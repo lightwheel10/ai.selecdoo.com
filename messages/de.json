@@ -162,7 +162,12 @@
     "cancel": "Abbrechen",
     "actions": "Aktionen",
     "emptyTitle": "Noch Keine Shops",
-    "emptyDescription": "Shopify-Shop-URL hinzufügen, um Produkte zu scrapen und zu überwachen."
+    "emptyDescription": "Shopify-Shop-URL hinzufügen, um Produkte zu scrapen und zu überwachen.",
+    "scrape": "Scrapen",
+    "scrapeStarted": "Scrape für {name} gestartet",
+    "scrapeCompleted": "Scrape abgeschlossen — {count} Produkte gefunden",
+    "scrapeFailed": "Scrape für {name} fehlgeschlagen",
+    "scraping": "Wird gescrapt..."
   },
   "AIContent": {
     "searchProducts": "Produkte suchen...",

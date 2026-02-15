@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import {
   Search,
   ExternalLink,
@@ -9,6 +9,8 @@ import {
   Trash2,
   X,
   Check,
+  Scan,
+  Loader2,
 } from "lucide-react";
 import {
   Table,
@@ -131,6 +133,71 @@ export function StoreTable({ stores }: StoreTableProps) {
     setLocalStores((prev) => prev.filter((s) => s.id !== id));
     setPendingDelete(null);
   }
+
+  const [scrapingIds, setScrapingIds] = useState<Set<string>>(new Set());
+  const pollTimers = useRef<Record<string, ReturnType<typeof setInterval>>>({});
+
+  const startScrape = useCallback(async (store: Store) => {
+    setScrapingIds((prev) => new Set(prev).add(store.id));
+    toast(t("scrapeStarted", { name: store.name }));
+
+    try {
+      const res = await fetch("/api/scrape", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ store_id: store.id }),
+      });
+
+      if (!res.ok) throw new Error("Failed to start scrape");
+
+      const { job_id } = await res.json();
+
+      // Poll for status
+      pollTimers.current[store.id] = setInterval(async () => {
+        try {
+          const statusRes = await fetch(`/api/scrape/${job_id}/status`);
+          if (!statusRes.ok) return;
+          const data = await statusRes.json();
+
+          if (data.status === "completed") {
+            clearInterval(pollTimers.current[store.id]);
+            delete pollTimers.current[store.id];
+            setScrapingIds((prev) => {
+              const next = new Set(prev);
+              next.delete(store.id);
+              return next;
+            });
+            setLocalStores((prev) =>
+              prev.map((s) =>
+                s.id === store.id
+                  ? { ...s, product_count: data.products_found ?? s.product_count, last_scraped_at: new Date().toISOString() }
+                  : s
+              )
+            );
+            toast(t("scrapeCompleted", { count: data.products_found ?? 0 }));
+          } else if (data.status === "failed") {
+            clearInterval(pollTimers.current[store.id]);
+            delete pollTimers.current[store.id];
+            setScrapingIds((prev) => {
+              const next = new Set(prev);
+              next.delete(store.id);
+              return next;
+            });
+            toast.error(t("scrapeFailed", { name: store.name }));
+          }
+        } catch {
+          // keep polling
+        }
+      }, 5000);
+    } catch {
+      setScrapingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(store.id);
+        return next;
+      });
+      toast.error(t("scrapeFailed", { name: store.name }));
+    }
+  }, [t]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return localStores;
@@ -367,6 +434,26 @@ export function StoreTable({ stores }: StoreTableProps) {
                           icon={ExternalLink}
                           title={t("visitStore")}
                         />
+                        {scrapingIds.has(store.id) ? (
+                          <button
+                            disabled
+                            title={t("scraping")}
+                            className="w-7 h-7 flex items-center justify-center transition-all duration-150"
+                            style={{
+                              backgroundColor: "rgba(202,255,4,0.10)",
+                              border: "1.5px solid rgba(202,255,4,0.3)",
+                              color: "#CAFF04",
+                            }}
+                          >
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          </button>
+                        ) : (
+                          <IconButton
+                            onClick={() => startScrape(store)}
+                            icon={Scan}
+                            title={t("scrape")}
+                          />
+                        )}
                         <IconButton
                           onClick={() => {
                             togglePause(store.id);

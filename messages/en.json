@@ -162,7 +162,12 @@
     "cancel": "Cancel",
     "actions": "Actions",
     "emptyTitle": "No Stores Yet",
-    "emptyDescription": "Add a Shopify store URL to start scraping and monitoring products."
+    "emptyDescription": "Add a Shopify store URL to start scraping and monitoring products.",
+    "scrape": "Scrape",
+    "scrapeStarted": "Scrape started for {name}",
+    "scrapeCompleted": "Scrape completed — {count} products found",
+    "scrapeFailed": "Scrape failed for {name}",
+    "scraping": "Scraping..."
   },
   "AIContent": {
     "searchProducts": "Search products...",
