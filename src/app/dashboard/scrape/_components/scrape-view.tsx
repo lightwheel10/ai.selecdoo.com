@@ -19,6 +19,83 @@ const STATUS_FLOW: Record<string, string> = {
   SUCCEEDED: "savingResults",
 };
 
+const QUICK_SCRAPE_LIMIT = 5;
+
+function QuickRescrape({
+  stores,
+  onSelect,
+  label,
+  showAllLabel,
+  showLessLabel,
+}: {
+  stores: Store[];
+  onSelect: (store: Store) => void;
+  label: string;
+  showAllLabel: string;
+  showLessLabel: string;
+}) {
+  const [showAll, setShowAll] = useState(false);
+
+  const activeStores = stores
+    .filter((s) => s.status === "active")
+    .sort((a, b) => {
+      if (!a.last_scraped_at) return 1;
+      if (!b.last_scraped_at) return -1;
+      return new Date(b.last_scraped_at).getTime() - new Date(a.last_scraped_at).getTime();
+    });
+
+  const visible = showAll ? activeStores : activeStores.slice(0, QUICK_SCRAPE_LIMIT);
+  const hasMore = activeStores.length > QUICK_SCRAPE_LIMIT;
+
+  return (
+    <div
+      className="mt-5 pt-5"
+      style={{ borderTop: "1px solid var(--border)" }}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <p
+          className="text-[10px] font-bold uppercase tracking-[0.15em]"
+          style={{
+            fontFamily: "var(--font-mono)",
+            color: "var(--muted-foreground)",
+          }}
+        >
+          {label}
+        </p>
+        {hasMore && (
+          <button
+            onClick={() => setShowAll((v) => !v)}
+            className="text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
+            style={{
+              fontFamily: "var(--font-mono)",
+              color: "#CAFF04",
+            }}
+          >
+            {showAll ? showLessLabel : `${showAllLabel} (${activeStores.length})`}
+          </button>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {visible.map((store) => (
+          <button
+            key={store.id}
+            onClick={() => onSelect(store)}
+            className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border transition-colors hover:border-primary/50"
+            style={{
+              fontFamily: "var(--font-mono)",
+              backgroundColor: "transparent",
+              borderColor: "var(--border)",
+              color: "var(--muted-foreground)",
+            }}
+          >
+            {store.name}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 interface ScrapeViewProps {
   stores: Store[];
   products: Product[];
@@ -377,39 +454,13 @@ export function ScrapeView({ stores, products: initialProducts }: ScrapeViewProp
 
         {/* Quick re-scrape — only in idle */}
         {phase === "idle" && stores.filter((s) => s.status === "active").length > 0 && (
-          <div
-            className="mt-5 pt-5"
-            style={{ borderTop: "1px solid var(--border)" }}
-          >
-            <p
-              className="text-[10px] font-bold uppercase tracking-[0.15em] mb-3"
-              style={{
-                fontFamily: "var(--font-mono)",
-                color: "var(--muted-foreground)",
-              }}
-            >
-              {t("quickRescrape")}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {stores
-                .filter((s) => s.status === "active")
-                .map((store) => (
-                  <button
-                    key={store.id}
-                    onClick={() => handleQuickScrape(store)}
-                    className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border transition-colors hover:border-primary/50"
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      backgroundColor: "transparent",
-                      borderColor: "var(--border)",
-                      color: "var(--muted-foreground)",
-                    }}
-                  >
-                    {store.name}
-                  </button>
-                ))}
-            </div>
-          </div>
+          <QuickRescrape
+            stores={stores}
+            onSelect={handleQuickScrape}
+            label={t("quickRescrape")}
+            showAllLabel={t("showAll")}
+            showLessLabel={t("showLess")}
+          />
         )}
       </div>
 

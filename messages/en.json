@@ -33,6 +33,8 @@
     "scraping": "Scraping...",
     "startScraping": "Start Scraping",
     "quickRescrape": "Quick Re-scrape",
+    "showAll": "Show All",
+    "showLess": "Show Less",
     "reset": "Reset",
     "jobStatus": "Job Status",
     "jobId": "Job ID",

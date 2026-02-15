@@ -33,6 +33,8 @@
     "scraping": "Scraping läuft...",
     "startScraping": "Scraping Starten",
     "quickRescrape": "Schnell Erneut Scrapen",
+    "showAll": "Alle Anzeigen",
+    "showLess": "Weniger Anzeigen",
     "reset": "Zurücksetzen",
     "jobStatus": "Auftragsstatus",
     "jobId": "Auftrags-ID",
