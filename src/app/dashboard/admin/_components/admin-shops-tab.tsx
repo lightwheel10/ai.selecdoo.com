@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
-import { Search, X, Check, ChevronDown, Pencil } from "lucide-react";
+import { Search, X, Check, ChevronDown, Pencil, Package } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -24,6 +24,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
+import { StatusBadge } from "@/components/domain/status-badge";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import type { Store, StorePlatform } from "@/types";
@@ -218,25 +219,109 @@ function ToggleRow({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between py-1">
+    <button
+      onClick={() => onChange(!checked)}
+      className="w-full flex items-center justify-between px-3 py-2.5 mt-1.5 border-2 transition-all duration-150"
+      style={{
+        backgroundColor: checked ? "rgba(34,197,94,0.06)" : "rgba(239,68,68,0.04)",
+        borderColor: checked ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.2)",
+      }}
+    >
       <span
         className="text-[10px] font-bold uppercase tracking-[0.15em]"
-        style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+        style={{
+          fontFamily: "var(--font-mono)",
+          color: checked ? "#22C55E" : "var(--muted-foreground)",
+        }}
       >
         {label}
       </span>
-      <button
-        onClick={() => onChange(!checked)}
-        className="w-7 h-7 flex items-center justify-center transition-all duration-150"
+      <div
+        className="w-6 h-6 flex items-center justify-center transition-all duration-150"
         style={{
-          backgroundColor: checked ? "rgba(34,197,94,0.15)" : "rgba(85,85,85,0.10)",
-          border: `1.5px solid ${checked ? "rgba(34,197,94,0.4)" : "rgba(85,85,85,0.3)"}`,
-          color: checked ? "#22C55E" : "#555555",
+          backgroundColor: checked ? "rgba(34,197,94,0.20)" : "rgba(239,68,68,0.12)",
+          color: checked ? "#22C55E" : "#EF4444",
         }}
       >
-        <Check className="w-3 h-3" />
-      </button>
+        {checked ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+      </div>
+    </button>
+  );
+}
+
+// ─── Store Header Card ───
+
+function StoreHeaderCard({ store }: { store: Store }) {
+  const t = useTranslations("Admin");
+  return (
+    <div
+      className="flex items-center gap-3 px-4 py-3 border-2 mb-4"
+      style={{
+        borderColor: "var(--border)",
+        backgroundColor: "rgba(202,255,4,0.03)",
+      }}
+    >
+      <div
+        className="w-9 h-9 flex-shrink-0 relative overflow-hidden"
+        style={{ backgroundColor: "rgba(202,255,4,0.10)" }}
+      >
+        <Image
+          src={`https://www.google.com/s2/favicons?domain=${new URL(store.url).hostname}&sz=32`}
+          alt={store.name}
+          fill
+          className="object-contain p-1"
+          sizes="36px"
+        />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[12px] font-semibold truncate">{store.name}</p>
+        <p
+          className="text-[10px] font-bold tracking-wider truncate"
+          style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+        >
+          {store.url.replace("https://", "")}
+        </p>
+        <div className="flex items-center gap-1.5 mt-0.5">
+          <Package className="w-3 h-3" style={{ color: "var(--muted-foreground)", opacity: 0.6 }} />
+          <span
+            className="text-[9px] font-bold tracking-wider"
+            style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+          >
+            {store.product_count.toLocaleString()} {t("productsLabel")}
+          </span>
+        </div>
+      </div>
+      <div className="flex-shrink-0">
+        <StatusBadge status={store.is_published ? "published" : "unpublished"} />
+      </div>
     </div>
+  );
+}
+
+// ─── Description Tab Button ───
+
+function DescriptionTabButton({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors"
+      style={{
+        fontFamily: "var(--font-mono)",
+        backgroundColor: active ? "rgba(202,255,4,0.12)" : "transparent",
+        color: active ? "#CAFF04" : "var(--muted-foreground)",
+        border: `1.5px solid ${active ? "rgba(202,255,4,0.3)" : "var(--border)"}`,
+      }}
+    >
+      {label}
+    </button>
   );
 }
 
@@ -258,6 +343,11 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
   const [logoFilter, setLogoFilter] = useState<string | null>(null);
   const [featuredFilter, setFeaturedFilter] = useState<string | null>(null);
   const [editingStore, setEditingStore] = useState<Store | null>(null);
+  const [descriptionTab, setDescriptionTab] = useState<"raw" | "formatted">("raw");
+
+  useEffect(() => {
+    setDescriptionTab("raw");
+  }, [editingStore?.id]);
 
   const platformOptions = [
     { label: "Shopify", value: "shopify" },
@@ -606,7 +696,7 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
       {/* Edit Dialog */}
       <Dialog open={!!editingStore} onOpenChange={(open) => !open && setEditingStore(null)}>
         <DialogContent
-          className="sm:max-w-2xl"
+          className="sm:max-w-3xl"
           style={{ borderRadius: 0, border: "2px solid var(--border)", backgroundColor: "var(--card)" }}
         >
           <DialogHeader>
@@ -622,132 +712,282 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
           </DialogHeader>
 
           {editingStore && (
-            <div className="max-h-[60vh] overflow-y-auto scrollbar-none pr-1">
-              {/* Basic */}
-              <SectionLabel>{t("basicInfo")}</SectionLabel>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <FieldLabel>{t("name")}</FieldLabel>
-                  <Input
-                    value={editingStore.name}
-                    onChange={(e) => setEditingStore({ ...editingStore, name: e.target.value })}
-                    className="text-xs border-2"
-                    style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
-                  />
-                </div>
-                <div>
-                  <FieldLabel>{t("platformLabel")}</FieldLabel>
-                  <select
-                    value={editingStore.platform || "shopify"}
-                    onChange={(e) => setEditingStore({ ...editingStore, platform: e.target.value as StorePlatform })}
-                    className="w-full px-3 py-2 text-[11px] border-2 outline-none"
-                    style={{ borderRadius: 0, fontFamily: "var(--font-mono)", borderColor: "var(--border)", backgroundColor: "var(--input)", color: "var(--foreground)" }}
-                  >
-                    <option value="shopify">Shopify</option>
-                    <option value="woocommerce">WooCommerce</option>
-                    <option value="magento">Magento</option>
-                    <option value="custom">Custom</option>
-                  </select>
-                </div>
-              </div>
-              <ToggleRow
-                label={t("featured")}
-                checked={!!editingStore.is_featured}
-                onChange={(v) => setEditingStore({ ...editingStore, is_featured: v })}
-              />
-              <ToggleRow
-                label={t("published")}
-                checked={!!editingStore.is_published}
-                onChange={(v) => setEditingStore({ ...editingStore, is_published: v })}
-              />
+            <>
+              {/* Store Header Card (outside scroll) */}
+              <StoreHeaderCard store={editingStore} />
 
-              {/* Affiliate */}
-              <SectionLabel>{t("affiliateInfo")}</SectionLabel>
-              <div className="space-y-2">
-                <div>
-                  <FieldLabel>{t("affiliateLinkBase")}</FieldLabel>
-                  <Input
-                    value={editingStore.affiliate_link_base || ""}
-                    onChange={(e) => setEditingStore({ ...editingStore, affiliate_link_base: e.target.value || null })}
-                    className="text-xs border-2"
-                    style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
-                  />
-                </div>
+              <div className="max-h-[65vh] overflow-y-auto scrollbar-none pr-1">
+                {/* Basic Info */}
+                <SectionLabel>{t("basicInfo")}</SectionLabel>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <FieldLabel>{t("programIdLabel")}</FieldLabel>
+                    <FieldLabel>{t("name")}</FieldLabel>
                     <Input
-                      value={editingStore.program_id || ""}
-                      onChange={(e) => setEditingStore({ ...editingStore, program_id: e.target.value || null })}
-                      className="text-xs border-2"
+                      value={editingStore.name}
+                      onChange={(e) => setEditingStore({ ...editingStore, name: e.target.value })}
+                      className="text-xs border-2 focus-visible:ring-0 focus-visible:border-[var(--border)]"
                       style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
                     />
                   </div>
                   <div>
-                    <FieldLabel>{t("couponCode")}</FieldLabel>
+                    <FieldLabel>{t("platformLabel")}</FieldLabel>
+                    <select
+                      value={editingStore.platform || "shopify"}
+                      onChange={(e) => setEditingStore({ ...editingStore, platform: e.target.value as StorePlatform })}
+                      className="w-full px-3 py-2 text-[11px] border-2 outline-none"
+                      style={{ borderRadius: 0, fontFamily: "var(--font-mono)", borderColor: "var(--border)", backgroundColor: "var(--input)", color: "var(--foreground)" }}
+                    >
+                      <option value="shopify">Shopify</option>
+                      <option value="woocommerce">WooCommerce</option>
+                      <option value="magento">Magento</option>
+                      <option value="custom">Custom</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <FieldLabel>{t("storeUrl")}</FieldLabel>
+                  <Input
+                    value={editingStore.url}
+                    onChange={(e) => setEditingStore({ ...editingStore, url: e.target.value })}
+                    className="text-xs border-2 focus-visible:ring-0 focus-visible:border-[var(--border)]"
+                    style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
+                  />
+                </div>
+                <ToggleRow
+                  label={t("featured")}
+                  checked={!!editingStore.is_featured}
+                  onChange={(v) => setEditingStore({ ...editingStore, is_featured: v })}
+                />
+                <ToggleRow
+                  label={t("published")}
+                  checked={!!editingStore.is_published}
+                  onChange={(v) => setEditingStore({ ...editingStore, is_published: v })}
+                />
+
+                {/* Affiliate */}
+                <SectionLabel>{t("affiliateInfo")}</SectionLabel>
+                <div className="space-y-2">
+                  <div>
+                    <FieldLabel>{t("affiliateLinkBase")}</FieldLabel>
                     <Input
-                      value={editingStore.coupon_code || ""}
-                      onChange={(e) => setEditingStore({ ...editingStore, coupon_code: e.target.value || null })}
-                      className="text-xs border-2"
+                      value={editingStore.affiliate_link_base || ""}
+                      onChange={(e) => setEditingStore({ ...editingStore, affiliate_link_base: e.target.value || null })}
+                      className="text-xs border-2 focus-visible:ring-0 focus-visible:border-[var(--border)]"
                       style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
                     />
                   </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <FieldLabel>{t("programIdLabel")}</FieldLabel>
+                      <Input
+                        value={editingStore.program_id || ""}
+                        onChange={(e) => setEditingStore({ ...editingStore, program_id: e.target.value || null })}
+                        className="text-xs border-2 focus-visible:ring-0 focus-visible:border-[var(--border)]"
+                        style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
+                      />
+                    </div>
+                    <div>
+                      <FieldLabel>{t("couponCode")}</FieldLabel>
+                      <Input
+                        value={editingStore.coupon_code || ""}
+                        onChange={(e) => setEditingStore({ ...editingStore, coupon_code: e.target.value || null })}
+                        className="text-xs border-2 focus-visible:ring-0 focus-visible:border-[var(--border)]"
+                        style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              {/* Descriptions */}
-              <SectionLabel>{t("descriptions")}</SectionLabel>
-              <div className="space-y-2">
-                <div>
-                  <FieldLabel>{t("descriptionEn")}</FieldLabel>
-                  <textarea
-                    value={editingStore.description_en || ""}
-                    onChange={(e) => setEditingStore({ ...editingStore, description_en: e.target.value || null })}
-                    rows={3}
-                    className="w-full px-3 py-2 text-[11px] border-2 outline-none resize-none"
-                    style={{ borderRadius: 0, fontFamily: "var(--font-mono)", borderColor: "var(--border)", backgroundColor: "var(--input)", color: "var(--foreground)" }}
-                  />
-                </div>
-                <div>
-                  <FieldLabel>{t("descriptionDe")}</FieldLabel>
-                  <textarea
-                    value={editingStore.description_de || ""}
-                    onChange={(e) => setEditingStore({ ...editingStore, description_de: e.target.value || null })}
-                    rows={3}
-                    className="w-full px-3 py-2 text-[11px] border-2 outline-none resize-none"
-                    style={{ borderRadius: 0, fontFamily: "var(--font-mono)", borderColor: "var(--border)", backgroundColor: "var(--input)", color: "var(--foreground)" }}
-                  />
-                </div>
-              </div>
-
-              {/* Media */}
-              <SectionLabel>{t("media")}</SectionLabel>
-              <div>
-                <FieldLabel>{t("logoUrl")}</FieldLabel>
-                <Input
-                  value={editingStore.logo_url || ""}
-                  onChange={(e) => setEditingStore({ ...editingStore, logo_url: e.target.value || null })}
-                  className="text-xs border-2"
-                  style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
-                />
-                {editingStore.logo_url && (
-                  <div className="mt-2">
-                    <p
-                      className="text-[9px] font-bold uppercase tracking-[0.15em] mb-1"
-                      style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
-                    >
-                      {t("preview")}
-                    </p>
-                    <img
-                      src={editingStore.logo_url}
-                      alt="Logo preview"
-                      className="w-12 h-12 object-cover"
-                      style={{ border: "1px solid var(--border)" }}
+                {/* Shipping */}
+                <SectionLabel>{t("shippingInfo")}</SectionLabel>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <FieldLabel>{t("shippingCountry")}</FieldLabel>
+                      <Input
+                        value={editingStore.shipping_country || ""}
+                        onChange={(e) => setEditingStore({ ...editingStore, shipping_country: e.target.value || null })}
+                        className="text-xs border-2 focus-visible:ring-0 focus-visible:border-[var(--border)]"
+                        style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
+                      />
+                    </div>
+                    <div>
+                      <FieldLabel>{t("shippingService")}</FieldLabel>
+                      <Input
+                        value={editingStore.shipping_service || ""}
+                        onChange={(e) => setEditingStore({ ...editingStore, shipping_service: e.target.value || null })}
+                        className="text-xs border-2 focus-visible:ring-0 focus-visible:border-[var(--border)]"
+                        style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <FieldLabel>{t("shippingPrice")}</FieldLabel>
+                    <Input
+                      value={editingStore.shipping_price || ""}
+                      onChange={(e) => setEditingStore({ ...editingStore, shipping_price: e.target.value || null })}
+                      className="text-xs border-2 focus-visible:ring-0 focus-visible:border-[var(--border)]"
+                      style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
                     />
                   </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <FieldLabel>{t("shippingMinHandling")}</FieldLabel>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={99}
+                        value={editingStore.shipping_min_handling_days ?? ""}
+                        onChange={(e) => setEditingStore({ ...editingStore, shipping_min_handling_days: e.target.value ? parseInt(e.target.value) : null })}
+                        className="text-xs border-2 focus-visible:ring-0 focus-visible:border-[var(--border)]"
+                        style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
+                      />
+                    </div>
+                    <div>
+                      <FieldLabel>{t("shippingMaxHandling")}</FieldLabel>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={99}
+                        value={editingStore.shipping_max_handling_days ?? ""}
+                        onChange={(e) => setEditingStore({ ...editingStore, shipping_max_handling_days: e.target.value ? parseInt(e.target.value) : null })}
+                        className="text-xs border-2 focus-visible:ring-0 focus-visible:border-[var(--border)]"
+                        style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <FieldLabel>{t("shippingMinTransit")}</FieldLabel>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={99}
+                        value={editingStore.shipping_min_transit_days ?? ""}
+                        onChange={(e) => setEditingStore({ ...editingStore, shipping_min_transit_days: e.target.value ? parseInt(e.target.value) : null })}
+                        className="text-xs border-2 focus-visible:ring-0 focus-visible:border-[var(--border)]"
+                        style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
+                      />
+                    </div>
+                    <div>
+                      <FieldLabel>{t("shippingMaxTransit")}</FieldLabel>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={99}
+                        value={editingStore.shipping_max_transit_days ?? ""}
+                        onChange={(e) => setEditingStore({ ...editingStore, shipping_max_transit_days: e.target.value ? parseInt(e.target.value) : null })}
+                        className="text-xs border-2 focus-visible:ring-0 focus-visible:border-[var(--border)]"
+                        style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Descriptions with tabs */}
+                <SectionLabel>{t("descriptions")}</SectionLabel>
+                <div className="flex items-center gap-1 mb-3">
+                  <DescriptionTabButton
+                    label={t("rawDescriptions")}
+                    active={descriptionTab === "raw"}
+                    onClick={() => setDescriptionTab("raw")}
+                  />
+                  <DescriptionTabButton
+                    label={t("formattedDescriptions")}
+                    active={descriptionTab === "formatted"}
+                    onClick={() => setDescriptionTab("formatted")}
+                  />
+                </div>
+
+                {descriptionTab === "raw" ? (
+                  <div className="space-y-2">
+                    <div>
+                      <FieldLabel>{t("descriptionEn")}</FieldLabel>
+                      <textarea
+                        value={editingStore.description_en || ""}
+                        onChange={(e) => setEditingStore({ ...editingStore, description_en: e.target.value || null })}
+                        rows={3}
+                        className="w-full px-3 py-2 text-[11px] border-2 outline-none resize-none"
+                        style={{ borderRadius: 0, fontFamily: "var(--font-mono)", borderColor: "var(--border)", backgroundColor: "var(--input)", color: "var(--foreground)" }}
+                      />
+                    </div>
+                    <div>
+                      <FieldLabel>{t("descriptionDe")}</FieldLabel>
+                      <textarea
+                        value={editingStore.description_de || ""}
+                        onChange={(e) => setEditingStore({ ...editingStore, description_de: e.target.value || null })}
+                        rows={3}
+                        className="w-full px-3 py-2 text-[11px] border-2 outline-none resize-none"
+                        style={{ borderRadius: 0, fontFamily: "var(--font-mono)", borderColor: "var(--border)", backgroundColor: "var(--input)", color: "var(--foreground)" }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div>
+                      <FieldLabel>{t("descriptionEnFormatted")}</FieldLabel>
+                      {editingStore.description_en_formatted ? (
+                        <textarea
+                          value={editingStore.description_en_formatted}
+                          onChange={(e) => setEditingStore({ ...editingStore, description_en_formatted: e.target.value || null })}
+                          rows={4}
+                          className="w-full px-3 py-2 text-[11px] border-2 outline-none resize-none"
+                          style={{ borderRadius: 0, fontFamily: "var(--font-mono)", borderColor: "var(--border)", backgroundColor: "var(--input)", color: "var(--foreground)" }}
+                        />
+                      ) : (
+                        <p
+                          className="text-[10px] py-3 px-3 border-2"
+                          style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
+                        >
+                          {t("noFormattedDescription")}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <FieldLabel>{t("descriptionDeFormatted")}</FieldLabel>
+                      {editingStore.description_de_formatted ? (
+                        <textarea
+                          value={editingStore.description_de_formatted}
+                          onChange={(e) => setEditingStore({ ...editingStore, description_de_formatted: e.target.value || null })}
+                          rows={4}
+                          className="w-full px-3 py-2 text-[11px] border-2 outline-none resize-none"
+                          style={{ borderRadius: 0, fontFamily: "var(--font-mono)", borderColor: "var(--border)", backgroundColor: "var(--input)", color: "var(--foreground)" }}
+                        />
+                      ) : (
+                        <p
+                          className="text-[10px] py-3 px-3 border-2"
+                          style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
+                        >
+                          {t("noFormattedDescription")}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 )}
+
+                {/* Media */}
+                <SectionLabel>{t("media")}</SectionLabel>
+                <div>
+                  <FieldLabel>{t("logoUrl")}</FieldLabel>
+                  <div className="flex items-center gap-3">
+                    <Input
+                      value={editingStore.logo_url || ""}
+                      onChange={(e) => setEditingStore({ ...editingStore, logo_url: e.target.value || null })}
+                      className="flex-1 text-xs border-2 focus-visible:ring-0 focus-visible:border-[var(--border)]"
+                      style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
+                    />
+                    {editingStore.logo_url && (
+                      <img
+                        src={editingStore.logo_url}
+                        alt="Logo preview"
+                        className="w-9 h-9 flex-shrink-0 object-cover"
+                        style={{ border: "1.5px solid var(--border)" }}
+                      />
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
+            </>
           )}
 
           {/* Footer */}

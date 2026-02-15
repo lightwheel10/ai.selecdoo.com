@@ -23,6 +23,16 @@ export interface Store {
   logo_url?: string | null;
   description_de?: string | null;
   description_en?: string | null;
+  description_en_formatted?: string | null;
+  description_de_formatted?: string | null;
+  // Shipping
+  shipping_country?: string | null;
+  shipping_price?: string | null;
+  shipping_service?: string | null;
+  shipping_min_handling_days?: number | null;
+  shipping_max_handling_days?: number | null;
+  shipping_min_transit_days?: number | null;
+  shipping_max_transit_days?: number | null;
 }
 
 // ─── Product ───

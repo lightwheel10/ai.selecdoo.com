@@ -305,25 +305,33 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 
 function ToggleRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <div className="flex items-center justify-between py-1">
+    <button
+      onClick={() => onChange(!checked)}
+      className="w-full flex items-center justify-between px-3 py-2.5 mt-1.5 border-2 transition-all duration-150"
+      style={{
+        backgroundColor: checked ? "rgba(34,197,94,0.06)" : "rgba(239,68,68,0.04)",
+        borderColor: checked ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.2)",
+      }}
+    >
       <span
         className="text-[10px] font-bold uppercase tracking-[0.15em]"
-        style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+        style={{
+          fontFamily: "var(--font-mono)",
+          color: checked ? "#22C55E" : "var(--muted-foreground)",
+        }}
       >
         {label}
       </span>
-      <button
-        onClick={() => onChange(!checked)}
-        className="w-7 h-7 flex items-center justify-center transition-all duration-150"
+      <div
+        className="w-6 h-6 flex items-center justify-center transition-all duration-150"
         style={{
-          backgroundColor: checked ? "rgba(34,197,94,0.15)" : "rgba(85,85,85,0.10)",
-          border: `1.5px solid ${checked ? "rgba(34,197,94,0.4)" : "rgba(85,85,85,0.3)"}`,
-          color: checked ? "#22C55E" : "#555555",
+          backgroundColor: checked ? "rgba(34,197,94,0.20)" : "rgba(239,68,68,0.12)",
+          color: checked ? "#22C55E" : "#EF4444",
         }}
       >
-        <Check className="w-3 h-3" />
-      </button>
-    </div>
+        {checked ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+      </div>
+    </button>
   );
 }
 
@@ -762,7 +770,7 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
                   <Input
                     value={editingProduct.ai_category || ""}
                     onChange={(e) => setEditingProduct({ ...editingProduct, ai_category: e.target.value || null })}
-                    className="text-xs border-2"
+                    className="text-xs border-2 focus-visible:ring-0 focus-visible:border-[var(--border)]"
                     style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
                   />
                 </div>
@@ -813,25 +821,19 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
               <SectionLabel>{t("media")}</SectionLabel>
               <div>
                 <FieldLabel>{t("imageUrl")}</FieldLabel>
-                <Input
-                  value={editingProduct.image_url || ""}
-                  onChange={(e) => setEditingProduct({ ...editingProduct, image_url: e.target.value || null })}
-                  className="text-xs border-2"
-                  style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
-                />
-                {editingProduct.image_url && (
-                  <div className="mt-2">
-                    <p
-                      className="text-[9px] font-bold uppercase tracking-[0.15em] mb-1"
-                      style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
-                    >
-                      {t("preview")}
-                    </p>
-                    <div className="w-16 h-16 relative" style={{ border: "1px solid var(--border)" }}>
-                      <Image src={editingProduct.image_url} alt="Preview" fill className="object-cover" sizes="64px" />
+                <div className="flex items-center gap-3">
+                  <Input
+                    value={editingProduct.image_url || ""}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, image_url: e.target.value || null })}
+                    className="flex-1 text-xs border-2 focus-visible:ring-0 focus-visible:border-[var(--border)]"
+                    style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
+                  />
+                  {editingProduct.image_url && (
+                    <div className="w-9 h-9 flex-shrink-0 relative" style={{ border: "1.5px solid var(--border)" }}>
+                      <Image src={editingProduct.image_url} alt="Preview" fill className="object-cover" sizes="36px" />
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               {/* Affiliate */}
@@ -841,7 +843,7 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
                 <Input
                   value={editingProduct.affiliate_link || ""}
                   onChange={(e) => setEditingProduct({ ...editingProduct, affiliate_link: e.target.value || null })}
-                  className="text-xs border-2"
+                  className="text-xs border-2 focus-visible:ring-0 focus-visible:border-[var(--border)]"
                   style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
                 />
               </div>
