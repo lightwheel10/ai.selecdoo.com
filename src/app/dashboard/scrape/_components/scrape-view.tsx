@@ -19,6 +19,28 @@ const STATUS_FLOW: Record<string, string> = {
   SUCCEEDED: "savingResults",
 };
 
+function Highlight({ text, query }: { text: string; query: string }) {
+  if (!query.trim()) return <>{text}</>;
+  const regex = new RegExp(
+    `(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
+    "gi"
+  );
+  const parts = text.split(regex);
+  return (
+    <>
+      {parts.map((part, i) =>
+        regex.test(part) ? (
+          <mark key={i} className="bg-transparent" style={{ color: "#CAFF04" }}>
+            {part}
+          </mark>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+}
+
 const QUICK_SCRAPE_LIMIT = 5;
 
 function QuickRescrape({
@@ -125,7 +147,7 @@ function QuickRescrape({
               color: "var(--muted-foreground)",
             }}
           >
-            {store.name}
+            <Highlight text={store.name} query={search} />
           </button>
         ))}
         {showAll && search.trim() && visible.length === 0 && (
