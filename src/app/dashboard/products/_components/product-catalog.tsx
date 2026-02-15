@@ -2,8 +2,9 @@
 
 import { useState, useMemo } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
-  ExternalLink,
+  Eye,
   Package,
   Tags,
   PenSquare,
@@ -651,29 +652,25 @@ export function ProductCatalog({ products, stores }: ProductCatalogProps) {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex gap-1.5">
+                  <div className="flex flex-wrap gap-1.5">
                     {/* Ghost — View */}
-                    {product.product_url && (
-                      <button
-                        onClick={() =>
-                          window.open(product.product_url!, "_blank")
-                        }
-                        className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 hover:opacity-80"
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          backgroundColor: "transparent",
-                          borderColor: "var(--border)",
-                          color: "var(--muted-foreground)",
-                        }}
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                        {t("view")}
-                      </button>
-                    )}
+                    <Link
+                      href={`/dashboard/products/${product.id}`}
+                      className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 hover:opacity-80"
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        backgroundColor: "transparent",
+                        borderColor: "var(--border)",
+                        color: "var(--muted-foreground)",
+                      }}
+                    >
+                      <Eye className="w-3 h-3" />
+                      {t("view")}
+                    </Link>
                     {/* Success semantic — Deals */}
                     <button
                       onClick={() => {/* TODO: deal workflow */}}
-                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
+                      className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
                       style={{
                         fontFamily: "var(--font-mono)",
                         backgroundColor: "#22C55E12",
@@ -687,7 +684,7 @@ export function ProductCatalog({ products, stores }: ProductCatalogProps) {
                     {/* Info semantic — Posts */}
                     <button
                       onClick={() => {/* TODO: post workflow */}}
-                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
+                      className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
                       style={{
                         fontFamily: "var(--font-mono)",
                         backgroundColor: "#5AC8FA12",

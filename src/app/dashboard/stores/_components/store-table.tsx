@@ -279,14 +279,17 @@ export function StoreTable({ stores }: StoreTableProps) {
                   <TableCell className="py-3">
                     <div className="flex items-center gap-2.5">
                       <div
-                        className="w-7 h-7 flex-shrink-0 flex items-center justify-center text-[10px] font-bold"
+                        className="w-7 h-7 flex-shrink-0 relative flex items-center justify-center overflow-hidden"
                         style={{
-                          fontFamily: "var(--font-mono)",
-                          backgroundColor: "rgba(202,255,4,0.10)",
-                          color: "#CAFF04",
+                          backgroundColor: "transparent",
                         }}
                       >
-                        {store.name[0]}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`https://www.google.com/s2/favicons?domain=${new URL(store.url).hostname}&sz=32`}
+                          alt={store.name}
+                          className="w-5 h-5 object-contain"
+                        />
                       </div>
                       <span className="text-[11px] font-semibold truncate">
                         <Highlight text={store.name} query={search} />

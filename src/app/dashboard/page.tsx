@@ -155,14 +155,34 @@ export default async function DashboardPage() {
               >
                 {/* Store avatar */}
                 <div
-                  className="w-6 h-6 flex-shrink-0 flex items-center justify-center text-[9px] font-bold"
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    backgroundColor: "rgba(202,255,4,0.10)",
-                    color: "#CAFF04",
-                  }}
+                  className="w-7 h-7 flex-shrink-0 relative flex items-center justify-center overflow-hidden"
+                  style={{ backgroundColor: "transparent" }}
                 >
-                  {job.store_name[0]}
+                  {(() => {
+                    const store = allStores.find((s) => s.name === job.store_name);
+                    if (store?.url) {
+                      const hostname = new URL(store.url).hostname;
+                      return (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=32`}
+                          alt={job.store_name}
+                          className="w-5 h-5 object-contain"
+                        />
+                      );
+                    }
+                    return (
+                      <span
+                        className="text-[9px] font-bold"
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          color: "#CAFF04",
+                        }}
+                      >
+                        {job.store_name[0]}
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 {/* Store name */}
@@ -253,17 +273,28 @@ export default async function DashboardPage() {
                     borderColor: "var(--border)",
                   }}
                 >
-                  {/* Product Image Placeholder */}
+                  {/* Product Image */}
                   <div
-                    className="relative w-full aspect-square flex items-center justify-center"
+                    className="relative w-full aspect-square"
                     style={{
                       backgroundColor: "var(--input)",
                     }}
                   >
-                    <Package
-                      className="w-8 h-8"
-                      style={{ color: "var(--muted-foreground)", opacity: 0.3 }}
-                    />
+                    {product.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={product.image_url}
+                        alt={product.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Package
+                          className="w-8 h-8"
+                          style={{ color: "var(--muted-foreground)", opacity: 0.3 }}
+                        />
+                      </div>
+                    )}
                     {hasDiscount && (
                       <span
                         className="absolute top-2 left-2 text-[10px] font-bold px-1.5 py-0.5"

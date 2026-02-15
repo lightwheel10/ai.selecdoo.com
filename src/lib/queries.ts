@@ -2,6 +2,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type {
   Store,
   Product,
+  ProductDetail,
+  ProductMedia,
+  ProductOption,
+  ProductVariant,
   ScrapeJob,
   ProductChange,
   MonitoringConfig,
@@ -120,8 +124,111 @@ function mapProduct(row: any): Product {
     is_slider: row.is_slider,
     ai_category: row.ai_category,
     affiliate_link: row.affiliate_link,
-    description_de: row.description,
+    description_de: row.description_de ?? row.description,
     description_en: row.description_en,
+  };
+}
+
+// ─── Product Detail ───
+
+export async function getProductById(id: string): Promise<ProductDetail | null> {
+  const supabase = createAdminClient();
+  const [{ data, error }, storeNames] = await Promise.all([
+    supabase.from("products").select("*").eq("id", id).single(),
+    getStoreNameMap(),
+  ]);
+
+  if (error || !data) {
+    console.error("getProductById error:", error?.message);
+    return null;
+  }
+
+  return mapProductDetail(data, storeNames);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseJsonb<T>(value: any, fallback: T): T {
+  if (value == null) return fallback;
+  if (Array.isArray(value)) return value as T;
+  if (typeof value === "string") {
+    try { return JSON.parse(value); } catch { return fallback; }
+  }
+  return fallback;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapProductDetail(row: any, storeNames: Record<string, string>): ProductDetail {
+  const medias: ProductMedia[] = parseJsonb(row.medias, []).map(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (m: any, i: number) => ({
+      src: m.src ?? m.url ?? "",
+      alt: m.alt ?? null,
+      width: m.width ?? null,
+      height: m.height ?? null,
+      position: m.position ?? i,
+    })
+  );
+
+  // Apify options: { type: "Size", values: [{ id: "XS", name: "XS" }, ...] }
+  const options: ProductOption[] = parseJsonb(row.options, []).map(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (o: any) => ({
+      name: o.name ?? o.type ?? "",
+      values: Array.isArray(o.values)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ? o.values.map((v: any) => (typeof v === "string" ? v : v?.name ?? v?.value ?? v?.id ?? String(v)))
+        : [],
+    })
+  );
+
+  // Apify stores variant price as object { current, previous, stockStatus } in cents
+  const variants: ProductVariant[] = parseJsonb(row.variants, []).map(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (v: any, i: number) => {
+      const priceObj = v.price;
+      const isObj = priceObj && typeof priceObj === "object";
+      const price = isObj ? Number(priceObj.current ?? 0) / 100 : Number(priceObj ?? 0);
+      const prevRaw = isObj ? priceObj.previous : v.original_price;
+      const originalPrice = prevRaw != null && Number(prevRaw) > 0
+        ? (isObj ? Number(prevRaw) / 100 : Number(prevRaw))
+        : null;
+      const inStock = isObj
+        ? priceObj.stockStatus === "InStock"
+        : (v.in_stock ?? v.available ?? true);
+
+      return {
+        title: v.title ?? "",
+        sku: v.sku ?? null,
+        price,
+        original_price: originalPrice,
+        in_stock: inStock,
+        position: v.position ?? i,
+        option1: v.option1 ?? null,
+        option2: v.option2 ?? null,
+        option3: v.option3 ?? null,
+      };
+    }
+  );
+
+  return {
+    ...mapProduct(row),
+    hash_id: row.hash_id ?? null,
+    gtin: row.gtin ?? null,
+    mpn: row.mpn ?? null,
+    condition: row.condition ?? null,
+    product_type: Array.isArray(row.categories) ? row.categories.join(", ") : (row.categories ?? null),
+    source_language: row.source_language ?? null,
+    source_retailer: row.source_retailer ?? null,
+    source_created_at: row.source_created_at ?? null,
+    source_updated_at: row.source_updated_at ?? null,
+    ai_cleaned_at: row.ai_cleaned_at ?? null,
+    coupon_code: row.coupon_code ?? null,
+    coupon_value: row.coupon_value ?? null,
+    medias,
+    options,
+    variants,
+    created_at: row.created_at,
+    store_name: storeNames[row.store_id] ?? "",
   };
 }
 

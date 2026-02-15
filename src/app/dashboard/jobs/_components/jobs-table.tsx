@@ -15,10 +15,11 @@ import { Input } from "@/components/ui/input";
 import { useTranslations, useLocale } from "next-intl";
 import { StatusBadge } from "@/components/domain/status-badge";
 import { toast } from "sonner";
-import type { ScrapeJob } from "@/types";
+import type { ScrapeJob, Store } from "@/types";
 
 interface JobsTableProps {
   jobs: ScrapeJob[];
+  stores: Store[];
 }
 
 function formatDuration(start: string, end: string | null) {
@@ -42,10 +43,18 @@ function formatDateTime(timestamp: string, locale: string) {
   });
 }
 
-export function JobsTable({ jobs }: JobsTableProps) {
+export function JobsTable({ jobs, stores }: JobsTableProps) {
   const t = useTranslations("Jobs");
   const locale = useLocale();
   const router = useRouter();
+
+  const storeUrlMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const s of stores) {
+      map[s.name] = s.url;
+    }
+    return map;
+  }, [stores]);
 
   const [search, setSearch] = useState("");
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
@@ -193,14 +202,27 @@ export function JobsTable({ jobs }: JobsTableProps) {
                 <TableCell className="py-3">
                   <div className="flex items-center gap-2">
                     <div
-                      className="w-6 h-6 flex-shrink-0 flex items-center justify-center text-[9px] font-bold"
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        backgroundColor: "rgba(202,255,4,0.10)",
-                        color: "#CAFF04",
-                      }}
+                      className="w-7 h-7 flex-shrink-0 relative flex items-center justify-center overflow-hidden"
+                      style={{ backgroundColor: "transparent" }}
                     >
-                      {job.store_name[0]}
+                      {storeUrlMap[job.store_name] ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={`https://www.google.com/s2/favicons?domain=${new URL(storeUrlMap[job.store_name]).hostname}&sz=32`}
+                          alt={job.store_name}
+                          className="w-5 h-5 object-contain"
+                        />
+                      ) : (
+                        <span
+                          className="text-[9px] font-bold"
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            color: "#CAFF04",
+                          }}
+                        >
+                          {job.store_name[0]}
+                        </span>
+                      )}
                     </div>
                     <span className="text-[11px] font-semibold">
                       {job.store_name}

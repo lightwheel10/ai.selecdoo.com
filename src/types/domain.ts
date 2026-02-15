@@ -67,6 +67,53 @@ export interface Product {
   description_en?: string | null;
 }
 
+// ─── Product Detail (extended for detail page) ───
+
+export interface ProductMedia {
+  src: string;
+  alt: string | null;
+  width: number | null;
+  height: number | null;
+  position: number;
+}
+
+export interface ProductOption {
+  name: string;
+  values: string[];
+}
+
+export interface ProductVariant {
+  title: string;
+  sku: string | null;
+  price: number;
+  original_price: number | null;
+  in_stock: boolean;
+  position: number;
+  option1: string | null;
+  option2: string | null;
+  option3: string | null;
+}
+
+export interface ProductDetail extends Product {
+  hash_id: string | null;
+  gtin: string | null;
+  mpn: string | null;
+  condition: string | null;
+  product_type: string | null;
+  source_language: string | null;
+  source_retailer: string | null;
+  source_created_at: string | null;
+  source_updated_at: string | null;
+  ai_cleaned_at: string | null;
+  coupon_code: string | null;
+  coupon_value: string | null;
+  medias: ProductMedia[];
+  options: ProductOption[];
+  variants: ProductVariant[];
+  created_at: string;
+  store_name: string;
+}
+
 // ─── Scrape Job ───
 
 export type ScrapeJobStatus = "pending" | "running" | "completed" | "failed";

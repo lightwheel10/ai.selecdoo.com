@@ -9,8 +9,10 @@ import {
   ChevronDown,
   Pencil,
   ExternalLink,
+  Eye,
   Package,
 } from "lucide-react";
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -673,11 +675,22 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
                     {/* Actions */}
                     <TableCell className="text-center">
                       <div className="flex items-center gap-1.5 justify-center">
+                        <Link
+                          href={`/dashboard/products/${product.id}`}
+                          className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"
+                          style={{
+                            backgroundColor: "transparent",
+                            border: "2px solid var(--border)",
+                            color: "var(--muted-foreground)",
+                          }}
+                          title={t("view")}
+                        >
+                          <Eye className="w-3 h-3" />
+                        </Link>
                         {product.product_url && (
                           <IconButton
                             onClick={() => window.open(product.product_url!, "_blank")}
                             icon={ExternalLink}
-                            title={t("view")}
                           />
                         )}
                         <IconButton

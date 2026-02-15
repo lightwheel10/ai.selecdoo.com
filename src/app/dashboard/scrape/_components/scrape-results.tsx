@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { ExternalLink, Package, Tags, PenSquare } from "lucide-react";
+import Link from "next/link";
+import { Eye, Package, Tags, PenSquare } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { StatusBadge } from "@/components/domain/status-badge";
 import type { Product } from "@/types";
@@ -122,23 +123,19 @@ export function ScrapeResults({ products }: ScrapeResultsProps) {
                 {/* Actions */}
                 <div className="flex gap-1.5">
                   {/* Ghost — View */}
-                  {product.product_url && (
-                    <button
-                      onClick={() =>
-                        window.open(product.product_url!, "_blank")
-                      }
-                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 hover:opacity-80"
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        backgroundColor: "transparent",
-                        borderColor: "var(--border)",
-                        color: "var(--muted-foreground)",
-                      }}
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                      {t("viewProduct")}
-                    </button>
-                  )}
+                  <Link
+                    href={`/dashboard/products/${product.id}`}
+                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 hover:opacity-80"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      backgroundColor: "transparent",
+                      borderColor: "var(--border)",
+                      color: "var(--muted-foreground)",
+                    }}
+                  >
+                    <Eye className="w-3 h-3" />
+                    {t("viewProduct")}
+                  </Link>
                   {/* Success semantic — Deals */}
                   <button
                     onClick={() => {/* TODO: deal workflow */}}
