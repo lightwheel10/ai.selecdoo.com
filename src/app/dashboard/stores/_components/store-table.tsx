@@ -9,7 +9,7 @@ import {
   Trash2,
   X,
   Check,
-  Scan,
+  RefreshCw,
   Loader2,
 } from "lucide-react";
 import {
@@ -450,7 +450,7 @@ export function StoreTable({ stores }: StoreTableProps) {
                         ) : (
                           <IconButton
                             onClick={() => startScrape(store)}
-                            icon={Scan}
+                            icon={RefreshCw}
                             title={t("scrape")}
                           />
                         )}
