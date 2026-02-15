@@ -255,6 +255,7 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
   const [couponFilter, setCouponFilter] = useState<string | null>(null);
   const [descFilter, setDescFilter] = useState<string | null>(null);
   const [logoFilter, setLogoFilter] = useState<string | null>(null);
+  const [featuredFilter, setFeaturedFilter] = useState<string | null>(null);
   const [editingStore, setEditingStore] = useState<Store | null>(null);
 
   const platformOptions = [
@@ -284,7 +285,12 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
     { label: t("noLogo"), value: "none" },
   ];
 
-  const hasAnyFilter = platformFilter || publishFilter || couponFilter || descFilter || logoFilter;
+  const featuredOptions = [
+    { label: t("isFeatured"), value: "featured" },
+    { label: t("notFeatured"), value: "not_featured" },
+  ];
+
+  const hasAnyFilter = platformFilter || publishFilter || couponFilter || descFilter || logoFilter || featuredFilter;
 
   const filtered = useMemo(() => {
     let result = localStores;
@@ -326,8 +332,14 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
       );
     }
 
+    if (featuredFilter) {
+      result = result.filter((s) =>
+        featuredFilter === "featured" ? !!s.is_featured : !s.is_featured
+      );
+    }
+
     return result;
-  }, [localStores, search, platformFilter, publishFilter, couponFilter, descFilter, logoFilter]);
+  }, [localStores, search, platformFilter, publishFilter, couponFilter, descFilter, logoFilter, featuredFilter]);
 
   function togglePublish(id: string) {
     setLocalStores((prev) =>
@@ -343,6 +355,7 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
     setCouponFilter(null);
     setDescFilter(null);
     setLogoFilter(null);
+    setFeaturedFilter(null);
     setSearch("");
   }
 
@@ -416,6 +429,13 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
           options={logoOptions}
           value={logoFilter}
           onChange={setLogoFilter}
+        />
+        <SimpleFilter
+          label={t("featuredFilter")}
+          resetLabel={t("allFeatured")}
+          options={featuredOptions}
+          value={featuredFilter}
+          onChange={setFeaturedFilter}
         />
 
         {(hasAnyFilter || search.trim()) && (
