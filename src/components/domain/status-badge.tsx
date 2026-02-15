@@ -5,7 +5,8 @@ import { useTranslations } from "next-intl";
 type Status =
   | "active" | "paused" | "error"
   | "in_stock" | "out_of_stock"
-  | "pending" | "running" | "completed" | "failed";
+  | "pending" | "running" | "completed" | "failed"
+  | "success" | "skipped" | "published" | "unpublished";
 
 const statusToKey: Record<Status, string> = {
   active: "active",
@@ -17,6 +18,10 @@ const statusToKey: Record<Status, string> = {
   running: "running",
   completed: "completed",
   failed: "failed",
+  success: "success",
+  skipped: "skipped",
+  published: "published",
+  unpublished: "unpublished",
 };
 
 const statusColors: Record<Status, { color: string; bg: string; border: string }> = {
@@ -29,6 +34,10 @@ const statusColors: Record<Status, { color: string; bg: string; border: string }
   running: { color: "#0A84FF", bg: "rgba(10,132,255,0.07)", border: "rgba(10,132,255,0.25)" },
   completed: { color: "#22C55E", bg: "rgba(34,197,94,0.07)", border: "rgba(34,197,94,0.25)" },
   failed: { color: "#FF453A", bg: "rgba(255,69,58,0.07)", border: "rgba(255,69,58,0.25)" },
+  success: { color: "#22C55E", bg: "rgba(34,197,94,0.07)", border: "rgba(34,197,94,0.25)" },
+  skipped: { color: "#FF9F0A", bg: "rgba(255,159,10,0.07)", border: "rgba(255,159,10,0.25)" },
+  published: { color: "#22C55E", bg: "rgba(34,197,94,0.07)", border: "rgba(34,197,94,0.25)" },
+  unpublished: { color: "#555555", bg: "rgba(85,85,85,0.07)", border: "rgba(85,85,85,0.25)" },
 };
 
 interface StatusBadgeProps {

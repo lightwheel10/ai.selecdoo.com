@@ -2,6 +2,8 @@
 
 export type StoreStatus = "active" | "paused" | "error";
 
+export type StorePlatform = "shopify" | "woocommerce" | "magento" | "custom";
+
 export interface Store {
   id: string;
   user_id: string;
@@ -11,6 +13,16 @@ export interface Store {
   last_scraped_at: string | null;
   status: StoreStatus;
   created_at: string;
+  // Admin fields
+  platform?: StorePlatform;
+  affiliate_link_base?: string | null;
+  program_id?: string | null;
+  coupon_code?: string | null;
+  is_published?: boolean;
+  is_featured?: boolean;
+  logo_url?: string | null;
+  description_de?: string | null;
+  description_en?: string | null;
 }
 
 // ─── Product ───
@@ -35,6 +47,14 @@ export interface Product {
   image_url: string | null;
   description: string | null;
   updated_at: string;
+  // Admin fields
+  is_published?: boolean;
+  is_featured?: boolean;
+  is_slider?: boolean;
+  ai_category?: string | null;
+  affiliate_link?: string | null;
+  description_de?: string | null;
+  description_en?: string | null;
 }
 
 // ─── Scrape Job ───
@@ -63,6 +83,7 @@ export interface ProductChange {
   store_id: string;
   store_name: string;
   product_title: string;
+  product_image: string | null;
   change_type: ChangeType;
   field_changed: string;
   old_value: string | null;
@@ -141,4 +162,23 @@ export interface DashboardStats {
   total_jobs: number;
   alerts_today: number;
   ai_generated: number;
+}
+
+// ─── AI Activity (Admin) ───
+
+export type AICleanStatus = "success" | "error" | "skipped";
+
+export interface AIActivityLog {
+  id: string;
+  store_id: string;
+  store_name: string;
+  product_id: string | null;
+  product_title: string | null;
+  status: AICleanStatus;
+  scope: string;
+  message: string;
+  items_processed: number;
+  items_updated: number;
+  items_skipped: number;
+  created_at: string;
 }
