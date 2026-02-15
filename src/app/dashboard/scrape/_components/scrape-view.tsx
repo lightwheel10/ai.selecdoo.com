@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Scan, Loader2, RotateCcw } from "lucide-react";
+import { Scan, Loader2, RotateCcw, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -27,14 +27,17 @@ function QuickRescrape({
   label,
   showAllLabel,
   showLessLabel,
+  searchPlaceholder,
 }: {
   stores: Store[];
   onSelect: (store: Store) => void;
   label: string;
   showAllLabel: string;
   showLessLabel: string;
+  searchPlaceholder: string;
 }) {
   const [showAll, setShowAll] = useState(false);
+  const [search, setSearch] = useState("");
 
   const activeStores = stores
     .filter((s) => s.status === "active")
@@ -44,7 +47,11 @@ function QuickRescrape({
       return new Date(b.last_scraped_at).getTime() - new Date(a.last_scraped_at).getTime();
     });
 
-  const visible = showAll ? activeStores : activeStores.slice(0, QUICK_SCRAPE_LIMIT);
+  const filtered = showAll && search.trim()
+    ? activeStores.filter((s) => s.name.toLowerCase().includes(search.toLowerCase()))
+    : activeStores;
+
+  const visible = showAll ? filtered : activeStores.slice(0, QUICK_SCRAPE_LIMIT);
   const hasMore = activeStores.length > QUICK_SCRAPE_LIMIT;
 
   return (
@@ -64,7 +71,7 @@ function QuickRescrape({
         </p>
         {hasMore && (
           <button
-            onClick={() => setShowAll((v) => !v)}
+            onClick={() => { setShowAll((v) => !v); setSearch(""); }}
             className="text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
             style={{
               fontFamily: "var(--font-mono)",
@@ -75,6 +82,36 @@ function QuickRescrape({
           </button>
         )}
       </div>
+      {showAll && (
+        <div className="relative mb-3" style={{ maxWidth: 240 }}>
+          <Search
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
+            style={{ color: "var(--muted-foreground)" }}
+          />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={searchPlaceholder}
+            className="w-full pl-8 pr-8 py-1.5 text-[11px] border-2 outline-none transition-colors duration-150 focus:border-primary"
+            style={{
+              backgroundColor: "var(--input)",
+              borderColor: "var(--border)",
+              color: "var(--foreground)",
+              borderRadius: 0,
+              fontFamily: "var(--font-mono)",
+            }}
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2"
+              style={{ color: "var(--muted-foreground)" }}
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+      )}
       <div className="flex flex-wrap gap-2">
         {visible.map((store) => (
           <button
@@ -91,6 +128,14 @@ function QuickRescrape({
             {store.name}
           </button>
         ))}
+        {showAll && search.trim() && visible.length === 0 && (
+          <p
+            className="text-[10px] font-bold uppercase tracking-[0.15em]"
+            style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+          >
+            No stores found
+          </p>
+        )}
       </div>
     </div>
   );
@@ -460,6 +505,7 @@ export function ScrapeView({ stores, products: initialProducts }: ScrapeViewProp
             label={t("quickRescrape")}
             showAllLabel={t("showAll")}
             showLessLabel={t("showLess")}
+            searchPlaceholder={t("searchStores")}
           />
         )}
       </div>
