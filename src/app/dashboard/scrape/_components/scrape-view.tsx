@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Scan, Loader2, RotateCcw } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ interface ScrapeViewProps {
 
 export function ScrapeView({ stores, products: initialProducts }: ScrapeViewProps) {
   const t = useTranslations("Scrape");
+  const searchParams = useSearchParams();
 
   // Form state
   const [url, setUrl] = useState("");
@@ -40,6 +42,7 @@ export function ScrapeView({ stores, products: initialProducts }: ScrapeViewProp
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const loadedJobRef = useRef<string | null>(null);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -47,6 +50,70 @@ export function ScrapeView({ stores, products: initialProducts }: ScrapeViewProp
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, []);
+
+  // Load a job from query params (e.g. coming from jobs table "View")
+  useEffect(() => {
+    const qJobId = searchParams.get("jobId");
+    if (!qJobId || loadedJobRef.current === qJobId) return;
+    loadedJobRef.current = qJobId;
+
+    async function loadJob(id: string) {
+      try {
+        const statusRes = await fetch(`/api/scrape/${id}/status`);
+        if (!statusRes.ok) return;
+        const statusData = await statusRes.json();
+
+        setJobId(id);
+        setProductsFound(statusData.products_found ?? 0);
+
+        if (statusData.status === "completed") {
+          setPhase("completed");
+          setStatusKey("savingResults");
+
+          const productsRes = await fetch(`/api/scrape/${id}/products`);
+          if (productsRes.ok) {
+            const productsData = await productsRes.json();
+            setScrapedProducts(productsData.products ?? []);
+          }
+        } else if (statusData.status === "failed") {
+          setPhase("failed");
+          setErrorMsg(statusData.error_message ?? "Scrape failed");
+        } else if (statusData.status === "running") {
+          setPhase("scraping");
+          setStartTime(new Date());
+          setStatusKey(STATUS_FLOW[statusData.apify_status] ?? "fetchingProducts");
+          // pollStatus will be available by the time the interval fires
+          pollRef.current = setInterval(() => {
+            fetch(`/api/scrape/${id}/status`)
+              .then((r) => r.ok ? r.json() : null)
+              .then((data) => {
+                if (!data) return;
+                setProductsFound(data.products_found ?? 0);
+                if (data.apify_status) setStatusKey(STATUS_FLOW[data.apify_status] ?? "fetchingProducts");
+                if (data.status === "completed") {
+                  if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+                  setPhase("completed");
+                  setProductsFound(data.products_found ?? 0);
+                  fetch(`/api/scrape/${id}/products`)
+                    .then((r) => r.ok ? r.json() : null)
+                    .then((pd) => { if (pd) setScrapedProducts(pd.products ?? []); });
+                } else if (data.status === "failed") {
+                  if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+                  setPhase("failed");
+                  setErrorMsg(data.error_message ?? "Scrape failed");
+                }
+              })
+              .catch(() => {});
+          }, 5000);
+        }
+      } catch {
+        // ignore — stay idle
+      }
+    }
+
+    loadJob(qJobId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Find store matching the entered URL
   const matchedStore = stores.find(

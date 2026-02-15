@@ -73,8 +73,7 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
   }, [jobs, search, locale]);
 
   function handleView(jobId: string) {
-    // TODO: navigate to scrape page with job context
-    router.push("/dashboard/scrape");
+    router.push(`/dashboard/scrape?jobId=${jobId}`);
   }
 
   function handleDelete(job: ScrapeJob) {
