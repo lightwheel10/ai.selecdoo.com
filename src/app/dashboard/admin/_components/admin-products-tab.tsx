@@ -345,6 +345,7 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
   const [brandFilter, setBrandFilter] = useState<string | null>(null);
   const [affiliateFilter, setAffiliateFilter] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [featuredFilter, setFeaturedFilter] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const uniqueBrands = useMemo(
@@ -367,7 +368,12 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
     { label: t("noLink"), value: "none" },
   ];
 
-  const hasAnyFilter = publishFilter || brandFilter || affiliateFilter || categoryFilter;
+  const featuredOptions = [
+    { label: t("isFeatured"), value: "featured" },
+    { label: t("notFeatured"), value: "not_featured" },
+  ];
+
+  const hasAnyFilter = publishFilter || brandFilter || affiliateFilter || categoryFilter || featuredFilter;
 
   const filtered = useMemo(() => {
     let result = localProducts;
@@ -402,8 +408,14 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
       result = result.filter((p) => p.ai_category === categoryFilter);
     }
 
+    if (featuredFilter) {
+      result = result.filter((p) =>
+        featuredFilter === "featured" ? !!p.is_featured : !p.is_featured
+      );
+    }
+
     return result;
-  }, [localProducts, search, publishFilter, brandFilter, affiliateFilter, categoryFilter]);
+  }, [localProducts, search, publishFilter, brandFilter, affiliateFilter, categoryFilter, featuredFilter]);
 
   function togglePublish(id: string) {
     setLocalProducts((prev) =>
@@ -416,6 +428,7 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
     setBrandFilter(null);
     setAffiliateFilter(null);
     setCategoryFilter(null);
+    setFeaturedFilter(null);
     setSearch("");
   }
 
@@ -486,6 +499,13 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
           value={categoryFilter}
           onChange={setCategoryFilter}
         />
+        <SimpleFilter
+          label={t("featuredFilter")}
+          resetLabel={t("allFeatured")}
+          options={featuredOptions}
+          value={featuredFilter}
+          onChange={setFeaturedFilter}
+        />
 
         {(hasAnyFilter || search.trim()) && (
           <button
@@ -549,7 +569,7 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
                   (header, i) => (
                     <TableHead
                       key={i}
-                      className="text-[9px] font-bold uppercase tracking-[0.15em] h-10"
+                      className={`text-[9px] font-bold uppercase tracking-[0.15em] h-10 ${i > 1 ? "text-center" : ""}`}
                       style={{
                         fontFamily: "var(--font-mono)",
                         color: "var(--muted-foreground)",
@@ -599,7 +619,7 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
                     </TableCell>
 
                     {/* Brand */}
-                    <TableCell>
+                    <TableCell className="text-center">
                       <span
                         className="text-[10px] font-bold tracking-wider"
                         style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
@@ -609,8 +629,8 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
                     </TableCell>
 
                     {/* Price */}
-                    <TableCell>
-                      <div className="flex items-baseline gap-1">
+                    <TableCell className="text-center">
+                      <div className="flex items-baseline gap-1 justify-center">
                         <span className="text-[11px] font-bold" style={{ fontFamily: "var(--font-display)" }}>
                           ${product.price.toFixed(2)}
                         </span>
@@ -626,21 +646,25 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
                     </TableCell>
 
                     {/* Stock */}
-                    <TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex justify-center">
                       <StatusBadge status={product.stock_status} />
+                      </div>
                     </TableCell>
 
                     {/* Published */}
-                    <TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex justify-center">
                       <PublishToggle
                         published={!!product.is_published}
                         onToggle={() => togglePublish(product.id)}
                       />
+                      </div>
                     </TableCell>
 
                     {/* Actions */}
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
+                    <TableCell className="text-center">
+                      <div className="flex items-center gap-1.5 justify-center">
                         {product.product_url && (
                           <IconButton
                             onClick={() => window.open(product.product_url!, "_blank")}

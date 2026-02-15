@@ -501,7 +501,7 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
                   (header, i) => (
                     <TableHead
                       key={i}
-                      className="text-[9px] font-bold uppercase tracking-[0.15em] h-10"
+                      className={`text-[9px] font-bold uppercase tracking-[0.15em] h-10 ${i > 0 ? "text-center" : ""}`}
                       style={{
                         fontFamily: "var(--font-mono)",
                         color: "var(--muted-foreground)",
@@ -545,7 +545,7 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
                   </TableCell>
 
                   {/* URL */}
-                  <TableCell>
+                  <TableCell className="text-center">
                     <span
                       className="text-[10px] font-bold tracking-wider truncate block"
                       style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
@@ -555,7 +555,7 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
                   </TableCell>
 
                   {/* Affiliate */}
-                  <TableCell>
+                  <TableCell className="text-center">
                     <span
                       className="text-[10px] font-bold tracking-wider truncate block"
                       style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
@@ -567,7 +567,7 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
                   </TableCell>
 
                   {/* Program ID */}
-                  <TableCell>
+                  <TableCell className="text-center">
                     <span
                       className="text-[10px] font-bold tracking-wider"
                       style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
@@ -577,20 +577,24 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
                   </TableCell>
 
                   {/* Published */}
-                  <TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex justify-center">
                     <PublishToggle
                       published={!!store.is_published}
                       onToggle={() => togglePublish(store.id)}
                     />
+                    </div>
                   </TableCell>
 
                   {/* Actions */}
-                  <TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex justify-center">
                     <IconButton
                       onClick={() => setEditingStore({ ...store })}
                       icon={Pencil}
                       title={t("edit")}
                     />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
