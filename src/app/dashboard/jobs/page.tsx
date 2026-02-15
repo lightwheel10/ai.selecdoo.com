@@ -1,13 +1,12 @@
 import { getTranslations } from "next-intl/server";
 import { JobsTable } from "./_components/jobs-table";
 import { JobStats } from "./_components/job-stats";
-import { mockScrapeJobs } from "@/lib/mock-data";
+import { getScrapeJobs } from "@/lib/queries";
 
 export default async function JobsPage() {
   const t = await getTranslations("Jobs");
 
-  // TODO: Replace with real Supabase queries
-  const jobs = mockScrapeJobs;
+  const jobs = await getScrapeJobs();
   const completed = jobs.filter((j) => j.status === "completed").length;
   const failed = jobs.filter((j) => j.status === "failed").length;
   const running = jobs.filter((j) => j.status === "running").length;

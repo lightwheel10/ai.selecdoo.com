@@ -2,15 +2,16 @@ import { Package } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { EmptyState } from "@/components/domain/empty-state";
 import { AIContentWorkstation } from "./_components/ai-content-workstation";
-import { mockProducts, mockStores, mockAIContent } from "@/lib/mock-data";
+import { getProducts, getStores, getAIContent } from "@/lib/queries";
 
 export default async function AIContentPage() {
   const t = await getTranslations("AIContent");
 
-  // TODO: Replace with real Supabase queries
-  const products = mockProducts;
-  const stores = mockStores;
-  const aiContent = mockAIContent;
+  const [products, stores, aiContent] = await Promise.all([
+    getProducts(),
+    getStores(),
+    getAIContent(),
+  ]);
 
   if (products.length === 0) {
     return (

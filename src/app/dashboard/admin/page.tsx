@@ -1,9 +1,14 @@
 import { getTranslations } from "next-intl/server";
-import { mockStores, mockProducts, mockAIActivityLogs } from "@/lib/mock-data";
+import { getStores, getProducts, getAIActivityLogs } from "@/lib/queries";
 import { AdminDashboard } from "./_components/admin-dashboard";
 
 export default async function AdminPage() {
-  const t = await getTranslations("Admin");
+  const [t, stores, products, activityLogs] = await Promise.all([
+    getTranslations("Admin"),
+    getStores(),
+    getProducts(),
+    getAIActivityLogs(),
+  ]);
 
   return (
     <>
@@ -19,9 +24,9 @@ export default async function AdminPage() {
         </h1>
       </div>
       <AdminDashboard
-        stores={mockStores}
-        products={mockProducts}
-        activityLogs={mockAIActivityLogs}
+        stores={stores}
+        products={products}
+        activityLogs={activityLogs}
       />
     </>
   );

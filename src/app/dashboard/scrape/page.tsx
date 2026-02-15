@@ -1,10 +1,8 @@
 import { ScrapeView } from "./_components/scrape-view";
-import { mockStores, mockProducts } from "@/lib/mock-data";
+import { getStores, getProducts } from "@/lib/queries";
 
 export default async function ScrapePage() {
-  // TODO: Replace with real Supabase queries
-  const stores = mockStores;
-  const products = mockProducts;
+  const [stores, products] = await Promise.all([getStores(), getProducts()]);
 
-  return <ScrapeView stores={stores} mockProducts={products} />;
+  return <ScrapeView stores={stores} products={products} />;
 }

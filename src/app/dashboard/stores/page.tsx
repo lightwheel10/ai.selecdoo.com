@@ -3,13 +3,12 @@ import { getTranslations } from "next-intl/server";
 import { EmptyState } from "@/components/domain/empty-state";
 import { StoreTable } from "./_components/store-table";
 import { AddStoreDialog } from "./_components/add-store-dialog";
-import { mockStores } from "@/lib/mock-data";
+import { getStores } from "@/lib/queries";
 
 export default async function StoresPage() {
   const t = await getTranslations("Stores");
 
-  // TODO: Replace with real Supabase queries
-  const stores = mockStores;
+  const stores = await getStores();
 
   if (stores.length === 0) {
     return (

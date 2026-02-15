@@ -14,12 +14,12 @@ import { getTranslations } from "next-intl/server";
 import { StatCard } from "@/components/domain/stat-card";
 import { StatusBadge } from "@/components/domain/status-badge";
 import {
-  mockStats,
-  mockActivity,
-  mockScrapeJobs,
-  mockProducts,
-  mockStores,
-} from "@/lib/mock-data";
+  getDashboardStats,
+  getRecentActivity,
+  getScrapeJobs,
+  getProducts,
+  getStores,
+} from "@/lib/queries";
 import type { ActivityType } from "@/types";
 
 const activityIcons: Record<ActivityType, { icon: typeof TrendingDown; color: string }> = {
@@ -59,12 +59,18 @@ export default async function DashboardPage() {
   const t = await getTranslations("Overview");
   const tt = await getTranslations("Time");
 
-  // TODO: Replace with real Supabase queries
-  const stats = mockStats;
-  const recentJobs = mockScrapeJobs.slice(0, 5);
-  const latestProducts = mockProducts.slice(0, 3);
-  const recentActivity = mockActivity.slice(0, 5);
-  const storeMap = Object.fromEntries(mockStores.map((s) => [s.id, s]));
+  const [stats, allJobs, allProducts, recentActivity, allStores] =
+    await Promise.all([
+      getDashboardStats(),
+      getScrapeJobs(),
+      getProducts(),
+      getRecentActivity(),
+      getStores(),
+    ]);
+
+  const recentJobs = allJobs.slice(0, 5);
+  const latestProducts = allProducts.slice(0, 3);
+  const storeMap = Object.fromEntries(allStores.map((s) => [s.id, s]));
 
   return (
     <>

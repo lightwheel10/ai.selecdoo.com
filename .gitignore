@@ -36,6 +36,15 @@ yarn-error.log*
 # docs (internal design docs — never push)
 /docs
 
+# database schema (local reference — never push)
+/db
+
+# claude code
+.claude/
+
+# migration scripts (one-time use)
+/scripts
+
 # vercel
 .vercel
 

@@ -1,10 +1,8 @@
 import { ProductCatalog } from "./_components/product-catalog";
-import { mockProducts, mockStores } from "@/lib/mock-data";
+import { getProducts, getStores } from "@/lib/queries";
 
 export default async function ProductsPage() {
-  // TODO: Replace with real Supabase queries
-  const products = mockProducts;
-  const stores = mockStores;
+  const [products, stores] = await Promise.all([getProducts(), getStores()]);
 
   return <ProductCatalog products={products} stores={stores} />;
 }
