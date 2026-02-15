@@ -18,6 +18,10 @@ function mapApifyProduct(item: any, storeId: string) {
   const canonicalUrl = item.source?.canonicalUrl ?? "";
   const handle = canonicalUrl.split("/products/")[1]?.split("?")[0] ?? null;
 
+  // Convert epoch ms timestamps to ISO strings
+  const toISO = (ms: number | undefined | null) =>
+    ms ? new Date(ms).toISOString() : null;
+
   return {
     store_id: storeId,
     hash_id: String(item.source?.id ?? `${Date.now()}_${Math.random()}`),
@@ -37,10 +41,14 @@ function mapApifyProduct(item: any, storeId: string) {
     categories: item.categories ?? null,
     tags: item.tags ?? null,
     medias: item.medias ?? null,
+    options: item.options ?? null,
+    source_retailer: item.source?.retailer ?? null,
+    source_language: item.source?.language ?? null,
+    source_created_at: toISO(item.source?.createdUTC),
+    source_updated_at: toISO(item.source?.updatedUTC),
+    source_published_at: toISO(item.source?.publishedUTC),
     status: "active",
-    is_published: false,
-    is_featured: false,
-    is_slider: false,
+    updated_at: new Date().toISOString(),
   };
 }
 
@@ -148,8 +156,11 @@ export async function GET(
 
       const items = await itemsRes.json();
       const products = items.map((item: unknown) => mapApifyProduct(item, job.store_id));
+      const scrapedHashIds = products.map((p: { hash_id: string }) => p.hash_id);
 
       // Upsert products in batches of 50
+      // Note: we intentionally exclude is_published/is_featured/is_slider
+      // so re-scraping doesn't reset user-set publishing flags
       let totalUpserted = 0;
       const batchSize = 50;
       for (let i = 0; i < products.length; i += batchSize) {
@@ -162,6 +173,29 @@ export async function GET(
           console.error(`Upsert batch ${i} error:`, upsertErr);
         } else {
           totalUpserted += batch.length;
+        }
+      }
+
+      // Mark products NOT in this scrape as removed
+      // (they were in our DB but no longer on the store)
+      if (scrapedHashIds.length > 0) {
+        const { data: existing } = await supabase
+          .from("products")
+          .select("hash_id")
+          .eq("store_id", job.store_id)
+          .eq("status", "active")
+          .is("deleted_at", null);
+
+        const removedHashIds = (existing ?? [])
+          .map((p) => p.hash_id)
+          .filter((hid: string) => !scrapedHashIds.includes(hid));
+
+        if (removedHashIds.length > 0) {
+          await supabase
+            .from("products")
+            .update({ status: "removed", updated_at: new Date().toISOString() })
+            .eq("store_id", job.store_id)
+            .in("hash_id", removedHashIds);
         }
       }
 
