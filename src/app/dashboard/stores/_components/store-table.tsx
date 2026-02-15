@@ -9,8 +9,7 @@ import {
   Trash2,
   X,
   Check,
-  RefreshCw,
-  Loader2,
+  ArrowDownToLine,
 } from "lucide-react";
 import {
   Table,
@@ -445,12 +444,12 @@ export function StoreTable({ stores }: StoreTableProps) {
                               color: "#CAFF04",
                             }}
                           >
-                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <ArrowDownToLine className="w-3 h-3 animate-bounce" />
                           </button>
                         ) : (
                           <IconButton
                             onClick={() => startScrape(store)}
-                            icon={RefreshCw}
+                            icon={ArrowDownToLine}
                             title={t("scrape")}
                           />
                         )}
