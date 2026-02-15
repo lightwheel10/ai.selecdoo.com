@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Image from "next/image";
 import { Search, X, Check, ChevronDown, Pencil } from "lucide-react";
 import {
   Table,
@@ -165,12 +166,12 @@ function PublishToggle({
       onClick={onToggle}
       className="w-7 h-7 flex items-center justify-center transition-all duration-150"
       style={{
-        backgroundColor: published ? "rgba(34,197,94,0.15)" : "rgba(85,85,85,0.10)",
-        border: `1.5px solid ${published ? "rgba(34,197,94,0.4)" : "rgba(85,85,85,0.3)"}`,
-        color: published ? "#22C55E" : "#555555",
+        backgroundColor: published ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.10)",
+        border: `1.5px solid ${published ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.3)"}`,
+        color: published ? "#22C55E" : "#EF4444",
       }}
     >
-      <Check className="w-3 h-3" />
+      {published ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
     </button>
   );
 }
@@ -524,14 +525,18 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
                   <TableCell className="py-3">
                     <div className="flex items-center gap-2.5">
                       <div
-                        className="w-7 h-7 flex-shrink-0 flex items-center justify-center text-[10px] font-bold"
+                        className="w-7 h-7 flex-shrink-0 relative overflow-hidden"
                         style={{
-                          fontFamily: "var(--font-mono)",
                           backgroundColor: "rgba(202,255,4,0.10)",
-                          color: "#CAFF04",
                         }}
                       >
-                        {store.name[0]}
+                        <Image
+                          src={`https://www.google.com/s2/favicons?domain=${new URL(store.url).hostname}&sz=32`}
+                          alt={store.name}
+                          fill
+                          className="object-contain p-0.5"
+                          sizes="28px"
+                        />
                       </div>
                       <span className="text-[11px] font-semibold truncate">
                         <Highlight text={store.name} query={search} />

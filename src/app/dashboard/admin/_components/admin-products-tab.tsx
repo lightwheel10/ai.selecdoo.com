@@ -265,12 +265,12 @@ function PublishToggle({ published, onToggle }: { published: boolean; onToggle: 
       onClick={onToggle}
       className="w-7 h-7 flex items-center justify-center transition-all duration-150"
       style={{
-        backgroundColor: published ? "rgba(34,197,94,0.15)" : "rgba(85,85,85,0.10)",
-        border: `1.5px solid ${published ? "rgba(34,197,94,0.4)" : "rgba(85,85,85,0.3)"}`,
-        color: published ? "#22C55E" : "#555555",
+        backgroundColor: published ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.10)",
+        border: `1.5px solid ${published ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.3)"}`,
+        color: published ? "#22C55E" : "#EF4444",
       }}
     >
-      <Check className="w-3 h-3" />
+      {published ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
     </button>
   );
 }
