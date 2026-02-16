@@ -175,7 +175,10 @@
     "scrapeStarted": "Scrape für {name} gestartet",
     "scrapeCompleted": "Scrape abgeschlossen — {count} Produkte gefunden",
     "scrapeFailed": "Scrape für {name} fehlgeschlagen",
-    "scraping": "Wird gescrapt..."
+    "scraping": "Wird gescrapt...",
+    "updateFailed": "Shop konnte nicht aktualisiert werden",
+    "deleteFailed": "Shop konnte nicht gelöscht werden",
+    "addFailed": "Shop konnte nicht hinzugefügt werden"
   },
   "AIContent": {
     "searchProducts": "Produkte suchen...",

@@ -175,7 +175,10 @@
     "scrapeStarted": "Scrape started for {name}",
     "scrapeCompleted": "Scrape completed — {count} products found",
     "scrapeFailed": "Scrape failed for {name}",
-    "scraping": "Scraping..."
+    "scraping": "Scraping...",
+    "updateFailed": "Failed to update store",
+    "deleteFailed": "Failed to delete store",
+    "addFailed": "Failed to add store"
   },
   "AIContent": {
     "searchProducts": "Search products...",
