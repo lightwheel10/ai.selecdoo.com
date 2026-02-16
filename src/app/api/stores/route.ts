@@ -72,11 +72,11 @@ export async function POST(req: Request) {
 
     // Auto-create monitoring config
     const now = new Date();
-    const nextCheck = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const nextCheck = new Date(now.getTime() + 72 * 60 * 60 * 1000);
     await supabase.from("monitoring_configs").insert({
       store_id: newStore.id,
       enabled: true,
-      check_interval_hours: 24,
+      check_interval_hours: 72,
       next_check_at: nextCheck.toISOString(),
     });
 
