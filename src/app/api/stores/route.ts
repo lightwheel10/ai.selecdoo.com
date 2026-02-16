@@ -5,13 +5,18 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export async function POST(req: Request) {
   try {
     // Authenticate
-    const supabaseAuth = await createClient();
-    const {
-      data: { user },
-    } = await supabaseAuth.auth.getUser();
-
-    if (!user && process.env.NEXT_PUBLIC_DEV_BYPASS !== "true") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    let userId: string | null = null;
+    if (process.env.NEXT_PUBLIC_DEV_BYPASS === "true") {
+      userId = null; // dev mode — no user required
+    } else {
+      const supabaseAuth = await createClient();
+      const {
+        data: { user },
+      } = await supabaseAuth.auth.getUser();
+      if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      userId = user.id;
     }
 
     const { url } = await req.json();
@@ -52,7 +57,6 @@ export async function POST(req: Request) {
     }
 
     // Insert store
-    const userId = user?.id ?? null;
     const { data: newStore, error: insertErr } = await supabase
       .from("stores")
       .insert({

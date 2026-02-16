@@ -33,14 +33,14 @@ const VALID_STATUSES = ["active", "paused"];
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function authenticate() {
+  if (process.env.NEXT_PUBLIC_DEV_BYPASS === "true") {
+    return { id: "dev-bypass" } as { id: string };
+  }
   const supabaseAuth = await createClient();
   const {
     data: { user },
   } = await supabaseAuth.auth.getUser();
 
-  if (!user && process.env.NEXT_PUBLIC_DEV_BYPASS !== "true") {
-    return null;
-  }
   return user;
 }
 
