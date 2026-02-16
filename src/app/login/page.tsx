@@ -275,7 +275,7 @@ export default function LoginPage() {
                 </button>
 
                 {/* TODO: Remove dev bypass once Supabase dashboard access is granted */}
-                {process.env.NEXT_PUBLIC_DEV_BYPASS === "true" && (
+                {process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_DEV_BYPASS === "true" && (
                   <button
                     onClick={() => router.push("/dashboard")}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"

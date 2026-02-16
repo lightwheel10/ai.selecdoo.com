@@ -14,7 +14,7 @@ export default async function DashboardLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user && process.env.NEXT_PUBLIC_DEV_BYPASS !== "true") {
+  if (!user && !(process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_DEV_BYPASS === "true")) {
     redirect("/login");
   }
 

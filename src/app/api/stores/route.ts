@@ -6,7 +6,7 @@ export async function POST(req: Request) {
   try {
     // Authenticate
     let userId: string | null = null;
-    if (process.env.NEXT_PUBLIC_DEV_BYPASS === "true") {
+    if (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_DEV_BYPASS === "true") {
       userId = null; // dev mode — no user required
     } else {
       const supabaseAuth = await createClient();
