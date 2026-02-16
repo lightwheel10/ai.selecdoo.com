@@ -225,10 +225,15 @@ export interface Activity {
 
 export interface DashboardStats {
   total_products: number;
+  total_products_delta: number;
   active_stores: number;
+  active_stores_delta: number;
   total_jobs: number;
+  total_jobs_delta: number;
   alerts_today: number;
+  alerts_today_delta: number;
   ai_generated: number;
+  ai_generated_delta: number;
 }
 
 // ─── AI Activity (Admin) ───

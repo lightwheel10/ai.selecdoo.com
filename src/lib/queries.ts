@@ -486,34 +486,105 @@ function mapAIActivityLog(row: any, storeNames: Record<string, string>): AIActiv
 export async function getDashboardStats(): Promise<DashboardStats> {
   const supabase = createAdminClient();
 
-  const [products, stores, jobs, alerts, aiContent] = await Promise.all([
+  const now = new Date();
+  const todayMidnight = new Date(now);
+  todayMidnight.setHours(0, 0, 0, 0);
+  const yesterdayMidnight = new Date(todayMidnight);
+  yesterdayMidnight.setDate(yesterdayMidnight.getDate() - 1);
+  const sevenDaysAgo = new Date(now);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const twentyFourHoursAgo = new Date(now);
+  twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+  const fortyEightHoursAgo = new Date(now);
+  fortyEightHoursAgo.setHours(fortyEightHoursAgo.getHours() - 48);
+  const fourteenDaysAgo = new Date(now);
+  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+  const [
+    products, productsDelta,
+    stores, storesDelta,
+    jobs, jobsCurrent24h, jobsPrev24h,
+    alertsToday, alertsYesterday,
+    aiContent, aiCurrent7d, aiPrev7d,
+  ] = await Promise.all([
+    // Total products
     supabase
       .from("products")
       .select("*", { count: "exact", head: true })
       .is("deleted_at", null),
+    // Products created in last 7 days
+    supabase
+      .from("products")
+      .select("*", { count: "exact", head: true })
+      .is("deleted_at", null)
+      .gte("created_at", sevenDaysAgo.toISOString()),
+    // Active stores
     supabase
       .from("stores")
       .select("*", { count: "exact", head: true })
       .eq("status", "active")
       .is("deleted_at", null),
+    // Stores created since yesterday
+    supabase
+      .from("stores")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "active")
+      .is("deleted_at", null)
+      .gte("created_at", yesterdayMidnight.toISOString()),
+    // Total jobs
     supabase
       .from("scrape_jobs")
       .select("*", { count: "exact", head: true }),
+    // Jobs in last 24h
+    supabase
+      .from("scrape_jobs")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", twentyFourHoursAgo.toISOString()),
+    // Jobs in previous 24h
+    supabase
+      .from("scrape_jobs")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", fortyEightHoursAgo.toISOString())
+      .lt("created_at", twentyFourHoursAgo.toISOString()),
+    // Alerts today
     supabase
       .from("product_changes")
       .select("*", { count: "exact", head: true })
-      .gte("detected_at", new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
+      .gte("detected_at", todayMidnight.toISOString()),
+    // Alerts yesterday
+    supabase
+      .from("product_changes")
+      .select("*", { count: "exact", head: true })
+      .gte("detected_at", yesterdayMidnight.toISOString())
+      .lt("detected_at", todayMidnight.toISOString()),
+    // AI content total
     supabase
       .from("ai_content")
       .select("*", { count: "exact", head: true }),
+    // AI content last 7 days
+    supabase
+      .from("ai_content")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", sevenDaysAgo.toISOString()),
+    // AI content previous 7 days
+    supabase
+      .from("ai_content")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", fourteenDaysAgo.toISOString())
+      .lt("created_at", sevenDaysAgo.toISOString()),
   ]);
 
   return {
     total_products: products.count ?? 0,
+    total_products_delta: productsDelta.count ?? 0,
     active_stores: stores.count ?? 0,
+    active_stores_delta: storesDelta.count ?? 0,
     total_jobs: jobs.count ?? 0,
-    alerts_today: alerts.count ?? 0,
+    total_jobs_delta: (jobsCurrent24h.count ?? 0) - (jobsPrev24h.count ?? 0),
+    alerts_today: alertsToday.count ?? 0,
+    alerts_today_delta: (alertsToday.count ?? 0) - (alertsYesterday.count ?? 0),
     ai_generated: aiContent.count ?? 0,
+    ai_generated_delta: (aiCurrent7d.count ?? 0) - (aiPrev7d.count ?? 0),
   };
 }
 

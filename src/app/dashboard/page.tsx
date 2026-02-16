@@ -55,6 +55,21 @@ function formatRelativeTime(
   return tt("daysAgo", { count: days });
 }
 
+function formatDelta(
+  delta: number,
+  invertColor = false,
+): { change: string; changeType: "positive" | "negative" | "neutral" } {
+  if (delta === 0) return { change: "0", changeType: "neutral" };
+  const change = delta > 0 ? `+${delta}` : String(delta);
+  let changeType: "positive" | "negative" | "neutral";
+  if (invertColor) {
+    changeType = delta > 0 ? "negative" : "positive";
+  } else {
+    changeType = delta > 0 ? "positive" : "negative";
+  }
+  return { change, changeType };
+}
+
 export default async function DashboardPage() {
   const t = await getTranslations("Overview");
   const tt = await getTranslations("Time");
@@ -72,6 +87,12 @@ export default async function DashboardPage() {
   const latestProducts = allProducts.slice(0, 3);
   const storeMap = Object.fromEntries(allStores.map((s) => [s.id, s]));
 
+  const productsDelta = formatDelta(stats.total_products_delta);
+  const storesDelta = formatDelta(stats.active_stores_delta);
+  const jobsDelta = formatDelta(stats.total_jobs_delta);
+  const alertsDelta = formatDelta(stats.alerts_today_delta, true);
+  const aiDelta = formatDelta(stats.ai_generated_delta);
+
   return (
     <>
       {/* Stats */}
@@ -79,32 +100,37 @@ export default async function DashboardPage() {
         <StatCard
           label={t("totalProducts")}
           value={stats.total_products.toLocaleString()}
-          change="+3.2%"
-          changeType="positive"
+          change={productsDelta.change}
+          changeType={productsDelta.changeType}
+          subtitle={t("last7days")}
         />
         <StatCard
           label={t("activeStores")}
           value={String(stats.active_stores)}
-          change="+1"
-          changeType="positive"
+          change={storesDelta.change}
+          changeType={storesDelta.changeType}
+          subtitle={t("sinceYesterday")}
         />
         <StatCard
           label={t("totalJobs")}
           value={String(stats.total_jobs)}
-          change="+14"
-          changeType="neutral"
+          change={jobsDelta.change}
+          changeType={jobsDelta.changeType}
+          subtitle={t("vs24h")}
         />
         <StatCard
           label={t("alertsToday")}
           value={String(stats.alerts_today)}
-          change="+12"
-          changeType="negative"
+          change={alertsDelta.change}
+          changeType={alertsDelta.changeType}
+          subtitle={t("vsYesterday")}
         />
         <StatCard
           label={t("aiGenerated")}
           value={String(stats.ai_generated)}
-          change="+8"
-          changeType="neutral"
+          change={aiDelta.change}
+          changeType={aiDelta.changeType}
+          subtitle={t("last7days")}
         />
       </div>
 

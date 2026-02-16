@@ -23,7 +23,11 @@
     "viewAll": "Alle Anzeigen",
     "products": "Produkte",
     "inProgress": "In Bearbeitung",
-    "unknown": "Unbekannt"
+    "unknown": "Unbekannt",
+    "last7days": "Letzte 7 Tage",
+    "sinceYesterday": "Seit gestern",
+    "vs24h": "vs vorh. 24h",
+    "vsYesterday": "vs gestern"
   },
   "Scrape": {
     "newScrape": "Neuer Scrape",
