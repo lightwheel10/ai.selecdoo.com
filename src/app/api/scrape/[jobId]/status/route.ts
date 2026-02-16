@@ -358,7 +358,19 @@ export async function GET(
           : job.scraper_type === "shopify_fallback" || job.fallback_attempted
             ? mapFallbackProduct
             : mapApifyProduct;
-      const products = items.map((item: unknown) => mapper(item, job.store_id));
+      const allProducts = items.map((item: unknown) => mapper(item, job.store_id));
+
+      // Deduplicate by handle — multilingual WooCommerce stores (WPML/Polylang)
+      // return the same product under different IDs but the same slug.
+      // Keep first occurrence per handle; null handles are kept as-is.
+      const seenHandles = new Set<string>();
+      const products = allProducts.filter((p: { handle: string | null }) => {
+        if (!p.handle) return true;
+        if (seenHandles.has(p.handle)) return false;
+        seenHandles.add(p.handle);
+        return true;
+      });
+
       const scrapedHashIds = products.map((p: { hash_id: string }) => p.hash_id);
 
       // Upsert products in batches of 50
@@ -373,7 +385,18 @@ export async function GET(
           .upsert(batch, { onConflict: "hash_id" });
 
         if (upsertErr) {
-          console.error(`Upsert batch ${i} error:`, upsertErr);
+          // Batch failed — fall back to one-by-one so one bad row
+          // doesn't prevent the rest of the batch from being saved
+          for (const product of batch) {
+            const { error: singleErr } = await supabase
+              .from("products")
+              .upsert(product, { onConflict: "hash_id" });
+            if (singleErr) {
+              console.error(`Upsert failed for hash_id=${product.hash_id}:`, singleErr.message);
+            } else {
+              totalUpserted += 1;
+            }
+          }
         } else {
           totalUpserted += batch.length;
         }
