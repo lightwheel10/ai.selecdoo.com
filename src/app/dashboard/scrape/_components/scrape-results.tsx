@@ -26,7 +26,7 @@ export function ScrapeResults({ products }: ScrapeResultsProps) {
         {t("scrapeResults")}
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
         {products.map((product) => {
           const hasDiscount =
             product.discount_percentage && product.discount_percentage > 0;
@@ -82,7 +82,7 @@ export function ScrapeResults({ products }: ScrapeResultsProps) {
               </div>
 
               {/* Body */}
-              <div className="p-4 flex flex-col flex-1">
+              <div className="p-3 flex flex-col flex-1">
                 {/* Title */}
                 <p className="text-[12px] font-semibold line-clamp-2 mb-1">
                   {product.title}

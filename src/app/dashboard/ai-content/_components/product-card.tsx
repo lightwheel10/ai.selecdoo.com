@@ -137,7 +137,7 @@ export function ProductCard({
       </div>
 
       {/* Body */}
-      <div className="p-4 flex flex-col flex-1">
+      <div className="p-3 flex flex-col flex-1">
         {/* Store */}
         <div className="flex items-center gap-1.5 mb-2">
           <div

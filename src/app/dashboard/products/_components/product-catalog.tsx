@@ -532,7 +532,7 @@ export function ProductCatalog({ products, stores }: ProductCatalogProps) {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
           {filtered.map((product) => {
             const store = storeMap[product.store_id];
             const hasDiscount =
@@ -589,7 +589,7 @@ export function ProductCatalog({ products, stores }: ProductCatalogProps) {
                 </div>
 
                 {/* Body */}
-                <div className="p-4 flex flex-col flex-1">
+                <div className="p-3 flex flex-col flex-1">
                   {/* Store */}
                   <div className="flex items-center gap-1.5 mb-2">
                     <div

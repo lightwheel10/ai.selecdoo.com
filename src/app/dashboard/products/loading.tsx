@@ -30,7 +30,7 @@ export default function ProductsLoading() {
       </div>
 
       {/* Product grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
         {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}
@@ -44,7 +44,7 @@ export default function ProductsLoading() {
             <Skeleton className="w-full aspect-square rounded-none" />
 
             {/* Body */}
-            <div className="p-4 flex flex-col flex-1">
+            <div className="p-3 flex flex-col flex-1">
               {/* Store badge */}
               <div className="flex items-center gap-1.5 mb-2">
                 <Skeleton className="w-4 h-4" />
