@@ -292,7 +292,7 @@ export function StoreTable({ stores }: StoreTableProps) {
           style={{
             backgroundColor: "var(--card)",
             borderColor: "var(--border)",
-            maxHeight: "70vh",
+            maxHeight: "85vh",
           }}
         >
           <Table style={{ tableLayout: "fixed", width: "100%" }}>
