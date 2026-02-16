@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   TrendingDown,
   TrendingUp,
@@ -117,6 +118,7 @@ function formatChangeDescription(
 export function ChangeTimeline({ changes }: ChangeTimelineProps) {
   const t = useTranslations("Monitoring");
   const tt = useTranslations("Time");
+  const router = useRouter();
 
   const [storeFilter, setStoreFilter] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<ChangeType | null>(null);
@@ -463,7 +465,7 @@ export function ChangeTimeline({ changes }: ChangeTimelineProps) {
                     </span>
                     <button
                       onClick={() => {
-                        // TODO: navigate to product detail
+                        router.push(`/dashboard/products?store=${change.store_id}`);
                       }}
                       className="flex items-center gap-1 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.15em] border transition-colors hover:border-primary/50"
                       style={{

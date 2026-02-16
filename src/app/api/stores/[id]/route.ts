@@ -7,6 +7,7 @@ const FIELD_MAP: Record<string, string> = {
   name: "name",
   url: "url",
   platform: "platform",
+  status: "status",
   is_published: "is_published",
   is_featured: "is_featured",
   affiliate_link_base: "affiliate_link_base",
@@ -27,6 +28,21 @@ const FIELD_MAP: Record<string, string> = {
 };
 
 const VALID_PLATFORMS = ["shopify", "woocommerce", "magento", "custom"];
+const VALID_STATUSES = ["active", "paused"];
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function authenticate() {
+  const supabaseAuth = await createClient();
+  const {
+    data: { user },
+  } = await supabaseAuth.auth.getUser();
+
+  if (!user && process.env.NEXT_PUBLIC_DEV_BYPASS !== "true") {
+    return null;
+  }
+  return user;
+}
 
 export async function PATCH(
   req: Request,
@@ -35,19 +51,11 @@ export async function PATCH(
   try {
     const { id } = await params;
 
-    // Authenticate the user via session cookie
-    const supabaseAuth = await createClient();
-    const {
-      data: { user },
-    } = await supabaseAuth.auth.getUser();
-
-    // Allow in dev bypass mode (same as middleware)
-    if (!user && process.env.NEXT_PUBLIC_DEV_BYPASS !== "true") {
+    if (!await authenticate()) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Validate UUID format
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    if (!UUID_RE.test(id)) {
       return NextResponse.json({ error: "Invalid store ID" }, { status: 400 });
     }
 
@@ -66,6 +74,14 @@ export async function PATCH(
         if (field === "platform" && !VALID_PLATFORMS.includes(value)) {
           return NextResponse.json(
             { error: `Invalid platform: ${value}` },
+            { status: 400 }
+          );
+        }
+
+        // Validate status value
+        if (field === "status" && !VALID_STATUSES.includes(value)) {
+          return NextResponse.json(
+            { error: `Invalid status: ${value}` },
             { status: 400 }
           );
         }
@@ -133,6 +149,15 @@ export async function PATCH(
       );
     }
 
+    // Side-effect: sync monitoring_configs.enabled when status changes
+    if ("status" in body) {
+      const monitoringEnabled = body.status === "active";
+      await supabase
+        .from("monitoring_configs")
+        .update({ enabled: monitoringEnabled, updated_at: new Date().toISOString() })
+        .eq("store_id", id);
+    }
+
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("Store PATCH error:", err);
@@ -140,5 +165,62 @@ export async function PATCH(
       { error: "Internal server error" },
       { status: 500 }
     );
+  }
+}
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    if (!await authenticate()) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!UUID_RE.test(id)) {
+      return NextResponse.json({ error: "Invalid store ID" }, { status: 400 });
+    }
+
+    const supabase = createAdminClient();
+
+    // Verify store exists
+    const { data: existing, error: lookupErr } = await supabase
+      .from("stores")
+      .select("id")
+      .eq("id", id)
+      .is("deleted_at", null)
+      .single();
+
+    if (lookupErr || !existing) {
+      return NextResponse.json({ error: "Store not found" }, { status: 404 });
+    }
+
+    // Soft-delete the store
+    const { error: deleteErr } = await supabase
+      .from("stores")
+      .update({
+        deleted_at: new Date().toISOString(),
+        status: "paused",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+
+    if (deleteErr) {
+      console.error("Store delete error:", deleteErr);
+      return NextResponse.json({ error: "Failed to delete store" }, { status: 500 });
+    }
+
+    // Disable monitoring
+    await supabase
+      .from("monitoring_configs")
+      .update({ enabled: false, updated_at: new Date().toISOString() })
+      .eq("store_id", id);
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("Store DELETE error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

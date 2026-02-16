@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createMonitoringLog, updateMonitoringConfigTimestamps } from "@/lib/monitoring-helpers";
 
 const APIFY_TOKEN = process.env.APIFY_API_KEY!;
 const APIFY_ACTOR_ID = process.env.APIFY_ACTOR_ID!;
@@ -41,7 +42,7 @@ async function detectPlatform(storeUrl: string): Promise<Platform> {
 
 export async function POST(req: Request) {
   try {
-    const { store_id } = await req.json();
+    const { store_id, update_monitoring } = await req.json();
     if (!store_id) {
       return NextResponse.json({ error: "store_id required" }, { status: 400 });
     }
@@ -83,6 +84,13 @@ export async function POST(req: Request) {
       );
     }
 
+    // If monitoring update requested, create monitoring log and update timestamps
+    let monitoringLogId: string | null = null;
+    if (update_monitoring) {
+      monitoringLogId = await createMonitoringLog(supabase, store.id);
+      await updateMonitoringConfigTimestamps(supabase, store.id);
+    }
+
     // Create scrape_job record
     const { data: job, error: jobErr } = await supabase
       .from("scrape_jobs")
@@ -91,6 +99,7 @@ export async function POST(req: Request) {
         status: "running",
         started_at: new Date().toISOString(),
         scraper_type: scraperType,
+        ...(monitoringLogId ? { monitoring_log_id: monitoringLogId } : {}),
       })
       .select("id")
       .single();

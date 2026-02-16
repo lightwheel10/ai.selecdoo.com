@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import {
   Dialog,
@@ -16,19 +17,38 @@ import { toast } from "sonner";
 
 export function AddStoreDialog() {
   const t = useTranslations("Stores");
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!url.trim()) return;
+    setLoading(true);
 
-    // TODO: Wire to server action when DB access arrives
-    toast(t("storeAdded"), {
-      description: t("storeAddedDescription", { url }),
-    });
-    setUrl("");
-    setOpen(false);
+    try {
+      const res = await fetch("/api/stores", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: url.trim() }),
+      });
+
+      if (res.ok) {
+        toast(t("storeAdded"), {
+          description: t("storeAddedDescription", { url }),
+        });
+        setUrl("");
+        setOpen(false);
+        router.refresh();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || t("addFailed"));
+      }
+    } catch {
+      toast.error(t("addFailed"));
+    }
+    setLoading(false);
   }
 
   return (
@@ -95,7 +115,7 @@ export function AddStoreDialog() {
           </div>
           <button
             type="submit"
-            disabled={!url.trim()}
+            disabled={!url.trim() || loading}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-40 disabled:pointer-events-none bg-primary text-primary-foreground border-primary shadow-[3px_3px_0px] shadow-primary"
             style={{ fontFamily: "var(--font-mono)" }}
           >

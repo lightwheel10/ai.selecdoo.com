@@ -1,198 +1,11 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getMapper } from "@/lib/product-mappers";
+import { detectAndLogChanges } from "@/lib/change-detection";
+import { completeMonitoringLog } from "@/lib/monitoring-helpers";
 
 const APIFY_TOKEN = process.env.APIFY_API_KEY!;
 const APIFY_FALLBACK_ACTOR_ID = process.env.APIFY_FALLBACK_ACTOR_ID;
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapWooCommerceProduct(item: any, storeId: string) {
-  const minorUnit = item.prices?.currency_minor_unit ?? 2;
-  const divisor = Math.pow(10, minorUnit);
-
-  const priceRaw = Number(item.prices?.price ?? 0);
-  const regularRaw = Number(item.prices?.regular_price ?? 0);
-  const price = priceRaw / divisor;
-  const regularPrice = regularRaw / divisor;
-
-  const onSale = item.on_sale === true;
-  const originalPrice = onSale && regularPrice > price ? regularPrice : null;
-  const discountPct =
-    originalPrice && originalPrice > price
-      ? Math.round(((originalPrice - price) / originalPrice) * 100)
-      : null;
-
-  // Extract brand from brands array or from pa_brand attribute
-  const brand =
-    item.brands?.[0]?.name ??
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    item.attributes?.find((a: any) => a.taxonomy === "pa_brand")?.terms?.[0]
-      ?.name ??
-    null;
-
-  // Map only variation-controlling attributes as options
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const options = (item.attributes ?? [])
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .filter((a: any) => a.has_variations)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .map((a: any) => ({
-      name: a.name,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      values: (a.terms ?? []).map((t: any) => ({ name: t.name, id: t.slug })),
-    }));
-
-  // Map variations (minimal — id + attribute selections)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const variants = (item.variations ?? []).map((v: any, i: number) => ({
-    id: v.id,
-    title:
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      v.attributes?.map((a: any) => a.value).join(" / ") ?? `Variant ${i + 1}`,
-    position: i,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ...(v.attributes ?? []).reduce(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (acc: Record<string, string>, a: any, idx: number) => {
-        acc[`option${idx + 1}`] = a.value;
-        return acc;
-      },
-      {}
-    ),
-  }));
-
-  return {
-    store_id: storeId,
-    hash_id: String(item.id ?? `${Date.now()}_${Math.random()}`),
-    title: item.name ?? "Untitled",
-    handle: item.slug ?? null,
-    sku: item.sku ?? null,
-    brand,
-    description: item.short_description || item.description || null,
-    price,
-    original_price: originalPrice,
-    discount_percentage: discountPct,
-    currency: item.prices?.currency_code ?? "EUR",
-    in_stock: item.is_in_stock ?? true,
-    image_url: item.images?.[0]?.thumbnail ?? item.images?.[0]?.src ?? null,
-    product_url: item.url ?? null,
-    variants: variants.length > 0 ? variants : null,
-    categories: item.categories ?? null,
-    tags: item.tags ?? null,
-    medias:
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      item.images?.map((img: any) => ({
-        url: img.src,
-        thumbnail: img.thumbnail ?? null,
-        alt: img.alt ?? null,
-        type: "image",
-      })) ?? null,
-    recommend_products: null,
-    options: options.length > 0 ? options : null,
-    source_retailer: null,
-    source_language: null,
-    source_created_at: null,
-    source_updated_at: null,
-    source_published_at: null,
-    status: "active",
-    updated_at: new Date().toISOString(),
-  };
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapFallbackProduct(item: any, storeId: string) {
-  const firstVariant = item.variants?.[0];
-  const price = item.price ?? 0;
-  const originalPrice = item.compare_at_price ?? null;
-  const discountPct =
-    item.discount_pct ??
-    (originalPrice && originalPrice > price
-      ? Math.round(((originalPrice - price) / originalPrice) * 100)
-      : null);
-
-  const productUrl = item.product_url ?? "";
-  const handle = productUrl.split("/products/")[1]?.split("?")[0] ?? null;
-
-  return {
-    store_id: storeId,
-    hash_id: String(item.product_id ?? `${Date.now()}_${Math.random()}`),
-    title: item.title ?? "Untitled",
-    handle,
-    sku: firstVariant?.sku ?? null,
-    brand: item.vendor ?? null,
-    description: item.description ?? null,
-    price,
-    original_price: originalPrice,
-    discount_percentage: discountPct,
-    currency: item.currency ?? "EUR",
-    in_stock: firstVariant?.available ?? true,
-    image_url: item.featured_image ?? item.images?.[0] ?? null,
-    product_url: productUrl || null,
-    variants: item.variants ?? null,
-    categories: item.categories ?? null,
-    tags: item.tags ?? null,
-    medias:
-      item.images?.map((url: string) => ({ url, type: "image" })) ?? null,
-    recommend_products: null,
-    options: item.options ?? null,
-    source_retailer: null,
-    source_language: null,
-    source_created_at: item.created_at ?? null,
-    source_updated_at: item.updated_at ?? null,
-    source_published_at: item.published_at ?? null,
-    status: "active",
-    updated_at: new Date().toISOString(),
-  };
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapApifyProduct(item: any, storeId: string) {
-  const firstVariant = item.variants?.[0];
-  const priceCents = firstVariant?.price?.current ?? 0;
-  const previousCents = firstVariant?.price?.previous ?? 0;
-  const price = priceCents / 100;
-  const originalPrice = previousCents > 0 ? previousCents / 100 : null;
-  const discountPct =
-    originalPrice && originalPrice > price
-      ? Math.round(((originalPrice - price) / originalPrice) * 100)
-      : null;
-
-  const canonicalUrl = item.source?.canonicalUrl ?? "";
-  const handle = canonicalUrl.split("/products/")[1]?.split("?")[0] ?? null;
-
-  // Convert epoch ms timestamps to ISO strings
-  const toISO = (ms: number | undefined | null) =>
-    ms ? new Date(ms).toISOString() : null;
-
-  return {
-    store_id: storeId,
-    hash_id: String(item.source?.id ?? `${Date.now()}_${Math.random()}`),
-    title: item.title ?? "Untitled",
-    handle,
-    sku: firstVariant?.sku ?? null,
-    brand: item.brand ?? null,
-    description: item.description ?? null,
-    price,
-    original_price: originalPrice,
-    discount_percentage: discountPct,
-    currency: item.source?.currency ?? "EUR",
-    in_stock: firstVariant?.price?.stockStatus === "InStock",
-    image_url: item.medias?.[0]?.url ?? null,
-    product_url: canonicalUrl || null,
-    variants: item.variants ?? null,
-    categories: item.categories ?? null,
-    tags: item.tags ?? null,
-    medias: item.medias ?? null,
-    recommend_products: item.recommendProducts ?? null,
-    options: item.options ?? null,
-    source_retailer: item.source?.retailer ?? null,
-    source_language: item.source?.language ?? null,
-    source_created_at: toISO(item.source?.createdUTC),
-    source_updated_at: toISO(item.source?.updatedUTC),
-    source_published_at: toISO(item.source?.publishedUTC),
-    status: "active",
-    updated_at: new Date().toISOString(),
-  };
-}
 
 export async function GET(
   _req: Request,
@@ -260,6 +73,16 @@ export async function GET(
           completed_at: new Date().toISOString(),
         })
         .eq("id", jobId);
+
+      // Update monitoring log if linked
+      if (job.monitoring_log_id) {
+        await completeMonitoringLog(
+          supabase,
+          job.monitoring_log_id,
+          { newCount: 0, updatedCount: 0, removedCount: 0, totalChanges: 0 },
+          `Apify run ${runStatus}`
+        );
+      }
 
       return NextResponse.json({
         status: "failed",
@@ -352,12 +175,7 @@ export async function GET(
       }
 
       // Use the correct mapper based on scraper type
-      const mapper =
-        job.scraper_type === "woocommerce"
-          ? mapWooCommerceProduct
-          : job.scraper_type === "shopify_fallback" || job.fallback_attempted
-            ? mapFallbackProduct
-            : mapApifyProduct;
+      const mapper = getMapper(job.scraper_type ?? "shopify", job.fallback_attempted ?? false);
       const allProducts = items.map((item: unknown) => mapper(item, job.store_id));
 
       // Deduplicate by handle — multilingual WooCommerce stores (WPML/Polylang)
@@ -371,7 +189,10 @@ export async function GET(
         return true;
       });
 
-      const scrapedHashIds = products.map((p: { hash_id: string }) => p.hash_id);
+      // ── Change detection ──
+      // Compare new products against existing DB records BEFORE upserting.
+      // This also handles marking removed products.
+      const changeSummary = await detectAndLogChanges(supabase, job.store_id, products);
 
       // Upsert products in batches of 50
       // Note: we intentionally exclude is_published/is_featured/is_slider
@@ -402,29 +223,6 @@ export async function GET(
         }
       }
 
-      // Mark products NOT in this scrape as removed
-      // (they were in our DB but no longer on the store)
-      if (scrapedHashIds.length > 0) {
-        const { data: existing } = await supabase
-          .from("products")
-          .select("hash_id")
-          .eq("store_id", job.store_id)
-          .eq("status", "active")
-          .is("deleted_at", null);
-
-        const removedHashIds = (existing ?? [])
-          .map((p) => p.hash_id)
-          .filter((hid: string) => !scrapedHashIds.includes(hid));
-
-        if (removedHashIds.length > 0) {
-          await supabase
-            .from("products")
-            .update({ status: "removed", updated_at: new Date().toISOString() })
-            .eq("store_id", job.store_id)
-            .in("hash_id", removedHashIds);
-        }
-      }
-
       // Update store product_count and last_scraped_at
       await supabase
         .from("stores")
@@ -433,6 +231,11 @@ export async function GET(
           last_scraped_at: new Date().toISOString(),
         })
         .eq("id", job.store_id);
+
+      // Update monitoring log if linked
+      if (job.monitoring_log_id) {
+        await completeMonitoringLog(supabase, job.monitoring_log_id, changeSummary);
+      }
 
       // Mark job completed
       await supabase

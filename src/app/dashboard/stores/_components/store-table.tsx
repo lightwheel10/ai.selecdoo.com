@@ -118,18 +118,42 @@ export function StoreTable({ stores }: StoreTableProps) {
   const [search, setSearch] = useState("");
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
-  function togglePause(id: string) {
+  async function togglePause(id: string) {
+    const store = localStores.find((s) => s.id === id);
+    if (!store) return;
+    const newStatus = store.status === "paused" ? "active" : "paused";
+
+    // Optimistic update
     setLocalStores((prev) =>
       prev.map((s) =>
-        s.id === id
-          ? { ...s, status: s.status === "paused" ? "active" : "paused" as Store["status"] }
-          : s
+        s.id === id ? { ...s, status: newStatus as Store["status"] } : s
       )
     );
+
+    const res = await fetch(`/api/stores/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+
+    if (!res.ok) {
+      // Revert on failure
+      setLocalStores((prev) =>
+        prev.map((s) =>
+          s.id === id ? { ...s, status: store.status } : s
+        )
+      );
+      toast.error(t("updateFailed"));
+    }
   }
 
-  function deleteStore(id: string) {
-    setLocalStores((prev) => prev.filter((s) => s.id !== id));
+  async function deleteStore(id: string) {
+    const res = await fetch(`/api/stores/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setLocalStores((prev) => prev.filter((s) => s.id !== id));
+    } else {
+      toast.error(t("deleteFailed"));
+    }
     setPendingDelete(null);
   }
 

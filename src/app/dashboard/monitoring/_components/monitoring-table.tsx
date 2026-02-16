@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableBody,
@@ -56,6 +57,7 @@ export function MonitoringTable({ configs, logs }: MonitoringTableProps) {
   const t = useTranslations("Monitoring");
   const tt = useTranslations("Time");
   const st = useTranslations("Status");
+  const router = useRouter();
   const [runningStores, setRunningStores] = useState<Set<string>>(new Set());
 
   // Map store_id → latest log
@@ -67,17 +69,51 @@ export function MonitoringTable({ configs, logs }: MonitoringTableProps) {
     }
   }
 
-  function handleRunNow(storeId: string, storeName: string) {
+  async function handleRunNow(storeId: string, storeName: string) {
     setRunningStores((prev) => new Set(prev).add(storeId));
-    // Simulate a run (2.5s)
-    setTimeout(() => {
-      setRunningStores((prev) => {
-        const next = new Set(prev);
-        next.delete(storeId);
-        return next;
+
+    try {
+      const res = await fetch("/api/scrape", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ store_id: storeId, update_monitoring: true }),
       });
-      toast(t("runComplete", { name: storeName }));
-    }, 2500);
+
+      if (!res.ok) throw new Error();
+      const { job_id } = await res.json();
+
+      // Poll for completion
+      const poll = setInterval(async () => {
+        try {
+          const statusRes = await fetch(`/api/scrape/${job_id}/status`);
+          if (!statusRes.ok) return;
+          const data = await statusRes.json();
+          if (data.status === "completed" || data.status === "failed") {
+            clearInterval(poll);
+            setRunningStores((prev) => {
+              const n = new Set(prev);
+              n.delete(storeId);
+              return n;
+            });
+            toast(
+              data.status === "completed"
+                ? t("runComplete", { name: storeName })
+                : t("runFailed", { name: storeName })
+            );
+            router.refresh();
+          }
+        } catch {
+          // keep polling
+        }
+      }, 5000);
+    } catch {
+      setRunningStores((prev) => {
+        const n = new Set(prev);
+        n.delete(storeId);
+        return n;
+      });
+      toast.error(t("runFailed", { name: storeName }));
+    }
   }
 
   const headers = [
@@ -280,16 +316,21 @@ export function MonitoringTable({ configs, logs }: MonitoringTableProps) {
 
                     {/* Pause/Resume */}
                     <button
-                      onClick={() => {
-                        toast(
-                          config.enabled
-                            ? t("monitoringPaused", {
-                                name: config.store_name,
-                              })
-                            : t("monitoringResumed", {
-                                name: config.store_name,
-                              })
-                        );
+                      onClick={async () => {
+                        const newStatus = config.enabled ? "paused" : "active";
+                        const res = await fetch(`/api/stores/${config.store_id}`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ status: newStatus }),
+                        });
+                        if (res.ok) {
+                          toast(
+                            config.enabled
+                              ? t("monitoringPaused", { name: config.store_name })
+                              : t("monitoringResumed", { name: config.store_name })
+                          );
+                          router.refresh();
+                        }
                       }}
                       className="px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] border transition-colors hover:border-primary/50"
                       style={{
