@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Package, Tags, PenSquare, ShoppingBag, Trash2, Loader2 } from "lucide-react";
 import type { Product, Store } from "@/types";
 import type { ContentEntry } from "./utils";
@@ -97,11 +98,12 @@ export function ProductCard({
         style={{ backgroundColor: "var(--input)" }}
       >
         {product.image_url ? (
-          <img
+          <Image
             src={product.image_url}
             alt={product.title}
-            loading="lazy"
-            className="absolute inset-0 w-full h-full object-cover"
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">

@@ -16,8 +16,8 @@ import { StatusBadge } from "@/components/domain/status-badge";
 import {
   getDashboardStats,
   getRecentActivity,
-  getScrapeJobs,
-  getProducts,
+  getRecentJobs,
+  getRecentProducts,
   getStores,
 } from "@/lib/queries";
 import type { ActivityType } from "@/types";
@@ -74,17 +74,14 @@ export default async function DashboardPage() {
   const t = await getTranslations("Overview");
   const tt = await getTranslations("Time");
 
-  const [stats, allJobs, allProducts, recentActivity, allStores] =
+  const [stats, recentJobs, latestProducts, recentActivity, allStores] =
     await Promise.all([
       getDashboardStats(),
-      getScrapeJobs(),
-      getProducts(),
+      getRecentJobs(5),
+      getRecentProducts(3),
       getRecentActivity(),
       getStores(),
     ]);
-
-  const recentJobs = allJobs.slice(0, 5);
-  const latestProducts = allProducts.slice(0, 3);
   const storeMap = Object.fromEntries(allStores.map((s) => [s.id, s]));
 
   const productsDelta = formatDelta(stats.total_products_delta);

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type {
   Store,
@@ -20,8 +21,10 @@ import type {
 } from "@/types";
 
 // ─── Store name lookup (shared by queries needing store_name) ───
+// Wrapped in React cache() to deduplicate within a single server render pass.
+// Multiple query functions calling this in the same render will only hit the DB once.
 
-async function getStoreNameMap(): Promise<Record<string, string>> {
+const getStoreNameMap = cache(async (): Promise<Record<string, string>> => {
   const supabase = createAdminClient();
   const { data } = await supabase
     .from("stores")
@@ -29,7 +32,7 @@ async function getStoreNameMap(): Promise<Record<string, string>> {
     .is("deleted_at", null);
 
   return Object.fromEntries((data ?? []).map((s) => [s.id, s.name]));
-}
+});
 
 // ─── Stores ───
 
@@ -81,18 +84,54 @@ function mapStore(row: any): Store {
   };
 }
 
+export async function getStoreById(id: string): Promise<Store | null> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("stores")
+    .select("*")
+    .eq("id", id)
+    .is("deleted_at", null)
+    .single();
+
+  if (error || !data) return null;
+  return mapStore(data);
+}
+
 // ─── Products ───
+
+// Only the columns needed by mapProduct() — excludes large JSONB columns
+// (medias, variants, options, recommend_products, categories) that are only
+// needed on the product detail page.
+const PRODUCT_LIST_COLUMNS = "id, store_id, cleaned_title, title, handle, sku, brand, price, original_price, discount_percentage, currency, in_stock, product_url, image_url, description, updated_at, is_published, is_featured, is_slider, ai_category, affiliate_link";
 
 export async function getProducts(): Promise<Product[]> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("products")
-    .select("*")
+    .select(PRODUCT_LIST_COLUMNS)
     .is("deleted_at", null)
     .order("updated_at", { ascending: false });
 
   if (error) {
     console.error("getProducts error:", error.message);
+    return [];
+  }
+
+  return (data ?? []).map(mapProduct);
+}
+
+// Lightweight version for dashboard — only fetches what the overview cards need
+export async function getRecentProducts(limit: number): Promise<Product[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("id, store_id, title, cleaned_title, brand, price, original_price, discount_percentage, image_url, in_stock, updated_at")
+    .is("deleted_at", null)
+    .order("updated_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("getRecentProducts error:", error.message);
     return [];
   }
 
@@ -273,6 +312,26 @@ export async function getScrapeJobs(): Promise<ScrapeJob[]> {
 
   if (error) {
     console.error("getScrapeJobs error:", error.message);
+    return [];
+  }
+
+  return (data ?? []).map((row) => mapScrapeJob(row, storeNames));
+}
+
+// Lightweight version for dashboard — only recent jobs
+export async function getRecentJobs(limit: number): Promise<ScrapeJob[]> {
+  const supabase = createAdminClient();
+  const [{ data, error }, storeNames] = await Promise.all([
+    supabase
+      .from("scrape_jobs")
+      .select("id, store_id, status, products_found, products_updated, started_at, completed_at, error_message")
+      .order("created_at", { ascending: false })
+      .limit(limit),
+    getStoreNameMap(),
+  ]);
+
+  if (error) {
+    console.error("getRecentJobs error:", error.message);
     return [];
   }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   Package,
   Tags,
@@ -91,11 +92,12 @@ export function MiniProductCard({
         }}
       >
         {product.image_url ? (
-          <img
+          <Image
             src={product.image_url}
             alt={product.title}
-            loading="lazy"
-            className="absolute inset-0 w-full h-full object-cover"
+            fill
+            className="object-cover"
+            sizes="48px"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
