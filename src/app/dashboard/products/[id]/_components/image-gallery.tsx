@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Package } from "lucide-react";
 import type { ProductMedia } from "@/types";
 
@@ -42,11 +43,13 @@ export function ImageGallery({ medias, mainImage, title }: ImageGalleryProps) {
         className="relative w-full aspect-square mb-2 overflow-hidden"
         style={{ backgroundColor: "var(--input)" }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src={current.src}
           alt={current.alt || title}
-          className="w-full h-full object-contain"
+          fill
+          className="object-contain"
+          sizes="(max-width: 1024px) 100vw, 50vw"
+          priority
         />
       </div>
 
@@ -57,7 +60,7 @@ export function ImageGallery({ medias, mainImage, title }: ImageGalleryProps) {
             <button
               key={i}
               onClick={() => setSelected(i)}
-              className="w-14 h-14 flex-shrink-0 overflow-hidden transition-all duration-150"
+              className="relative w-14 h-14 flex-shrink-0 overflow-hidden transition-all duration-150"
               style={{
                 border: i === selected
                   ? "2px solid #CAFF04"
@@ -65,11 +68,12 @@ export function ImageGallery({ medias, mainImage, title }: ImageGalleryProps) {
                 opacity: i === selected ? 1 : 0.6,
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={img.src}
                 alt={img.alt || `${title} ${i + 1}`}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
+                sizes="56px"
               />
             </button>
           ))}

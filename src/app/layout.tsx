@@ -38,6 +38,10 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} className="dark">
+      <head>
+        <link rel="preconnect" href="https://cdn.shopify.com" />
+        <link rel="dns-prefetch" href="https://cdn.shopify.com" />
+      </head>
       <body
         className={`${sora.variable} ${dmSans.variable} ${spaceMono.variable} antialiased`}
       >

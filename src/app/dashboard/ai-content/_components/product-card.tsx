@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
-import { Package, Tags, PenSquare, ShoppingBag, Trash2, Loader2 } from "lucide-react";
+import { Tags, PenSquare, ShoppingBag, Trash2, Loader2 } from "lucide-react";
 import type { Product, Store } from "@/types";
 import type { ContentEntry } from "./utils";
 import { Highlight } from "./highlight";
 import { ContentStatusBadge } from "./content-status-badge";
+import { ProductImage } from "@/components/domain/product-image";
 
 interface ProductCardProps {
   product: Product;
@@ -97,22 +97,7 @@ export function ProductCard({
         className="relative w-full aspect-square"
         style={{ backgroundColor: "var(--input)" }}
       >
-        {product.image_url ? (
-          <Image
-            src={product.image_url}
-            alt={product.title}
-            fill
-            className="object-cover"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Package
-              className="w-8 h-8"
-              style={{ color: "var(--muted-foreground)", opacity: 0.3 }}
-            />
-          </div>
-        )}
+        <ProductImage src={product.image_url} alt={product.title} sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
         {/* Discount badge */}
         {hasDiscount && (
           <span

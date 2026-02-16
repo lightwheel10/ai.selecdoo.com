@@ -73,7 +73,7 @@ function mapWooCommerceProduct(item: any, storeId: string) {
     discount_percentage: discountPct,
     currency: item.prices?.currency_code ?? "EUR",
     in_stock: item.is_in_stock ?? true,
-    image_url: item.images?.[0]?.src ?? null,
+    image_url: item.images?.[0]?.thumbnail ?? item.images?.[0]?.src ?? null,
     product_url: item.url ?? null,
     variants: variants.length > 0 ? variants : null,
     categories: item.categories ?? null,
@@ -82,6 +82,7 @@ function mapWooCommerceProduct(item: any, storeId: string) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       item.images?.map((img: any) => ({
         url: img.src,
+        thumbnail: img.thumbnail ?? null,
         alt: img.alt ?? null,
         type: "image",
       })) ?? null,

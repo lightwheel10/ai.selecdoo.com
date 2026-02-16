@@ -1,11 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import Image from "next/image";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   Eye,
-  Package,
   Tags,
   PenSquare,
   Search,
@@ -28,8 +26,12 @@ import {
 } from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/domain/status-badge";
+import { Pagination } from "@/components/domain/pagination";
+import { ProductImage } from "@/components/domain/product-image";
 import { useTranslations } from "next-intl";
 import type { Product, Store } from "@/types";
+
+const ITEMS_PER_PAGE = 24;
 
 interface ProductCatalogProps {
   products: Product[];
@@ -363,6 +365,19 @@ export function ProductCatalog({ products, stores }: ProductCatalogProps) {
     return result;
   }, [products, search, storeFilter, stockFilter, discountFilter, minPrice, maxPrice, storeMap]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, storeFilter, stockFilter, discountFilter, minPrice, maxPrice]);
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filtered.slice(start, start + ITEMS_PER_PAGE);
+  }, [filtered, currentPage]);
+
   function clearAll() {
     setStoreFilter(null);
     setStockFilter(null);
@@ -535,7 +550,7 @@ export function ProductCatalog({ products, stores }: ProductCatalogProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
-          {filtered.map((product) => {
+          {paginatedProducts.map((product, index) => {
             const store = storeMap[product.store_id];
             const hasDiscount =
               product.discount_percentage && product.discount_percentage > 0;
@@ -554,25 +569,12 @@ export function ProductCatalog({ products, stores }: ProductCatalogProps) {
                   className="relative w-full aspect-square"
                   style={{ backgroundColor: "var(--input)" }}
                 >
-                  {product.image_url ? (
-                    <Image
-                      src={product.image_url}
-                      alt={product.title}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Package
-                        className="w-8 h-8"
-                        style={{
-                          color: "var(--muted-foreground)",
-                          opacity: 0.3,
-                        }}
-                      />
-                    </div>
-                  )}
+                  <ProductImage
+                    src={product.image_url}
+                    alt={product.title}
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                    priority={index < 5}
+                  />
                   {hasDiscount && (
                     <span
                       className="absolute top-2 left-2 text-[10px] font-bold px-1.5 py-0.5"
@@ -718,6 +720,12 @@ export function ProductCatalog({ products, stores }: ProductCatalogProps) {
           })}
         </div>
       )}
+
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 }

@@ -1,8 +1,6 @@
 "use client";
 
-import Image from "next/image";
 import {
-  Package,
   Tags,
   PenSquare,
   ShoppingBag,
@@ -12,6 +10,7 @@ import {
 import type { Product } from "@/types";
 import type { ContentEntry } from "./utils";
 import { Highlight } from "./highlight";
+import { ProductImage } from "@/components/domain/product-image";
 
 interface MiniProductCardProps {
   product: Product;
@@ -91,22 +90,7 @@ export function MiniProductCard({
           borderColor: "var(--border)",
         }}
       >
-        {product.image_url ? (
-          <Image
-            src={product.image_url}
-            alt={product.title}
-            fill
-            className="object-cover"
-            sizes="48px"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Package
-              className="w-4 h-4"
-              style={{ color: "var(--muted-foreground)", opacity: 0.3 }}
-            />
-          </div>
-        )}
+        <ProductImage src={product.image_url} alt={product.title} sizes="48px" iconSize="w-4 h-4" />
       </div>
 
       {/* Info */}

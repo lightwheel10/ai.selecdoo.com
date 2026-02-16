@@ -28,7 +28,7 @@ import {
   type StoreGroupData,
 } from "./utils";
 import { MultiSearchableFilter, MultiSimpleFilter, SimpleFilter, ToggleGroup } from "./filters";
-import { Pagination } from "./pagination";
+import { Pagination } from "@/components/domain/pagination";
 import { ProductCard } from "./product-card";
 import { ContentDialog } from "./content-dialog";
 import { StoreGroupView } from "./store-group-view";

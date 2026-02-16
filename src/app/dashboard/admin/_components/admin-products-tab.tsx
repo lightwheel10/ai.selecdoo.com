@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import Image from "next/image";
+import { useState, useMemo, useEffect } from "react";
 import {
   Search,
   X,
@@ -10,8 +9,8 @@ import {
   Pencil,
   ExternalLink,
   Eye,
-  Package,
 } from "lucide-react";
+import { ProductImage } from "@/components/domain/product-image";
 import Link from "next/link";
 import {
   Table,
@@ -43,9 +42,12 @@ import {
 } from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/domain/status-badge";
+import { Pagination } from "@/components/domain/pagination";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import type { Product, Store, StockStatus } from "@/types";
+
+const ITEMS_PER_PAGE = 50;
 
 // ─── Text Highlight ───
 
@@ -359,6 +361,7 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [featuredFilter, setFeaturedFilter] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const uniqueBrands = useMemo(
     () => [...new Set(localProducts.map((p) => p.brand).filter(Boolean) as string[])].sort(),
@@ -428,6 +431,17 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
 
     return result;
   }, [localProducts, search, publishFilter, brandFilter, affiliateFilter, categoryFilter, featuredFilter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, publishFilter, brandFilter, affiliateFilter, categoryFilter, featuredFilter]);
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filtered.slice(start, start + ITEMS_PER_PAGE);
+  }, [filtered, currentPage]);
 
   function togglePublish(id: string) {
     setLocalProducts((prev) =>
@@ -595,7 +609,7 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((product) => {
+              {paginatedProducts.map((product) => {
                 const hasDiscount = product.discount_percentage && product.discount_percentage > 0;
                 return (
                   <TableRow
@@ -609,17 +623,7 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
                         className="w-8 h-8 relative flex-shrink-0 flex items-center justify-center"
                         style={{ backgroundColor: "var(--input)" }}
                       >
-                        {product.image_url ? (
-                          <Image
-                            src={product.image_url}
-                            alt={product.title}
-                            fill
-                            className="object-cover"
-                            sizes="32px"
-                          />
-                        ) : (
-                          <Package className="w-3.5 h-3.5" style={{ color: "var(--muted-foreground)", opacity: 0.3 }} />
-                        )}
+                        <ProductImage src={product.image_url} alt={product.title} sizes="32px" iconSize="w-3.5 h-3.5" />
                       </div>
                     </TableCell>
 
@@ -710,6 +714,8 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
         </div>
       )}
 
+      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+
       {/* Edit Dialog */}
       <Dialog open={!!editingProduct} onOpenChange={(open) => !open && setEditingProduct(null)}>
         <DialogContent
@@ -736,17 +742,7 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
                   className="w-10 h-10 relative flex-shrink-0 flex items-center justify-center"
                   style={{ backgroundColor: "var(--input)" }}
                 >
-                  {editingProduct.image_url ? (
-                    <Image
-                      src={editingProduct.image_url}
-                      alt={editingProduct.title}
-                      fill
-                      className="object-cover"
-                      sizes="40px"
-                    />
-                  ) : (
-                    <Package className="w-4 h-4" style={{ color: "var(--muted-foreground)", opacity: 0.3 }} />
-                  )}
+                  <ProductImage src={editingProduct.image_url} alt={editingProduct.title} sizes="40px" iconSize="w-4 h-4" />
                 </div>
                 <div>
                   <p className="text-[12px] font-semibold">{editingProduct.title}</p>
@@ -845,7 +841,7 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
                   />
                   {editingProduct.image_url && (
                     <div className="w-9 h-9 flex-shrink-0 relative" style={{ border: "1.5px solid var(--border)" }}>
-                      <Image src={editingProduct.image_url} alt="Preview" fill className="object-cover" sizes="36px" />
+                      <ProductImage src={editingProduct.image_url} alt="Preview" sizes="36px" iconSize="w-3 h-3" />
                     </div>
                   )}
                 </div>

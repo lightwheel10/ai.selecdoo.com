@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import {
   Check,
   X,
@@ -12,7 +11,6 @@ import {
   Pencil,
   Tags,
   PenSquare,
-  Package,
 } from "lucide-react";
 import {
   Dialog,
@@ -23,6 +21,7 @@ import {
 import type { Product, Store, AIGeneratedContent } from "@/types";
 import { CopyBtn } from "./copy-btn";
 import type { ContentEntry } from "./utils";
+import { ProductImage } from "@/components/domain/product-image";
 
 interface ContentDialogProps {
   modal: { product: Product; contentType: "deal_post" | "social_post" } | null;
@@ -103,25 +102,7 @@ export function ContentDialog({
                     borderColor: "var(--border)",
                   }}
                 >
-                  {modal.product.image_url ? (
-                    <Image
-                      src={modal.product.image_url}
-                      alt={modal.product.title}
-                      fill
-                      className="object-cover"
-                      sizes="80px"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Package
-                        className="w-6 h-6"
-                        style={{
-                          color: "var(--muted-foreground)",
-                          opacity: 0.3,
-                        }}
-                      />
-                    </div>
-                  )}
+                  <ProductImage src={modal.product.image_url} alt={modal.product.title} sizes="80px" iconSize="w-6 h-6" />
                   {hasDiscount && (
                     <span
                       className="absolute bottom-0 left-0 right-0 text-center text-[9px] font-bold py-0.5"
