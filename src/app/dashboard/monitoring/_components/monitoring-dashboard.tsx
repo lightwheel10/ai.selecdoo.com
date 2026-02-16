@@ -10,6 +10,8 @@ import {
   ChevronRight,
   Zap,
   Info,
+  PackageSearch,
+  RefreshCw,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { MonitoringConfig, MonitoringLog, ProductChange } from "@/types";
@@ -80,16 +82,22 @@ export function MonitoringDashboard({
     const priceChanges = changes.filter(
       (c) => c.change_type === "price_change"
     ).length;
+    const stockChanges = changes.filter(
+      (c) => c.change_type === "stock_change"
+    ).length;
+    const fieldUpdates = changes.filter(
+      (c) => c.change_type === "field_update"
+    ).length;
     const newProducts = changes.filter(
       (c) => c.change_type === "new_product"
     ).length;
     const removedProducts = changes.filter(
       (c) => c.change_type === "product_removed"
     ).length;
-    const totalChecks = logs.length;
+    const totalChanges = changes.length;
 
-    return { priceChanges, newProducts, removedProducts, totalChecks };
-  }, [changes, logs]);
+    return { priceChanges, stockChanges, fieldUpdates, newProducts, removedProducts, totalChanges };
+  }, [changes]);
 
   const metricCards: {
     label: string;
@@ -104,6 +112,18 @@ export function MonitoringDashboard({
       icon: TrendingDown,
     },
     {
+      label: t("metricStockChanges"),
+      value: metrics.stockChanges,
+      color: "#FF453A",
+      icon: PackageSearch,
+    },
+    {
+      label: t("metricFieldUpdates"),
+      value: metrics.fieldUpdates,
+      color: "#AF52DE",
+      icon: RefreshCw,
+    },
+    {
       label: t("metricNewProducts"),
       value: metrics.newProducts,
       color: "#22C55E",
@@ -112,12 +132,12 @@ export function MonitoringDashboard({
     {
       label: t("metricRemovedProducts"),
       value: metrics.removedProducts,
-      color: "#FF453A",
+      color: "#FF6961",
       icon: PackageX,
     },
     {
-      label: t("metricTotalChecks"),
-      value: metrics.totalChecks,
+      label: t("metricTotalChanges"),
+      value: metrics.totalChanges,
       color: "#5AC8FA",
       icon: Activity,
     },
@@ -283,7 +303,7 @@ export function MonitoringDashboard({
       </div>
 
       {/* ── 3. Metric Cards (full-width row) ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {metricCards.map((card) => {
           const Icon = card.icon;
           return (

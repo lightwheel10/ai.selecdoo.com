@@ -355,13 +355,14 @@ function mapScrapeJob(row: any, storeNames: Record<string, string>): ScrapeJob {
 
 // ─── Product Changes ───
 
-export async function getProductChanges(): Promise<ProductChange[]> {
+export async function getProductChanges(limit = 500): Promise<ProductChange[]> {
   const supabase = createAdminClient();
   const [{ data, error }, storeNames] = await Promise.all([
     supabase
       .from("product_changes")
       .select("*")
-      .order("detected_at", { ascending: false }),
+      .order("detected_at", { ascending: false })
+      .limit(limit),
     getStoreNameMap(),
   ]);
 

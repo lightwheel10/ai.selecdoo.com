@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import {
   TrendingDown,
   TrendingUp,
@@ -9,7 +8,6 @@ import {
   PackagePlus,
   RefreshCw,
   ChevronDown,
-  ExternalLink,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ProductChange, ChangeType } from "@/types";
@@ -18,7 +16,7 @@ interface ChangeTimelineProps {
   changes: ProductChange[];
 }
 
-const ITEMS_PER_PAGE = 6;
+const MAX_PER_SECTION = 5;
 
 const changeColors: Record<ChangeType, string> = {
   price_change: "#FF9F0A",
@@ -36,20 +34,13 @@ const changeIcons: Record<ChangeType, typeof TrendingDown> = {
   field_update: RefreshCw,
 };
 
-const changeToKey: Record<ChangeType, string> = {
-  price_change: "price",
-  stock_change: "stock",
-  new_product: "new",
-  product_removed: "removed",
-  field_update: "update",
-};
-
-const allChangeTypes: ChangeType[] = [
+// Section display order
+const sectionOrder: ChangeType[] = [
   "price_change",
   "stock_change",
+  "field_update",
   "new_product",
   "product_removed",
-  "field_update",
 ];
 
 function formatRelativeTime(
@@ -65,74 +56,356 @@ function formatRelativeTime(
   return tt("daysAgo", { count: days });
 }
 
-function formatChangeDescription(
-  change: ProductChange,
-  t: (key: string) => string
-) {
-  if (
-    change.change_type === "price_change" &&
-    change.old_value &&
-    change.new_value
-  ) {
-    const oldPrice = parseFloat(change.old_value);
-    const newPrice = parseFloat(change.new_value);
-    const diff = Math.abs(newPrice - oldPrice);
-    const pct = ((diff / oldPrice) * 100).toFixed(0);
-    const direction = newPrice < oldPrice ? t("dropped") : t("increased");
-    return {
-      text: `$${change.old_value} → $${change.new_value}`,
-      detail: `${direction} ${pct}%`,
-      isDropped: newPrice < oldPrice,
-    };
-  }
-  if (change.change_type === "stock_change") {
-    const isBack =
-      change.new_value === "true" || change.new_value === "in_stock";
-    return {
-      text: isBack ? t("backInStock") : t("wentOutOfStock"),
-      detail: null,
-      isDropped: !isBack,
-    };
-  }
-  if (change.change_type === "new_product") {
-    return {
-      text: t("productAdded"),
-      detail: null,
-      isDropped: false,
-    };
-  }
-  if (change.change_type === "product_removed") {
-    return {
-      text: t("productRemoved"),
-      detail: null,
-      isDropped: true,
-    };
-  }
-  return {
-    text: `${change.field_changed}: ${change.old_value || "—"} → ${change.new_value || "—"}`,
-    detail: null,
-    isDropped: false,
-  };
+// ─── Section: Price Changes ───
+
+function PriceChangeRow({
+  change,
+  tt,
+  t,
+}: {
+  change: ProductChange;
+  tt: (key: string, values: { count: number }) => string;
+  t: (key: string) => string;
+}) {
+  const oldPrice = change.old_value ? parseFloat(change.old_value) : 0;
+  const newPrice = change.new_value ? parseFloat(change.new_value) : 0;
+  const isDropped = newPrice < oldPrice;
+  const diff = Math.abs(newPrice - oldPrice);
+  const pct = oldPrice > 0 ? ((diff / oldPrice) * 100).toFixed(0) : "0";
+  const Icon = isDropped ? TrendingDown : TrendingUp;
+
+  return (
+    <div
+      className="flex items-center gap-3 px-3 py-2.5"
+      style={{ borderBottom: "1px solid var(--border)" }}
+    >
+      {/* Image */}
+      {change.product_image ? (
+        <img
+          src={change.product_image}
+          alt=""
+          className="w-8 h-8 object-cover flex-shrink-0"
+          style={{ border: "1px solid var(--border)" }}
+        />
+      ) : (
+        <div
+          className="w-8 h-8 flex-shrink-0 flex items-center justify-center"
+          style={{ backgroundColor: "rgba(255,159,10,0.08)", border: "1px solid var(--border)" }}
+        >
+          <Icon className="w-3.5 h-3.5" style={{ color: "#FF9F0A" }} />
+        </div>
+      )}
+
+      {/* Product + Store */}
+      <div className="flex-1 min-w-0">
+        <p className="text-[11px] font-semibold truncate">
+          {change.product_title}
+        </p>
+        <span
+          className="text-[9px] font-bold tracking-wider"
+          style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+        >
+          {change.store_name}
+        </span>
+      </div>
+
+      {/* Old → New price */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <span
+          className="text-[10px] font-bold tracking-wider line-through"
+          style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+        >
+          €{change.old_value}
+        </span>
+        <span
+          className="text-[10px] font-bold tracking-wider"
+          style={{
+            fontFamily: "var(--font-mono)",
+            color: isDropped ? "#22C55E" : "#FF453A",
+          }}
+        >
+          €{change.new_value}
+        </span>
+      </div>
+
+      {/* Percentage badge */}
+      <span
+        className="flex items-center gap-0.5 text-[9px] font-bold tracking-wider px-1.5 py-0.5 flex-shrink-0"
+        style={{
+          fontFamily: "var(--font-mono)",
+          color: isDropped ? "#22C55E" : "#FF453A",
+          backgroundColor: isDropped ? "rgba(34,197,94,0.08)" : "rgba(255,69,58,0.08)",
+        }}
+      >
+        <Icon className="w-2.5 h-2.5" />
+        {pct}%
+      </span>
+
+      {/* Time */}
+      <span
+        className="text-[9px] font-bold tracking-wider flex-shrink-0"
+        style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+      >
+        {formatRelativeTime(change.detected_at, tt)}
+      </span>
+    </div>
+  );
 }
+
+// ─── Section: Stock Changes ───
+
+function StockChangeRow({
+  change,
+  tt,
+  t,
+}: {
+  change: ProductChange;
+  tt: (key: string, values: { count: number }) => string;
+  t: (key: string) => string;
+}) {
+  const isBack = change.new_value === "true" || change.new_value === "in_stock";
+
+  return (
+    <div
+      className="flex items-center gap-3 px-3 py-2.5"
+      style={{ borderBottom: "1px solid var(--border)" }}
+    >
+      {change.product_image ? (
+        <img
+          src={change.product_image}
+          alt=""
+          className="w-8 h-8 object-cover flex-shrink-0"
+          style={{ border: "1px solid var(--border)" }}
+        />
+      ) : (
+        <div
+          className="w-8 h-8 flex-shrink-0 flex items-center justify-center"
+          style={{ backgroundColor: "rgba(255,69,58,0.08)", border: "1px solid var(--border)" }}
+        >
+          <PackageX className="w-3.5 h-3.5" style={{ color: "#FF453A" }} />
+        </div>
+      )}
+
+      <div className="flex-1 min-w-0">
+        <p className="text-[11px] font-semibold truncate">
+          {change.product_title}
+        </p>
+        <span
+          className="text-[9px] font-bold tracking-wider"
+          style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+        >
+          {change.store_name}
+        </span>
+      </div>
+
+      {/* Status badge */}
+      <span
+        className="text-[9px] font-bold uppercase tracking-[0.15em] px-2 py-1 flex-shrink-0"
+        style={{
+          fontFamily: "var(--font-mono)",
+          color: isBack ? "#22C55E" : "#FF453A",
+          backgroundColor: isBack ? "rgba(34,197,94,0.08)" : "rgba(255,69,58,0.08)",
+          border: `1px solid ${isBack ? "rgba(34,197,94,0.2)" : "rgba(255,69,58,0.2)"}`,
+        }}
+      >
+        {isBack ? t("backInStock") : t("wentOutOfStock")}
+      </span>
+
+      <span
+        className="text-[9px] font-bold tracking-wider flex-shrink-0"
+        style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+      >
+        {formatRelativeTime(change.detected_at, tt)}
+      </span>
+    </div>
+  );
+}
+
+// ─── Section: Field Updates (discount, original_price) ───
+
+function FieldUpdateRow({
+  change,
+  tt,
+  t,
+}: {
+  change: ProductChange;
+  tt: (key: string, values: { count: number }) => string;
+  t: (key: string) => string;
+}) {
+  let isDropped = false;
+  if (change.field_changed === "discount_percentage") {
+    const oldNum = change.old_value ? parseFloat(change.old_value) : 0;
+    const newNum = change.new_value ? parseFloat(change.new_value) : 0;
+    isDropped = newNum < oldNum;
+  } else if (change.field_changed === "original_price") {
+    const oldNum = change.old_value ? parseFloat(change.old_value) : 0;
+    const newNum = change.new_value ? parseFloat(change.new_value) : 0;
+    isDropped = newNum > oldNum;
+  }
+
+  return (
+    <div
+      className="flex items-center gap-3 px-3 py-2.5"
+      style={{ borderBottom: "1px solid var(--border)" }}
+    >
+      {change.product_image ? (
+        <img
+          src={change.product_image}
+          alt=""
+          className="w-8 h-8 object-cover flex-shrink-0"
+          style={{ border: "1px solid var(--border)" }}
+        />
+      ) : (
+        <div
+          className="w-8 h-8 flex-shrink-0 flex items-center justify-center"
+          style={{ backgroundColor: "rgba(90,200,250,0.08)", border: "1px solid var(--border)" }}
+        >
+          <RefreshCw className="w-3.5 h-3.5" style={{ color: "#5AC8FA" }} />
+        </div>
+      )}
+
+      <div className="flex-1 min-w-0">
+        <p className="text-[11px] font-semibold truncate">
+          {change.product_title}
+        </p>
+        <span
+          className="text-[9px] font-bold tracking-wider"
+          style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+        >
+          {change.store_name}
+        </span>
+      </div>
+
+      {/* Field name */}
+      <span
+        className="text-[9px] font-bold uppercase tracking-[0.15em] px-1.5 py-0.5 flex-shrink-0"
+        style={{
+          fontFamily: "var(--font-mono)",
+          color: "#5AC8FA",
+          backgroundColor: "rgba(90,200,250,0.08)",
+        }}
+      >
+        {change.field_changed}
+      </span>
+
+      {/* Old → New */}
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        <span
+          className="text-[10px] font-bold tracking-wider"
+          style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+        >
+          {change.old_value || t("none")}
+        </span>
+        <span
+          className="text-[9px]"
+          style={{ color: "var(--muted-foreground)" }}
+        >
+          →
+        </span>
+        <span
+          className="text-[10px] font-bold tracking-wider"
+          style={{
+            fontFamily: "var(--font-mono)",
+            color: isDropped ? "#FF453A" : "#22C55E",
+          }}
+        >
+          {change.new_value || t("none")}
+        </span>
+      </div>
+
+      <span
+        className="text-[9px] font-bold tracking-wider flex-shrink-0"
+        style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+      >
+        {formatRelativeTime(change.detected_at, tt)}
+      </span>
+    </div>
+  );
+}
+
+// ─── Section: New / Removed Products (simple list) ───
+
+function ProductRow({
+  change,
+  tt,
+  type,
+}: {
+  change: ProductChange;
+  tt: (key: string, values: { count: number }) => string;
+  type: "new_product" | "product_removed";
+}) {
+  const color = type === "new_product" ? "#22C55E" : "#FF453A";
+  const Icon = type === "new_product" ? PackagePlus : PackageX;
+
+  return (
+    <div
+      className="flex items-center gap-3 px-3 py-2.5"
+      style={{ borderBottom: "1px solid var(--border)" }}
+    >
+      {change.product_image ? (
+        <img
+          src={change.product_image}
+          alt=""
+          className="w-8 h-8 object-cover flex-shrink-0"
+          style={{ border: "1px solid var(--border)" }}
+        />
+      ) : (
+        <div
+          className="w-8 h-8 flex-shrink-0 flex items-center justify-center"
+          style={{ backgroundColor: `${color}14`, border: "1px solid var(--border)" }}
+        >
+          <Icon className="w-3.5 h-3.5" style={{ color }} />
+        </div>
+      )}
+
+      <div className="flex-1 min-w-0">
+        <p className="text-[11px] font-semibold truncate">
+          {change.product_title}
+        </p>
+        <span
+          className="text-[9px] font-bold tracking-wider"
+          style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+        >
+          {change.store_name}
+        </span>
+      </div>
+
+      <span
+        className="text-[9px] font-bold tracking-wider flex-shrink-0"
+        style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+      >
+        {formatRelativeTime(change.detected_at, tt)}
+      </span>
+    </div>
+  );
+}
+
+// ─── Section Header Keys ───
+
+const sectionTitleKeys: Record<ChangeType, string> = {
+  price_change: "sectionPriceChanges",
+  stock_change: "sectionStockChanges",
+  field_update: "sectionFieldUpdates",
+  new_product: "sectionNewProducts",
+  product_removed: "sectionRemovedProducts",
+};
+
+// ─── Main Component ───
 
 export function ChangeTimeline({ changes }: ChangeTimelineProps) {
   const t = useTranslations("Monitoring");
   const tt = useTranslations("Time");
-  const router = useRouter();
 
   const [storeFilter, setStoreFilter] = useState<string | null>(null);
-  const [typeFilter, setTypeFilter] = useState<ChangeType | null>(null);
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const [storeDropdownOpen, setStoreDropdownOpen] = useState(false);
+  const [storeSearch, setStoreSearch] = useState("");
+  const [expandedSections, setExpandedSections] = useState<Set<ChangeType>>(new Set());
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setStoreDropdownOpen(false);
       }
     }
@@ -149,43 +422,42 @@ export function ChangeTimeline({ changes }: ChangeTimelineProps) {
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [changes]);
 
-  // Change type counts (respecting store filter)
-  const typeCounts = useMemo(() => {
-    const base = storeFilter
-      ? changes.filter((c) => c.store_id === storeFilter)
-      : changes;
-    const counts: Record<string, number> = {};
-    for (const c of base) {
-      counts[c.change_type] = (counts[c.change_type] || 0) + 1;
-    }
-    return counts;
-  }, [changes, storeFilter]);
-
-  // Filtered changes
+  // Filter by store
   const filtered = useMemo(() => {
-    let result = [...changes];
-    if (storeFilter)
-      result = result.filter((c) => c.store_id === storeFilter);
-    if (typeFilter)
-      result = result.filter((c) => c.change_type === typeFilter);
+    let result = storeFilter
+      ? changes.filter((c) => c.store_id === storeFilter)
+      : [...changes];
     result.sort(
-      (a, b) =>
-        new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime()
+      (a, b) => new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime()
     );
     return result;
-  }, [changes, storeFilter, typeFilter]);
+  }, [changes, storeFilter]);
 
-  const visible = filtered.slice(0, visibleCount);
-  const hasMore = visibleCount < filtered.length;
+  // Group by change type
+  const grouped = useMemo(() => {
+    const map: Record<string, ProductChange[]> = {};
+    for (const c of filtered) {
+      if (!map[c.change_type]) map[c.change_type] = [];
+      map[c.change_type].push(c);
+    }
+    return map;
+  }, [filtered]);
 
-  // Reset pagination when filters change
-  useEffect(() => {
-    setVisibleCount(ITEMS_PER_PAGE);
-  }, [storeFilter, typeFilter]);
+  function toggleSection(type: ChangeType) {
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      return next;
+    });
+  }
+
+  // Count total
+  const totalCount = filtered.length;
 
   return (
     <div>
-      {/* ── Filter Bar (separate full-width bar above timeline) ── */}
+      {/* ── Filter Bar ── */}
       <div
         className="flex flex-wrap items-center gap-2 px-4 py-3 mb-3 border-2"
         style={{
@@ -200,310 +472,217 @@ export function ChangeTimeline({ changes }: ChangeTimelineProps) {
             className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border transition-colors hover:border-primary/50"
             style={{
               fontFamily: "var(--font-mono)",
-              backgroundColor: storeFilter
-                ? "rgba(202,255,4,0.07)"
-                : "transparent",
-              borderColor: storeFilter
-                ? "rgba(202,255,4,0.25)"
-                : "var(--border)",
+              backgroundColor: storeFilter ? "rgba(202,255,4,0.07)" : "transparent",
+              borderColor: storeFilter ? "rgba(202,255,4,0.25)" : "var(--border)",
               color: storeFilter ? "#CAFF04" : "var(--muted-foreground)",
             }}
           >
             {storeFilter
-              ? stores.find((s) => s.id === storeFilter)?.name ||
-                t("allStores")
+              ? stores.find((s) => s.id === storeFilter)?.name || t("allStores")
               : t("allStores")}
             <ChevronDown className="w-3 h-3" />
           </button>
 
           {storeDropdownOpen && (
             <div
-              className="absolute z-50 top-full left-0 mt-1 min-w-[180px] border-2 py-1"
+              className="absolute z-50 top-full left-0 mt-1 min-w-[200px] border-2"
               style={{
                 backgroundColor: "var(--card)",
                 borderColor: "var(--border)",
               }}
             >
-              <button
-                onClick={() => {
-                  setStoreFilter(null);
-                  setStoreDropdownOpen(false);
-                }}
-                className="w-full text-left px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  color: !storeFilter
-                    ? "#CAFF04"
-                    : "var(--muted-foreground)",
-                }}
-              >
-                {t("allStores")}
-              </button>
-              {stores.map((store) => (
+              {/* Search input */}
+              {stores.length > 8 && (
+                <div className="px-2 py-1.5" style={{ borderBottom: "1px solid var(--border)" }}>
+                  <input
+                    type="text"
+                    value={storeSearch}
+                    onChange={(e) => setStoreSearch(e.target.value)}
+                    placeholder={t("searchStores")}
+                    className="w-full px-2 py-1 text-[10px] border outline-none focus:border-primary"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      backgroundColor: "var(--input)",
+                      borderColor: "var(--border)",
+                      color: "var(--foreground)",
+                    }}
+                    autoFocus
+                  />
+                </div>
+              )}
+              <div className="py-1 max-h-[240px] overflow-y-auto scrollbar-none">
                 <button
-                  key={store.id}
-                  onClick={() => {
-                    setStoreFilter(store.id);
-                    setStoreDropdownOpen(false);
-                  }}
+                  onClick={() => { setStoreFilter(null); setStoreDropdownOpen(false); setStoreSearch(""); }}
                   className="w-full text-left px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
                   style={{
                     fontFamily: "var(--font-mono)",
-                    color:
-                      storeFilter === store.id
-                        ? "#CAFF04"
-                        : "var(--muted-foreground)",
+                    color: !storeFilter ? "#CAFF04" : "var(--muted-foreground)",
                   }}
                 >
-                  {store.name}
+                  {t("allStores")}
                 </button>
-              ))}
+                {stores
+                  .filter((s) => !storeSearch || s.name.toLowerCase().includes(storeSearch.toLowerCase()))
+                  .map((store) => (
+                    <button
+                      key={store.id}
+                      onClick={() => { setStoreFilter(store.id); setStoreDropdownOpen(false); setStoreSearch(""); }}
+                      className="w-full text-left px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        color: storeFilter === store.id ? "#CAFF04" : "var(--muted-foreground)",
+                      }}
+                    >
+                      {store.name}
+                    </button>
+                  ))}
+              </div>
             </div>
           )}
         </div>
 
         {/* Divider */}
-        <div
-          className="w-px h-5"
-          style={{ backgroundColor: "var(--border)" }}
-        />
+        <div className="w-px h-5" style={{ backgroundColor: "var(--border)" }} />
 
-        {/* Change type filter pills */}
+        {/* Section summary pills */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          {allChangeTypes.map((type) => {
-            const count = typeCounts[type] || 0;
+          {sectionOrder.map((type) => {
+            const count = grouped[type]?.length || 0;
             if (count === 0) return null;
             const color = changeColors[type];
-            const isActive = typeFilter === type;
+            const Icon = changeIcons[type];
 
             return (
-              <button
+              <span
                 key={type}
-                onClick={() => setTypeFilter(isActive ? null : type)}
-                className="flex items-center gap-1 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.15em] transition-colors"
+                className="flex items-center gap-1 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.15em]"
                 style={{
                   fontFamily: "var(--font-mono)",
-                  backgroundColor: isActive ? `${color}20` : "transparent",
-                  border: `1.5px solid ${isActive ? `${color}60` : "var(--border)"}`,
-                  color: isActive ? color : "var(--muted-foreground)",
+                  backgroundColor: `${color}12`,
+                  border: `1.5px solid ${color}30`,
+                  color: color,
                 }}
               >
-                {t(changeToKey[type])}
-                <span className="text-[8px]" style={{ opacity: 0.7 }}>
-                  {count}
-                </span>
-              </button>
+                <Icon className="w-2.5 h-2.5" />
+                {count}
+              </span>
             );
           })}
         </div>
 
-        {/* Result count */}
+        {/* Total count */}
         <span
           className="ml-auto text-[9px] font-bold tracking-wider"
-          style={{
-            fontFamily: "var(--font-mono)",
-            color: "var(--muted-foreground)",
-          }}
+          style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
         >
-          {t("changesCount", { count: filtered.length })}
+          {t("changesCount", { count: totalCount })}
         </span>
       </div>
 
-      {/* ── Timeline entries (full-width) ── */}
-      <div
-        className="border-2"
-        style={{
-          backgroundColor: "var(--card)",
-          borderColor: "var(--border)",
-        }}
-      >
-        {visible.length === 0 ? (
-          <div className="py-16 text-center">
-            <p
-              className="text-[11px] font-bold uppercase tracking-[0.15em]"
-              style={{
-                fontFamily: "var(--font-mono)",
-                color: "var(--muted-foreground)",
-              }}
-            >
-              {t("noChanges")}
-            </p>
-          </div>
-        ) : (
-          <>
-            {visible.map((change, i) => {
-              const color = changeColors[change.change_type];
-              const Icon = changeIcons[change.change_type];
-              const label = t(changeToKey[change.change_type]);
-              const desc = formatChangeDescription(change, t);
+      {/* ── Grouped Sections ── */}
+      {totalCount === 0 ? (
+        <div
+          className="border-2 py-16 text-center"
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+        >
+          <p
+            className="text-[11px] font-bold uppercase tracking-[0.15em]"
+            style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+          >
+            {t("noChanges")}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {sectionOrder.map((type) => {
+            const items = grouped[type];
+            if (!items || items.length === 0) return null;
 
-              const PriceIcon =
-                change.change_type === "price_change" &&
-                change.old_value &&
-                change.new_value &&
-                parseFloat(change.new_value) > parseFloat(change.old_value)
-                  ? TrendingUp
-                  : Icon;
+            const color = changeColors[type];
+            const Icon = changeIcons[type];
+            const isExpanded = expandedSections.has(type);
+            const visibleItems = isExpanded ? items : items.slice(0, MAX_PER_SECTION);
+            const hasMore = items.length > MAX_PER_SECTION && !isExpanded;
 
-              return (
+            return (
+              <div
+                key={type}
+                className="border-2"
+                style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+              >
+                {/* Section header */}
                 <div
-                  key={change.id}
-                  className="flex gap-3 px-4 py-3"
+                  className="flex items-center gap-2 px-3 py-2.5"
                   style={{
-                    borderBottom:
-                      i < visible.length - 1
-                        ? "1px solid var(--border)"
-                        : "none",
+                    borderBottom: "2px solid var(--border)",
+                    backgroundColor: "rgba(255,255,255,0.02)",
                   }}
                 >
-                  {/* Product Image (40px) or Icon fallback */}
-                  {change.product_image ? (
-                    <div
-                      className="w-10 h-10 flex-shrink-0 overflow-hidden relative mt-0.5"
-                      style={{
-                        border: `1.5px solid ${color}40`,
-                      }}
-                    >
-                      <img
-                        src={change.product_image}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                      <div
-                        className="absolute bottom-0 right-0 w-4 h-4 flex items-center justify-center"
-                        style={{ backgroundColor: `${color}CC` }}
-                      >
-                        <PriceIcon
-                          className="w-2.5 h-2.5"
-                          style={{ color: "#0A0A0A" }}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div
-                      className="w-10 h-10 flex-shrink-0 flex items-center justify-center mt-0.5"
-                      style={{
-                        backgroundColor: `${color}12`,
-                        border: `1.5px solid ${color}40`,
-                      }}
-                    >
-                      <PriceIcon
-                        className="w-4 h-4"
-                        style={{ color }}
-                      />
-                    </div>
-                  )}
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    {/* Row 1: Type badge + Store */}
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span
-                        className="text-[10px] font-bold uppercase tracking-[0.15em] px-1.5 py-0.5"
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          color: color,
-                          backgroundColor: `${color}12`,
-                        }}
-                      >
-                        {label}
-                      </span>
-                      <span
-                        className="text-[9px] font-bold tracking-wider"
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          color: "var(--muted-foreground)",
-                        }}
-                      >
-                        {change.store_name}
-                      </span>
-                    </div>
-
-                    {/* Row 2: Product title */}
-                    <p className="text-[11px] font-semibold truncate">
-                      {change.product_title}
-                    </p>
-
-                    {/* Row 3: Change description */}
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span
-                        className="text-[10px] font-bold tracking-wider"
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          color: desc.isDropped ? "#FF453A" : "#22C55E",
-                        }}
-                      >
-                        {desc.text}
-                      </span>
-                      {desc.detail && (
-                        <span
-                          className="text-[9px] font-bold tracking-wider px-1 py-0.5"
-                          style={{
-                            fontFamily: "var(--font-mono)",
-                            color: desc.isDropped ? "#FF453A" : "#22C55E",
-                            backgroundColor: desc.isDropped
-                              ? "rgba(255,69,58,0.08)"
-                              : "rgba(34,197,94,0.08)",
-                          }}
-                        >
-                          {desc.detail}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Right side: Time + View — vertically centered */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span
-                      className="text-[9px] font-bold tracking-wider"
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        color: "var(--muted-foreground)",
-                      }}
-                    >
-                      {formatRelativeTime(change.detected_at, tt)}
-                    </span>
-                    <button
-                      onClick={() => {
-                        router.push(`/dashboard/products?store=${change.store_id}`);
-                      }}
-                      className="flex items-center gap-1 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.15em] border transition-colors hover:border-primary/50"
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        backgroundColor: "transparent",
-                        borderColor: "var(--border)",
-                        color: "var(--muted-foreground)",
-                      }}
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                      {t("viewProduct")}
-                    </button>
-                  </div>
+                  <Icon className="w-3.5 h-3.5" style={{ color }} />
+                  <span
+                    className="text-[10px] font-bold uppercase tracking-[0.15em]"
+                    style={{ fontFamily: "var(--font-mono)", color }}
+                  >
+                    {t(sectionTitleKeys[type])}
+                  </span>
+                  <span
+                    className="text-[9px] font-bold tracking-wider px-1.5 py-0.5"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      color,
+                      backgroundColor: `${color}12`,
+                    }}
+                  >
+                    {items.length}
+                  </span>
                 </div>
-              );
-            })}
 
-            {/* Load More */}
-            {hasMore && (
-              <button
-                onClick={() =>
-                  setVisibleCount((prev) => prev + ITEMS_PER_PAGE)
-                }
-                className="w-full py-3 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  color: "var(--muted-foreground)",
-                  borderTop: "1px solid var(--border)",
-                }}
-              >
-                {t("loadMore", {
-                  remaining: filtered.length - visibleCount,
+                {/* Section rows */}
+                {visibleItems.map((change) => {
+                  if (type === "price_change") {
+                    return <PriceChangeRow key={change.id} change={change} tt={tt} t={t} />;
+                  }
+                  if (type === "stock_change") {
+                    return <StockChangeRow key={change.id} change={change} tt={tt} t={t} />;
+                  }
+                  if (type === "field_update") {
+                    return <FieldUpdateRow key={change.id} change={change} tt={tt} t={t} />;
+                  }
+                  return <ProductRow key={change.id} change={change} tt={tt} type={type as "new_product" | "product_removed"} />;
                 })}
-              </button>
-            )}
-          </>
-        )}
-      </div>
+
+                {/* Show more / less */}
+                {hasMore && (
+                  <button
+                    onClick={() => toggleSection(type)}
+                    className="w-full py-2 text-[9px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      color: "var(--muted-foreground)",
+                      borderTop: "1px solid var(--border)",
+                    }}
+                  >
+                    {t("showMore", { count: items.length - MAX_PER_SECTION })}
+                  </button>
+                )}
+                {isExpanded && items.length > MAX_PER_SECTION && (
+                  <button
+                    onClick={() => toggleSection(type)}
+                    className="w-full py-2 text-[9px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      color: "var(--muted-foreground)",
+                      borderTop: "1px solid var(--border)",
+                    }}
+                  >
+                    {t("showLess")}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
