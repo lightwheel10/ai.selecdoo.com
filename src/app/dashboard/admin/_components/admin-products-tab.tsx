@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Image from "next/image";
 import {
   Search,
   X,
@@ -608,12 +607,11 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
                         style={{ backgroundColor: "var(--input)" }}
                       >
                         {product.image_url ? (
-                          <Image
+                          <img
                             src={product.image_url}
                             alt={product.title}
-                            fill
-                            className="object-cover"
-                            sizes="32px"
+                            loading="lazy"
+                            className="absolute inset-0 w-full h-full object-cover"
                           />
                         ) : (
                           <Package className="w-3.5 h-3.5" style={{ color: "var(--muted-foreground)", opacity: 0.3 }} />
@@ -735,12 +733,11 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
                   style={{ backgroundColor: "var(--input)" }}
                 >
                   {editingProduct.image_url ? (
-                    <Image
+                    <img
                       src={editingProduct.image_url}
                       alt={editingProduct.title}
-                      fill
-                      className="object-cover"
-                      sizes="40px"
+                      loading="lazy"
+                      className="absolute inset-0 w-full h-full object-cover"
                     />
                   ) : (
                     <Package className="w-4 h-4" style={{ color: "var(--muted-foreground)", opacity: 0.3 }} />
@@ -843,7 +840,7 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
                   />
                   {editingProduct.image_url && (
                     <div className="w-9 h-9 flex-shrink-0 relative" style={{ border: "1.5px solid var(--border)" }}>
-                      <Image src={editingProduct.image_url} alt="Preview" fill className="object-cover" sizes="36px" />
+                      <img src={editingProduct.image_url} alt="Preview" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
                     </div>
                   )}
                 </div>

@@ -17,6 +17,7 @@ const STATUS_FLOW: Record<string, string> = {
   READY: "initializing",
   RUNNING: "fetchingProducts",
   SUCCEEDED: "savingResults",
+  fallbackScraping: "fallbackScraping",
 };
 
 function Highlight({ text, query }: { text: string; query: string }) {
@@ -233,7 +234,11 @@ export function ScrapeView({ stores, products: initialProducts }: ScrapeViewProp
               .then((data) => {
                 if (!data) return;
                 setProductsFound(data.products_found ?? 0);
-                if (data.apify_status) setStatusKey(STATUS_FLOW[data.apify_status] ?? "fetchingProducts");
+                if (data.fallback) {
+                  setStatusKey("fallbackScraping");
+                } else if (data.apify_status) {
+                  setStatusKey(STATUS_FLOW[data.apify_status] ?? "fetchingProducts");
+                }
                 if (data.status === "completed") {
                   if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
                   setPhase("completed");
@@ -279,7 +284,9 @@ export function ScrapeView({ stores, products: initialProducts }: ScrapeViewProp
 
         setProductsFound(data.products_found ?? 0);
 
-        if (data.apify_status) {
+        if (data.fallback) {
+          setStatusKey("fallbackScraping");
+        } else if (data.apify_status) {
           setStatusKey(STATUS_FLOW[data.apify_status] ?? "fetchingProducts");
         }
 

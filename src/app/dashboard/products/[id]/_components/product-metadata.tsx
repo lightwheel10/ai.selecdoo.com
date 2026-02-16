@@ -54,7 +54,7 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
 
 function formatDate(iso: string | null | undefined): string | null {
   if (!iso) return null;
-  return new Date(iso).toLocaleDateString(undefined, {
+  return new Date(iso).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",

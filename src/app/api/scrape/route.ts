@@ -3,6 +3,41 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 const APIFY_TOKEN = process.env.APIFY_API_KEY!;
 const APIFY_ACTOR_ID = process.env.APIFY_ACTOR_ID!;
+const APIFY_WOO_ACTOR_ID = process.env.APIFY_WOO_ACTOR_ID;
+
+type Platform = "shopify" | "woocommerce";
+
+async function detectPlatform(storeUrl: string): Promise<Platform> {
+  const base = storeUrl.replace(/\/+$/, "");
+
+  // Check Shopify: /products.json is a Shopify-only endpoint
+  try {
+    const res = await fetch(`${base}/products.json?limit=1`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.products) return "shopify";
+    }
+  } catch {
+    // not Shopify
+  }
+
+  // Check WooCommerce: /wp-json/wc/store/products is WooCommerce Store API
+  try {
+    const res = await fetch(`${base}/wp-json/wc/store/products?per_page=1`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) return "woocommerce";
+    }
+  } catch {
+    // not WooCommerce
+  }
+
+  return "shopify"; // default fallback
+}
 
 export async function POST(req: Request) {
   try {
@@ -16,12 +51,36 @@ export async function POST(req: Request) {
     // Look up store
     const { data: store, error: storeErr } = await supabase
       .from("stores")
-      .select("id, url, name")
+      .select("id, url, name, platform, last_scraped_at")
       .eq("id", store_id)
       .single();
 
     if (storeErr || !store) {
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
+    }
+
+    // Auto-detect platform on first scrape (when never scraped before)
+    let platform: Platform = (store.platform as Platform) ?? "shopify";
+    if (!store.last_scraped_at) {
+      const detected = await detectPlatform(store.url);
+      platform = detected;
+      if (detected !== store.platform) {
+        await supabase
+          .from("stores")
+          .update({ platform: detected })
+          .eq("id", store.id);
+      }
+    }
+
+    // Determine scraper type based on store platform
+    const isWooCommerce = platform === "woocommerce";
+    const scraperType = isWooCommerce ? "woocommerce" : "shopify";
+
+    if (isWooCommerce && !APIFY_WOO_ACTOR_ID) {
+      return NextResponse.json(
+        { error: "WooCommerce scraper not configured" },
+        { status: 500 }
+      );
     }
 
     // Create scrape_job record
@@ -31,6 +90,7 @@ export async function POST(req: Request) {
         store_id: store.id,
         status: "running",
         started_at: new Date().toISOString(),
+        scraper_type: scraperType,
       })
       .select("id")
       .single();
@@ -40,18 +100,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Failed to create job" }, { status: 500 });
     }
 
-    // Start Apify run
+    // Start Apify run — different actor + input format per platform
+    const actorId = isWooCommerce ? APIFY_WOO_ACTOR_ID! : APIFY_ACTOR_ID;
+    const actorInput = isWooCommerce
+      ? {
+          url: [store.url],
+          limit: 5000,
+        }
+      : {
+          startUrls: [{ url: store.url }],
+          maxRequestsPerCrawl: 0,
+          maxRecommendationsPerProduct: 5,
+          proxy: { useApifyProxy: true },
+        };
+
     const apifyRes = await fetch(
-      `https://api.apify.com/v2/acts/${APIFY_ACTOR_ID}/runs?token=${APIFY_TOKEN}`,
+      `https://api.apify.com/v2/acts/${actorId}/runs?token=${APIFY_TOKEN}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          startUrls: [{ url: store.url }],
-          maxRequestsPerCrawl: 0, // no limit
-          maxRecommendationsPerProduct: 5,
-          proxy: { useApifyProxy: true },
-        }),
+        body: JSON.stringify(actorInput),
       }
     );
 

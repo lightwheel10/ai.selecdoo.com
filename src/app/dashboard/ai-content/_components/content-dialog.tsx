@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import {
   Check,
   X,
@@ -104,12 +103,11 @@ export function ContentDialog({
                   }}
                 >
                   {modal.product.image_url ? (
-                    <Image
+                    <img
                       src={modal.product.image_url}
                       alt={modal.product.title}
-                      fill
-                      className="object-cover"
-                      sizes="80px"
+                      loading="lazy"
+                      className="absolute inset-0 w-full h-full object-cover"
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center">

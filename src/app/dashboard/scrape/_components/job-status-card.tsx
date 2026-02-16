@@ -44,6 +44,7 @@ export function JobStatusCard({
     connecting: 1,
     analyzingStore: 2,
     fetchingProducts: 3,
+    fallbackScraping: 3,
     processingData: 4,
     savingResults: 5,
   };

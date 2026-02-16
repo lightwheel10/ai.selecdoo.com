@@ -170,16 +170,18 @@ function mapProductDetail(row: any, storeNames: Record<string, string>): Product
     })
   );
 
-  // Apify options: { type: "Size", values: [{ id: "XS", name: "XS" }, ...] }
+  // Apify options: { type: "Size", values: [...] }
+  // WooCommerce options: { name: "Ausführung", terms: [{ name: "1er Pack", slug: "..." }] }
   const options: ProductOption[] = parseJsonb(row.options, []).map(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (o: any) => ({
-      name: o.name ?? o.type ?? "",
-      values: Array.isArray(o.values)
+    (o: any) => {
+      const rawValues = Array.isArray(o.values) ? o.values : Array.isArray(o.terms) ? o.terms : [];
+      return {
+        name: o.name ?? o.type ?? "",
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ? o.values.map((v: any) => (typeof v === "string" ? v : v?.name ?? v?.value ?? v?.id ?? String(v)))
-        : [],
-    })
+        values: rawValues.map((v: any) => (typeof v === "string" ? v : v?.name ?? v?.value ?? v?.id ?? String(v))),
+      };
+    }
   );
 
   // Apify stores variant price as object { current, previous, stockStatus } in cents
@@ -240,7 +242,10 @@ function mapProductDetail(row: any, storeNames: Record<string, string>): Product
     gtin: row.gtin ?? null,
     mpn: row.mpn ?? null,
     condition: row.condition ?? null,
-    product_type: Array.isArray(row.categories) ? row.categories.join(", ") : (row.categories ?? null),
+    product_type: Array.isArray(row.categories)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ? row.categories.map((c: any) => (typeof c === "string" ? c : c?.name ?? String(c))).join(", ")
+      : (row.categories ?? null),
     source_language: row.source_language ?? null,
     source_retailer: row.source_retailer ?? null,
     source_created_at: row.source_created_at ?? null,

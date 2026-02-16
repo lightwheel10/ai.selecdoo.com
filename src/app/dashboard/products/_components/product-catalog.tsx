@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import {
   Eye,
@@ -553,12 +552,11 @@ export function ProductCatalog({ products, stores }: ProductCatalogProps) {
                   style={{ backgroundColor: "var(--input)" }}
                 >
                   {product.image_url ? (
-                    <Image
+                    <img
                       src={product.image_url}
                       alt={product.title}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      loading="lazy"
+                      className="absolute inset-0 w-full h-full object-cover"
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center">

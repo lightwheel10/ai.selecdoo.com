@@ -432,12 +432,29 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
     return result;
   }, [localStores, search, platformFilter, publishFilter, couponFilter, descFilter, logoFilter, featuredFilter]);
 
-  function togglePublish(id: string) {
+  async function togglePublish(id: string) {
+    const store = localStores.find((s) => s.id === id);
+    if (!store) return;
+
+    const newValue = !store.is_published;
+    // Optimistic update
     setLocalStores((prev) =>
-      prev.map((s) =>
-        s.id === id ? { ...s, is_published: !s.is_published } : s
-      )
+      prev.map((s) => (s.id === id ? { ...s, is_published: newValue } : s))
     );
+
+    const res = await fetch(`/api/stores/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_published: newValue }),
+    });
+
+    if (!res.ok) {
+      // Revert on failure
+      setLocalStores((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, is_published: !newValue } : s))
+      );
+      toast.error("Failed to update publish status");
+    }
   }
 
   function clearAll() {
@@ -450,14 +467,56 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
     setSearch("");
   }
 
-  function saveStore(updated: Store) {
-    setLocalStores((prev) =>
-      prev.map((s) => (s.id === updated.id ? updated : s))
-    );
-    setEditingStore(null);
-    toast(t("storeSaved"), {
-      description: t("storeSavedDescription", { name: updated.name }),
-    });
+  const [saving, setSaving] = useState(false);
+
+  async function saveStore(updated: Store) {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/stores/${updated.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: updated.name,
+          url: updated.url,
+          platform: updated.platform,
+          is_published: updated.is_published,
+          is_featured: updated.is_featured,
+          affiliate_link_base: updated.affiliate_link_base,
+          program_id: updated.program_id,
+          coupon_code: updated.coupon_code,
+          description_en: updated.description_en,
+          description_de: updated.description_de,
+          description_en_formatted: updated.description_en_formatted,
+          description_de_formatted: updated.description_de_formatted,
+          logo_url: updated.logo_url,
+          shipping_country: updated.shipping_country,
+          shipping_price: updated.shipping_price,
+          shipping_service: updated.shipping_service,
+          shipping_min_handling_days: updated.shipping_min_handling_days,
+          shipping_max_handling_days: updated.shipping_max_handling_days,
+          shipping_min_transit_days: updated.shipping_min_transit_days,
+          shipping_max_transit_days: updated.shipping_max_transit_days,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error ?? "Failed to save store");
+        return;
+      }
+
+      setLocalStores((prev) =>
+        prev.map((s) => (s.id === updated.id ? updated : s))
+      );
+      setEditingStore(null);
+      toast(t("storeSaved"), {
+        description: t("storeSavedDescription", { name: updated.name }),
+      });
+    } catch {
+      toast.error("Network error");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -1001,7 +1060,8 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
             </button>
             <button
               onClick={() => editingStore && saveStore(editingStore)}
-              className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
+              disabled={saving}
+              className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
               style={{
                 fontFamily: "var(--font-mono)",
                 backgroundColor: "#CAFF04",
@@ -1009,7 +1069,7 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
                 borderRadius: 0,
               }}
             >
-              {t("save")}
+              {saving ? t("saving") : t("save")}
             </button>
           </div>
         </DialogContent>
