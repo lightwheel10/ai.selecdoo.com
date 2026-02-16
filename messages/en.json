@@ -369,7 +369,9 @@
     "createdAt": "Created",
     "updatedAt": "Updated",
     "na": "N/A",
-    "loading": "Loading product..."
+    "loading": "Loading product...",
+    "recommendedProducts": "Recommended Products",
+    "noRecommendations": "No recommendations available"
   },
   "Admin": {
     "pageTitle": "Admin Dashboard",

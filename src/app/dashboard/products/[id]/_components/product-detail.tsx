@@ -14,7 +14,7 @@ import { StatusBadge } from "@/components/domain/status-badge";
 import { ImageGallery } from "./image-gallery";
 import { VariantTable } from "./variant-table";
 import { ProductMetadata } from "./product-metadata";
-import type { ProductDetail, Store } from "@/types";
+import type { ProductDetail, RecommendedProduct, Store } from "@/types";
 
 interface ProductDetailViewProps {
   product: ProductDetail;
@@ -423,6 +423,124 @@ export function ProductDetailView({ product, store }: ProductDetailViewProps) {
         </p>
         <ProductMetadata product={product} />
       </div>
+
+      {/* Recommended Products Section */}
+      {product.recommend_products.length > 0 && (
+        <div className="mb-8">
+          <p
+            className="text-[10px] font-bold uppercase tracking-[0.15em] mb-3"
+            style={{
+              fontFamily: "var(--font-mono)",
+              color: "#CAFF04",
+            }}
+          >
+            {t("recommendedProducts")}
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {product.recommend_products.map((rec, i) => (
+              <RecommendedProductCard
+                key={i}
+                product={rec}
+                currency={product.currency}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+function RecommendedProductCard({
+  product,
+  currency,
+}: {
+  product: RecommendedProduct;
+  currency: string;
+}) {
+  const fmt = (value: number) =>
+    new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: currency || "EUR",
+    }).format(value);
+
+  const content = (
+    <div
+      className="border-2 overflow-hidden transition-all duration-150 hover:opacity-80"
+      style={{
+        backgroundColor: "var(--card)",
+        borderColor: "var(--border)",
+      }}
+    >
+      {product.image_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={product.image_url}
+          alt={product.title}
+          className="w-full aspect-square object-cover"
+          style={{ backgroundColor: "var(--muted)" }}
+        />
+      ) : (
+        <div
+          className="w-full aspect-square flex items-center justify-center"
+          style={{ backgroundColor: "var(--muted)" }}
+        >
+          <span
+            className="text-[9px] font-bold uppercase tracking-[0.15em]"
+            style={{
+              fontFamily: "var(--font-mono)",
+              color: "var(--muted-foreground)",
+            }}
+          >
+            No image
+          </span>
+        </div>
+      )}
+
+      <div className="p-2">
+        <p
+          className="text-[10px] font-semibold leading-tight mb-1 line-clamp-2"
+          style={{ fontFamily: "var(--font-mono)" }}
+        >
+          {product.title}
+        </p>
+
+        <div className="flex items-center justify-between gap-1">
+          <span
+            className="text-[11px] font-bold"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            {fmt(product.price)}
+          </span>
+          <span
+            className="text-[8px] font-bold uppercase px-1 py-0.5"
+            style={{
+              fontFamily: "var(--font-mono)",
+              backgroundColor: product.in_stock
+                ? "rgba(34,197,94,0.15)"
+                : "rgba(239,68,68,0.10)",
+              border: `1px solid ${product.in_stock ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.3)"}`,
+              color: product.in_stock ? "#22C55E" : "#EF4444",
+            }}
+          >
+            {product.in_stock ? "In Stock" : "OOS"}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (product.product_url) {
+    return (
+      <a
+        href={product.product_url}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {content}
+      </a>
+    );
+  }
+
+  return content;
 }

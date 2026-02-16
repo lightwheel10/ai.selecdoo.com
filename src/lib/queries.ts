@@ -6,6 +6,7 @@ import type {
   ProductMedia,
   ProductOption,
   ProductVariant,
+  RecommendedProduct,
   ScrapeJob,
   ProductChange,
   MonitoringConfig,
@@ -210,6 +211,29 @@ function mapProductDetail(row: any, storeNames: Record<string, string>): Product
     }
   );
 
+  // Recommended products from Apify — each is a full product object
+  const recommend_products: RecommendedProduct[] = parseJsonb(row.recommend_products, []).map(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (r: any) => {
+      const firstVariant = r.variants?.[0];
+      const priceObj = firstVariant?.price;
+      const isObj = priceObj && typeof priceObj === "object";
+      const price = isObj ? Number(priceObj.current ?? 0) / 100 : Number(priceObj ?? 0);
+      const inStock = isObj
+        ? priceObj.stockStatus === "InStock"
+        : (firstVariant?.in_stock ?? true);
+
+      return {
+        title: r.title ?? "Untitled",
+        price,
+        image_url: r.medias?.[0]?.url ?? r.medias?.[0]?.src ?? null,
+        product_url: r.source?.canonicalUrl ?? null,
+        in_stock: inStock,
+        brand: r.brand ?? null,
+      };
+    }
+  );
+
   return {
     ...mapProduct(row),
     hash_id: row.hash_id ?? null,
@@ -227,6 +251,7 @@ function mapProductDetail(row: any, storeNames: Record<string, string>): Product
     medias,
     options,
     variants,
+    recommend_products,
     created_at: row.created_at,
     store_name: storeNames[row.store_id] ?? "",
   };

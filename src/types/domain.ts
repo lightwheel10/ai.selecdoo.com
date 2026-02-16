@@ -94,6 +94,15 @@ export interface ProductVariant {
   option3: string | null;
 }
 
+export interface RecommendedProduct {
+  title: string;
+  price: number;
+  image_url: string | null;
+  product_url: string | null;
+  in_stock: boolean;
+  brand: string | null;
+}
+
 export interface ProductDetail extends Product {
   hash_id: string | null;
   gtin: string | null;
@@ -110,6 +119,7 @@ export interface ProductDetail extends Product {
   medias: ProductMedia[];
   options: ProductOption[];
   variants: ProductVariant[];
+  recommend_products: RecommendedProduct[];
   created_at: string;
   store_name: string;
 }

@@ -41,6 +41,7 @@ function mapApifyProduct(item: any, storeId: string) {
     categories: item.categories ?? null,
     tags: item.tags ?? null,
     medias: item.medias ?? null,
+    recommend_products: item.recommendProducts ?? null,
     options: item.options ?? null,
     source_retailer: item.source?.retailer ?? null,
     source_language: item.source?.language ?? null,

@@ -49,7 +49,7 @@ export async function POST(req: Request) {
         body: JSON.stringify({
           startUrls: [{ url: store.url }],
           maxRequestsPerCrawl: 0, // no limit
-          maxRecommendationsPerProduct: 0,
+          maxRecommendationsPerProduct: 5,
           proxy: { useApifyProxy: true },
         }),
       }
