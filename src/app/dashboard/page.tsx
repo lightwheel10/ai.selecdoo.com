@@ -2,6 +2,8 @@ import {
   TrendingDown,
   PackagePlus,
   PackageX,
+  PackageMinus,
+  RefreshCw,
   Scan,
   Store,
   Bell,
@@ -25,7 +27,9 @@ import type { ActivityType } from "@/types";
 const activityIcons: Record<ActivityType, { icon: typeof TrendingDown; color: string }> = {
   price_change: { icon: TrendingDown, color: "#FF9F0A" },
   stock_change: { icon: PackageX, color: "#FF453A" },
+  field_update: { icon: RefreshCw, color: "#AF52DE" },
   new_product: { icon: PackagePlus, color: "#22C55E" },
+  product_removed: { icon: PackageMinus, color: "#FF6961" },
   store_added: { icon: Store, color: "#5AC8FA" },
   scrape_complete: { icon: Scan, color: "#9ABF03" },
   monitoring_alert: { icon: Bell, color: "#FF9F0A" },

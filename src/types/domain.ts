@@ -206,7 +206,9 @@ export interface AIGeneratedContent {
 export type ActivityType =
   | "price_change"
   | "stock_change"
+  | "field_update"
   | "new_product"
+  | "product_removed"
   | "store_added"
   | "scrape_complete"
   | "monitoring_alert"
