@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
   // TODO: Remove dev bypass once Supabase dashboard access is granted
-  if (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_DEV_BYPASS === "true") {
+  if (process.env.NODE_ENV === "development" && process.env.DEV_BYPASS === "true") {
     return NextResponse.next({ request });
   }
 
