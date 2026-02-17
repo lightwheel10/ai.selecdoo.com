@@ -10,7 +10,14 @@ import {
   X,
   Check,
   ArrowDownToLine,
+  ChevronDown,
+  ArrowUpDown,
 } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Table,
   TableBody,
@@ -66,6 +73,89 @@ function formatRelativeTime(
   return tt("daysAgo", { count: days });
 }
 
+// ─── Simple Filter Dropdown ───
+
+function SimpleFilter({
+  label,
+  resetLabel,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  resetLabel: string;
+  options: { label: string; value: string }[];
+  value: string | null;
+  onChange: (v: string | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const activeLabel = options.find((o) => o.value === value)?.label;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          suppressHydrationWarning
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
+          style={{
+            fontFamily: "var(--font-mono)",
+            backgroundColor: value ? "rgba(202,255,4,0.06)" : "transparent",
+            borderColor: value ? "rgba(202,255,4,0.3)" : "var(--border)",
+            color: value ? "#CAFF04" : "var(--muted-foreground)",
+          }}
+        >
+          {activeLabel || label}
+          <ChevronDown className="w-3 h-3" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="p-1 border-2 w-[180px]"
+        style={{
+          borderColor: "var(--border)",
+          backgroundColor: "var(--card)",
+          borderRadius: 0,
+        }}
+      >
+        {value && (
+          <button
+            onClick={() => {
+              onChange(null);
+              setOpen(false);
+            }}
+            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
+            style={{
+              fontFamily: "var(--font-mono)",
+              color: "var(--muted-foreground)",
+            }}
+          >
+            <X className="w-3 h-3 opacity-50" />
+            {resetLabel}
+          </button>
+        )}
+        {options.map((option) => (
+          <button
+            key={option.value}
+            onClick={() => {
+              onChange(option.value === value ? null : option.value);
+              setOpen(false);
+            }}
+            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
+            style={{ fontFamily: "var(--font-mono)", borderRadius: 0 }}
+          >
+            {value === option.value ? (
+              <Check className="w-3 h-3 text-[#CAFF04]" />
+            ) : (
+              <span className="w-3" />
+            )}
+            {option.label}
+          </button>
+        ))}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 // ─── Icon Button ───
 
 function IconButton({
@@ -104,6 +194,11 @@ function IconButton({
   );
 }
 
+// ─── Sort Options ───
+
+type SortKey = "name" | "products" | "lastScraped" | "status";
+type SortDir = "asc" | "desc";
+
 // ─── Store Table ───
 
 interface StoreTableProps {
@@ -117,6 +212,25 @@ export function StoreTable({ stores }: StoreTableProps) {
   const [localStores, setLocalStores] = useState(stores);
   const [search, setSearch] = useState("");
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+
+  // Filters
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [platformFilter, setPlatformFilter] = useState<string | null>(null);
+  const [lastScrapedFilter, setLastScrapedFilter] = useState<string | null>(null);
+  const [publishedFilter, setPublishedFilter] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  const hasAnyFilter = statusFilter || platformFilter || lastScrapedFilter || publishedFilter;
+
+  // Computed: unique platforms from data
+  const platformOptions = useMemo(() => {
+    const platforms = [...new Set(localStores.map((s) => s.platform).filter(Boolean))] as string[];
+    return platforms.sort().map((p) => ({
+      label: p.charAt(0).toUpperCase() + p.slice(1),
+      value: p,
+    }));
+  }, [localStores]);
 
   async function togglePause(id: string) {
     const store = localStores.find((s) => s.id === id);
@@ -223,20 +337,162 @@ export function StoreTable({ stores }: StoreTableProps) {
   }, [t]);
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return localStores;
-    const q = search.toLowerCase();
-    return localStores.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) || s.url.toLowerCase().includes(q)
+    let result = localStores;
+
+    // Search
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (s) =>
+          s.name.toLowerCase().includes(q) || s.url.toLowerCase().includes(q)
+      );
+    }
+
+    // Status
+    if (statusFilter) {
+      result = result.filter((s) => s.status === statusFilter);
+    }
+
+    // Platform
+    if (platformFilter) {
+      result = result.filter((s) => s.platform === platformFilter);
+    }
+
+    // Last Scraped
+    if (lastScrapedFilter) {
+      const now = Date.now();
+      switch (lastScrapedFilter) {
+        case "today": {
+          const dayAgo = now - 24 * 60 * 60 * 1000;
+          result = result.filter(
+            (s) => s.last_scraped_at && new Date(s.last_scraped_at).getTime() > dayAgo
+          );
+          break;
+        }
+        case "week": {
+          const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+          result = result.filter(
+            (s) => s.last_scraped_at && new Date(s.last_scraped_at).getTime() > weekAgo
+          );
+          break;
+        }
+        case "older": {
+          const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+          result = result.filter(
+            (s) => s.last_scraped_at && new Date(s.last_scraped_at).getTime() <= weekAgo
+          );
+          break;
+        }
+        case "never":
+          result = result.filter((s) => !s.last_scraped_at);
+          break;
+      }
+    }
+
+    // Published
+    if (publishedFilter) {
+      result = result.filter(
+        (s) => (publishedFilter === "published") === s.is_published
+      );
+    }
+
+    // Sort
+    if (sortKey) {
+      result = [...result].sort((a, b) => {
+        let cmp = 0;
+        switch (sortKey) {
+          case "name":
+            cmp = a.name.localeCompare(b.name);
+            break;
+          case "products":
+            cmp = a.product_count - b.product_count;
+            break;
+          case "lastScraped": {
+            const aTime = a.last_scraped_at ? new Date(a.last_scraped_at).getTime() : 0;
+            const bTime = b.last_scraped_at ? new Date(b.last_scraped_at).getTime() : 0;
+            cmp = aTime - bTime;
+            break;
+          }
+          case "status":
+            cmp = a.status.localeCompare(b.status);
+            break;
+        }
+        return sortDir === "desc" ? -cmp : cmp;
+      });
+    }
+
+    return result;
+  }, [localStores, search, statusFilter, platformFilter, lastScrapedFilter, publishedFilter, sortKey, sortDir]);
+
+  function clearAll() {
+    setStatusFilter(null);
+    setPlatformFilter(null);
+    setLastScrapedFilter(null);
+    setPublishedFilter(null);
+    setSortKey(null);
+    setSearch("");
+  }
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      if (sortDir === "asc") {
+        setSortDir("desc");
+      } else {
+        // Third click: clear sort
+        setSortKey(null);
+        setSortDir("asc");
+      }
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  const statusOptions = [
+    { label: t("filterActive"), value: "active" },
+    { label: t("filterPaused"), value: "paused" },
+    { label: t("filterError"), value: "error" },
+  ];
+
+  const lastScrapedOptions = [
+    { label: t("filterToday"), value: "today" },
+    { label: t("filterThisWeek"), value: "week" },
+    { label: t("filterOlder"), value: "older" },
+    { label: t("filterNever"), value: "never" },
+  ];
+
+  const publishedOptions = [
+    { label: t("filterPublished"), value: "published" },
+    { label: t("filterUnpublished"), value: "unpublished" },
+  ];
+
+  // Sort header helper
+  function SortableHeader({ label, sortId }: { label: string; sortId: SortKey }) {
+    const isActive = sortKey === sortId;
+    return (
+      <button
+        onClick={() => handleSort(sortId)}
+        className="flex items-center gap-1 group"
+      >
+        {label}
+        <ArrowUpDown
+          className="w-2.5 h-2.5 transition-colors"
+          style={{
+            color: isActive ? "#CAFF04" : "var(--muted-foreground)",
+            opacity: isActive ? 1 : 0.4,
+            transform: isActive && sortDir === "desc" ? "scaleY(-1)" : undefined,
+          }}
+        />
+      </button>
     );
-  }, [localStores, search]);
+  }
 
   return (
     <div>
       {/* Toolbar */}
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex flex-wrap items-center gap-2 mb-4">
         {/* Search */}
-        <div className="relative flex-1" style={{ maxWidth: 280 }}>
+        <div className="relative" style={{ minWidth: 220 }}>
           <Search
             className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
             style={{ color: "var(--muted-foreground)" }}
@@ -257,16 +513,56 @@ export function StoreTable({ stores }: StoreTableProps) {
           />
         </div>
 
-        {search.trim() && (
+        {/* Status */}
+        <SimpleFilter
+          label={t("status")}
+          resetLabel={t("filterAllStatuses")}
+          options={statusOptions}
+          value={statusFilter}
+          onChange={setStatusFilter}
+        />
+
+        {/* Platform */}
+        {platformOptions.length > 1 && (
+          <SimpleFilter
+            label={t("filterPlatform")}
+            resetLabel={t("filterAllPlatforms")}
+            options={platformOptions}
+            value={platformFilter}
+            onChange={setPlatformFilter}
+          />
+        )}
+
+        {/* Last Scraped */}
+        <SimpleFilter
+          label={t("lastScraped")}
+          resetLabel={t("filterAllDates")}
+          options={lastScrapedOptions}
+          value={lastScrapedFilter}
+          onChange={setLastScrapedFilter}
+        />
+
+        {/* Published */}
+        <SimpleFilter
+          label={t("filterPublishedLabel")}
+          resetLabel={t("filterAllPublished")}
+          options={publishedOptions}
+          value={publishedFilter}
+          onChange={setPublishedFilter}
+        />
+
+        {/* Clear all */}
+        {(hasAnyFilter || search.trim()) && (
           <button
-            onClick={() => setSearch("")}
-            className="flex items-center text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
+            onClick={clearAll}
+            className="flex items-center gap-1 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
             style={{
               fontFamily: "var(--font-mono)",
               color: "var(--muted-foreground)",
             }}
           >
             <X className="w-3 h-3" />
+            {t("clearFilters")}
           </button>
         )}
 
@@ -279,11 +575,11 @@ export function StoreTable({ stores }: StoreTableProps) {
               color: "var(--muted-foreground)",
             }}
           >
-            {search.trim()
+            {hasAnyFilter || search.trim()
               ? t("storesFiltered", {
                   filtered: filtered.length,
                   total: localStores.length,
-                  query: search,
+                  query: search || "...",
                 })
               : t("storesFound", { count: localStores.length })}
           </p>
@@ -336,26 +632,66 @@ export function StoreTable({ stores }: StoreTableProps) {
                   backgroundColor: "var(--card)",
                 }}
               >
-                {[
-                  t("store"),
-                  t("url"),
-                  t("products"),
-                  t("lastScraped"),
-                  t("status"),
-                  "",
-                ].map((header, i) => (
-                  <TableHead
-                    key={i}
-                    className="text-[9px] font-bold uppercase tracking-[0.15em] h-10"
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      color: "var(--muted-foreground)",
-                      backgroundColor: "rgba(255,255,255,0.02)",
-                    }}
-                  >
-                    {header}
-                  </TableHead>
-                ))}
+                <TableHead
+                  className="text-[9px] font-bold uppercase tracking-[0.15em] h-10 cursor-pointer"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--muted-foreground)",
+                    backgroundColor: "rgba(255,255,255,0.02)",
+                  }}
+                >
+                  <SortableHeader label={t("store")} sortId="name" />
+                </TableHead>
+                <TableHead
+                  className="text-[9px] font-bold uppercase tracking-[0.15em] h-10"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--muted-foreground)",
+                    backgroundColor: "rgba(255,255,255,0.02)",
+                  }}
+                >
+                  {t("url")}
+                </TableHead>
+                <TableHead
+                  className="text-[9px] font-bold uppercase tracking-[0.15em] h-10 cursor-pointer"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--muted-foreground)",
+                    backgroundColor: "rgba(255,255,255,0.02)",
+                  }}
+                >
+                  <SortableHeader label={t("products")} sortId="products" />
+                </TableHead>
+                <TableHead
+                  className="text-[9px] font-bold uppercase tracking-[0.15em] h-10 cursor-pointer"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--muted-foreground)",
+                    backgroundColor: "rgba(255,255,255,0.02)",
+                  }}
+                >
+                  <SortableHeader label={t("lastScraped")} sortId="lastScraped" />
+                </TableHead>
+                <TableHead
+                  className="text-[9px] font-bold uppercase tracking-[0.15em] h-10 cursor-pointer"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--muted-foreground)",
+                    backgroundColor: "rgba(255,255,255,0.02)",
+                  }}
+                >
+                  <SortableHeader label={t("status")} sortId="status" />
+                </TableHead>
+                <TableHead
+                  className="text-[9px] font-bold uppercase tracking-[0.15em] h-10"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--muted-foreground)",
+                    backgroundColor: "rgba(255,255,255,0.02)",
+                  }}
+                >
+                  {/* Actions - no label */}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -417,6 +753,7 @@ export function StoreTable({ stores }: StoreTableProps) {
                   <TableCell>
                     <span
                       className="text-[10px] font-bold tracking-wider"
+                      suppressHydrationWarning
                       style={{
                         fontFamily: "var(--font-mono)",
                         color: "var(--muted-foreground)",
