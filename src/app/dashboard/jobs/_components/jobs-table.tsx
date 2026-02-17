@@ -9,6 +9,7 @@ import {
   X,
   Check,
   ChevronDown,
+  ArrowUpDown,
 } from "lucide-react";
 import {
   Popover,
@@ -259,6 +260,11 @@ function formatDateTime(timestamp: string, locale: string) {
   });
 }
 
+// ─── Sort Options ───
+
+type SortKey = "store" | "productsFound" | "started" | "duration";
+type SortDir = "asc" | "desc";
+
 // ─── Jobs Table ───
 
 export function JobsTable({ jobs, stores }: JobsTableProps) {
@@ -286,6 +292,8 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [storeFilter, setStoreFilter] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   const hasAnyFilter = statusFilter || storeFilter || dateFilter;
 
@@ -343,14 +351,78 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
       }
     }
 
+    // Sort
+    if (sortKey) {
+      result = [...result].sort((a, b) => {
+        let cmp = 0;
+        switch (sortKey) {
+          case "store":
+            cmp = a.store_name.localeCompare(b.store_name);
+            break;
+          case "productsFound":
+            cmp = a.products_found - b.products_found;
+            break;
+          case "started":
+            cmp = new Date(a.started_at).getTime() - new Date(b.started_at).getTime();
+            break;
+          case "duration": {
+            const durA = a.completed_at
+              ? new Date(a.completed_at).getTime() - new Date(a.started_at).getTime()
+              : 0;
+            const durB = b.completed_at
+              ? new Date(b.completed_at).getTime() - new Date(b.started_at).getTime()
+              : 0;
+            cmp = durA - durB;
+            break;
+          }
+        }
+        return sortDir === "desc" ? -cmp : cmp;
+      });
+    }
+
     return result;
-  }, [jobs, search, locale, statusFilter, storeFilter, dateFilter]);
+  }, [jobs, search, locale, statusFilter, storeFilter, dateFilter, sortKey, sortDir]);
 
   function clearAll() {
     setStatusFilter(null);
     setStoreFilter(null);
     setDateFilter(null);
+    setSortKey(null);
     setSearch("");
+  }
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      if (sortDir === "asc") {
+        setSortDir("desc");
+      } else {
+        setSortKey(null);
+        setSortDir("asc");
+      }
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  function SortableHeader({ label, sortId }: { label: string; sortId: SortKey }) {
+    const isActive = sortKey === sortId;
+    return (
+      <button
+        onClick={() => handleSort(sortId)}
+        className="flex items-center gap-1 group"
+      >
+        {label}
+        <ArrowUpDown
+          className="w-2.5 h-2.5 transition-colors"
+          style={{
+            color: isActive ? "#CAFF04" : "var(--muted-foreground)",
+            opacity: isActive ? 1 : 0.4,
+            transform: isActive && sortDir === "desc" ? "scaleY(-1)" : undefined,
+          }}
+        />
+      </button>
+    );
   }
 
   function handleView(jobId: string) {
@@ -382,16 +454,7 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
     { label: t("filterOlder"), value: "older" },
   ];
 
-  const headers = [
-    t("store"),
-    t("status"),
-    t("productsFound"),
-    t("updated"),
-    t("started"),
-    t("duration"),
-    t("error"),
-    t("actions"),
-  ];
+  // Headers defined inline with sortable support
 
   return (
     <div>
@@ -472,11 +535,16 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
           }}
         >
           {hasAnyFilter || search.trim()
-            ? t("jobsFiltered", {
-                filtered: filtered.length,
-                total: jobs.length,
-                query: search || "...",
-              })
+            ? search.trim()
+              ? t("jobsFiltered", {
+                  filtered: filtered.length,
+                  total: jobs.length,
+                  query: search,
+                })
+              : t("jobsFilteredOnly", {
+                  filtered: filtered.length,
+                  total: jobs.length,
+                })
             : t("jobsFound", { count: jobs.length })}
         </p>
       </div>
@@ -515,19 +583,86 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
                 className="border-b-2 hover:bg-transparent"
                 style={{ borderColor: "var(--border)" }}
               >
-                {headers.map((header) => (
-                  <TableHead
-                    key={header}
-                    className="text-[9px] font-bold uppercase tracking-[0.15em] h-10"
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      color: "var(--muted-foreground)",
-                      backgroundColor: "var(--card)",
-                    }}
-                  >
-                    {header}
-                  </TableHead>
-                ))}
+                <TableHead
+                  className="text-[9px] font-bold uppercase tracking-[0.15em] h-10 cursor-pointer"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--muted-foreground)",
+                    backgroundColor: "var(--card)",
+                  }}
+                >
+                  <SortableHeader label={t("store")} sortId="store" />
+                </TableHead>
+                <TableHead
+                  className="text-[9px] font-bold uppercase tracking-[0.15em] h-10"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--muted-foreground)",
+                    backgroundColor: "var(--card)",
+                  }}
+                >
+                  {t("status")}
+                </TableHead>
+                <TableHead
+                  className="text-[9px] font-bold uppercase tracking-[0.15em] h-10 cursor-pointer"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--muted-foreground)",
+                    backgroundColor: "var(--card)",
+                  }}
+                >
+                  <SortableHeader label={t("productsFound")} sortId="productsFound" />
+                </TableHead>
+                <TableHead
+                  className="text-[9px] font-bold uppercase tracking-[0.15em] h-10"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--muted-foreground)",
+                    backgroundColor: "var(--card)",
+                  }}
+                >
+                  {t("updated")}
+                </TableHead>
+                <TableHead
+                  className="text-[9px] font-bold uppercase tracking-[0.15em] h-10 cursor-pointer"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--muted-foreground)",
+                    backgroundColor: "var(--card)",
+                  }}
+                >
+                  <SortableHeader label={t("started")} sortId="started" />
+                </TableHead>
+                <TableHead
+                  className="text-[9px] font-bold uppercase tracking-[0.15em] h-10 cursor-pointer"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--muted-foreground)",
+                    backgroundColor: "var(--card)",
+                  }}
+                >
+                  <SortableHeader label={t("duration")} sortId="duration" />
+                </TableHead>
+                <TableHead
+                  className="text-[9px] font-bold uppercase tracking-[0.15em] h-10"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--muted-foreground)",
+                    backgroundColor: "var(--card)",
+                  }}
+                >
+                  {t("error")}
+                </TableHead>
+                <TableHead
+                  className="text-[9px] font-bold uppercase tracking-[0.15em] h-10"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--muted-foreground)",
+                    backgroundColor: "var(--card)",
+                  }}
+                >
+                  {/* Actions - no label */}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

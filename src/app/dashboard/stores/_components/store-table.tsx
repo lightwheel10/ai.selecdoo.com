@@ -576,11 +576,16 @@ export function StoreTable({ stores }: StoreTableProps) {
             }}
           >
             {hasAnyFilter || search.trim()
-              ? t("storesFiltered", {
-                  filtered: filtered.length,
-                  total: localStores.length,
-                  query: search || "...",
-                })
+              ? search.trim()
+                ? t("storesFiltered", {
+                    filtered: filtered.length,
+                    total: localStores.length,
+                    query: search,
+                  })
+                : t("storesFilteredOnly", {
+                    filtered: filtered.length,
+                    total: localStores.length,
+                  })
               : t("storesFound", { count: localStores.length })}
           </p>
           <AddStoreDialog />
