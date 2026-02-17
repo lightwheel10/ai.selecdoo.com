@@ -99,19 +99,6 @@ export function ProductCard({
         style={{ backgroundColor: "var(--input)" }}
       >
         <ProductImage src={product.image_url} alt={product.title} sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
-        {/* Discount badge */}
-        {hasDiscount && (
-          <span
-            className="absolute bottom-2 left-2 text-[10px] font-bold px-1.5 py-0.5"
-            style={{
-              fontFamily: "var(--font-mono)",
-              backgroundColor: "rgba(34,197,94,0.9)",
-              color: "#fff",
-            }}
-          >
-            -{product.discount_percentage}%
-          </span>
-        )}
         {/* Content status badge */}
         <div className="absolute bottom-2 right-2">
           <ContentStatusBadge
@@ -174,6 +161,18 @@ export function ProductCard({
               style={{ color: "var(--muted-foreground)" }}
             >
               ${product.original_price.toFixed(2)}
+            </span>
+          )}
+          {hasDiscount && (
+            <span
+              className="text-[10px] font-bold px-1.5 py-0.5"
+              style={{
+                fontFamily: "var(--font-mono)",
+                backgroundColor: "rgba(34,197,94,0.9)",
+                color: "#fff",
+              }}
+            >
+              -{product.discount_percentage}%
             </span>
           )}
         </div>

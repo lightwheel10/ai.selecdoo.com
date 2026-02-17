@@ -546,18 +546,6 @@ export function ProductCatalog({
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                       priority={index < 5}
                     />
-                    {hasDiscount && (
-                      <span
-                        className="absolute top-2 left-2 text-[10px] font-bold px-1.5 py-0.5"
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          backgroundColor: "rgba(34,197,94,0.9)",
-                          color: "#fff",
-                        }}
-                      >
-                        -{product.discount_percentage}%
-                      </span>
-                    )}
                   </div>
 
                   {/* Body */}
@@ -612,6 +600,18 @@ export function ProductCatalog({
                           style={{ color: "var(--muted-foreground)" }}
                         >
                           ${product.original_price.toFixed(2)}
+                        </span>
+                      )}
+                      {hasDiscount && (
+                        <span
+                          className="text-[10px] font-bold px-1.5 py-0.5"
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            backgroundColor: "rgba(34,197,94,0.9)",
+                            color: "#fff",
+                          }}
+                        >
+                          -{product.discount_percentage}%
                         </span>
                       )}
                     </div>
