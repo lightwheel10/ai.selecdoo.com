@@ -10,6 +10,8 @@ import {
   ChevronDown,
   X,
   Check,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import {
   Popover,
@@ -29,6 +31,7 @@ import { StatusBadge } from "@/components/domain/status-badge";
 import { Pagination } from "@/components/domain/pagination";
 import { ProductImage } from "@/components/domain/product-image";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 import { useFilterNavigation } from "@/hooks/use-filter-navigation";
 import type { Product, Store } from "@/types";
 
@@ -296,6 +299,35 @@ export function ProductCatalog({
   const tt = useTranslations("Time");
 
   const { setFilter, clearAll, isPending } = useFilterNavigation();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+
+  // Clear deleted IDs when server data changes (filter/page navigation)
+  useEffect(() => {
+    setDeletedIds(new Set());
+  }, [products]);
+
+  const visibleProducts = useMemo(
+    () => (deletedIds.size > 0 ? products.filter((p) => !deletedIds.has(p.id)) : products),
+    [products, deletedIds]
+  );
+
+  async function handleDelete(product: Product) {
+    if (deletingId) return;
+    setDeletingId(product.id);
+    try {
+      const res = await fetch(`/api/products/${product.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setDeletedIds((prev) => new Set(prev).add(product.id));
+      toast(t("productDeleted"), {
+        description: t("productDeletedDescription", { title: product.title }),
+      });
+    } catch {
+      toast.error(t("deleteFailed"));
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   const storeMap = useMemo(
     () => Object.fromEntries(stores.map((s) => [s.id, s])),
@@ -490,10 +522,10 @@ export function ProductCatalog({
         >
           {hasAnyFilter || filters.search
             ? t("productsFiltered", {
-                filtered: totalCount,
-                total: totalCount,
+                filtered: totalCount - deletedIds.size,
+                total: totalCount - deletedIds.size,
               })
-            : t("productsFound", { count: totalCount })}
+            : t("productsFound", { count: totalCount - deletedIds.size })}
         </p>
       </div>
 
@@ -501,7 +533,7 @@ export function ProductCatalog({
       <div
         style={{ opacity: isPending ? 0.6 : 1, transition: "opacity 150ms" }}
       >
-        {products.length === 0 ? (
+        {visibleProducts.length === 0 ? (
           <div
             className="border-2 py-16 text-center"
             style={{
@@ -521,7 +553,7 @@ export function ProductCatalog({
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
-            {products.map((product, index) => {
+            {visibleProducts.map((product, index) => {
               const store = storeMap[product.store_id];
               const hasDiscount =
                 product.discount_percentage && product.discount_percentage > 0;
@@ -529,12 +561,30 @@ export function ProductCatalog({
               return (
                 <div
                   key={product.id}
-                  className="border-2 flex flex-col"
+                  className="border-2 flex flex-col relative group"
                   style={{
                     backgroundColor: "var(--card)",
                     borderColor: "var(--border)",
                   }}
                 >
+                  {/* Delete button (top-right, visible on hover) */}
+                  <button
+                    onClick={() => handleDelete(product)}
+                    disabled={deletingId === product.id}
+                    className="absolute top-2 right-2 z-10 w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                    style={{
+                      backgroundColor: "rgba(255,69,58,0.15)",
+                      border: "1.5px solid rgba(255,69,58,0.4)",
+                    }}
+                    title={t("deleteProduct")}
+                  >
+                    {deletingId === product.id ? (
+                      <Loader2 className="w-3 h-3 animate-spin" style={{ color: "#FF453A" }} />
+                    ) : (
+                      <Trash2 className="w-3 h-3" style={{ color: "#FF453A" }} />
+                    )}
+                  </button>
+
                   {/* Image */}
                   <div
                     className="relative w-full aspect-square"

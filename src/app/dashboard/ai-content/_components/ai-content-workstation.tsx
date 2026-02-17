@@ -506,30 +506,46 @@ export function AIContentWorkstation({
     filtered.every((p) => selectedProducts.has(p.id));
 
   // Delete
-  function handleDeleteProduct(product: Product) {
-    setLocalProducts((prev) => prev.filter((p) => p.id !== product.id));
-    setLocalContent((prev) => prev.filter((c) => c.product_id !== product.id));
-    setSelectedProducts((prev) => {
-      const next = new Set(prev);
-      next.delete(product.id);
-      return next;
-    });
-    toast(t("productDeleted"), {
-      description: t("productDeletedDescription", { title: product.title }),
-    });
+  async function handleDeleteProduct(product: Product) {
+    try {
+      const res = await fetch(`/api/products/${product.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setLocalProducts((prev) => prev.filter((p) => p.id !== product.id));
+      setLocalContent((prev) => prev.filter((c) => c.product_id !== product.id));
+      setSelectedProducts((prev) => {
+        const next = new Set(prev);
+        next.delete(product.id);
+        return next;
+      });
+      toast(t("productDeleted"), {
+        description: t("productDeletedDescription", { title: product.title }),
+      });
+    } catch {
+      toast.error(t("deleteFailed"));
+    }
   }
 
-  function handleBulkDelete() {
-    setLocalProducts((prev) =>
-      prev.filter((p) => !selectedProducts.has(p.id))
+  async function handleBulkDelete() {
+    const ids = Array.from(selectedProducts);
+    const results = await Promise.allSettled(
+      ids.map((id) => fetch(`/api/products/${id}`, { method: "DELETE" }))
     );
-    setLocalContent((prev) =>
-      prev.filter((c) => !c.product_id || !selectedProducts.has(c.product_id))
-    );
-    const count = selectedProducts.size;
-    setSelectedProducts(new Set());
+    const succeeded = results.filter((r) => r.status === "fulfilled" && (r.value as Response).ok);
+    if (succeeded.length > 0) {
+      const deletedIds = new Set(ids.filter((_, i) => results[i].status === "fulfilled" && (results[i] as PromiseFulfilledResult<Response>).value.ok));
+      setLocalProducts((prev) => prev.filter((p) => !deletedIds.has(p.id)));
+      setLocalContent((prev) => prev.filter((c) => !c.product_id || !deletedIds.has(c.product_id)));
+      setSelectedProducts((prev) => {
+        const next = new Set(prev);
+        deletedIds.forEach((id) => next.delete(id));
+        return next;
+      });
+      toast(t("bulkDeleted", { count: succeeded.length }));
+    }
+    if (succeeded.length < ids.length) {
+      toast.error(t("deleteFailed"));
+    }
     setShowBulkDeleteConfirm(false);
-    toast(t("bulkDeleted", { count }));
   }
 
   // Store expand/collapse

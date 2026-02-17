@@ -150,7 +150,11 @@
     "allDiscounts": "Alle Rabatte",
     "priceRange": "Preis",
     "minPrice": "Min",
-    "maxPrice": "Max"
+    "maxPrice": "Max",
+    "deleteProduct": "Löschen",
+    "productDeleted": "Produkt gelöscht",
+    "productDeletedDescription": "{title} wurde entfernt.",
+    "deleteFailed": "Produkt konnte nicht gelöscht werden"
   },
   "Stores": {
     "store": "Shop",
@@ -304,6 +308,7 @@
     "deleteProduct": "Löschen",
     "productDeleted": "Produkt gelöscht",
     "productDeletedDescription": "{title} wurde entfernt.",
+    "deleteFailed": "Produkt konnte nicht gelöscht werden",
     "noContentYet": "Noch kein Inhalt generiert",
     "noContentYetDescription": "Klicken Sie auf Generieren, um KI-Inhalte für dieses Produkt zu erstellen.",
     "chars": "{count} Zeichen",

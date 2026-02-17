@@ -150,7 +150,11 @@
     "allDiscounts": "All Discounts",
     "priceRange": "Price",
     "minPrice": "Min",
-    "maxPrice": "Max"
+    "maxPrice": "Max",
+    "deleteProduct": "Delete",
+    "productDeleted": "Product deleted",
+    "productDeletedDescription": "{title} has been removed.",
+    "deleteFailed": "Failed to delete product"
   },
   "Stores": {
     "store": "Store",
@@ -304,6 +308,7 @@
     "deleteProduct": "Delete",
     "productDeleted": "Product deleted",
     "productDeletedDescription": "{title} has been removed.",
+    "deleteFailed": "Failed to delete product",
     "noContentYet": "No content generated yet",
     "noContentYetDescription": "Click generate to create AI content for this product.",
     "chars": "{count} chars",
