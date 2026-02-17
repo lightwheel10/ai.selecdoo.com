@@ -18,6 +18,8 @@ import type {
   Activity,
   ChangeType,
   AIContentType,
+  ProductFilterParams,
+  PaginatedProducts,
 } from "@/types";
 
 // ─── Store name lookup (shared by queries needing store_name) ───
@@ -110,7 +112,8 @@ export async function getProducts(): Promise<Product[]> {
     .from("products")
     .select(PRODUCT_LIST_COLUMNS)
     .is("deleted_at", null)
-    .order("updated_at", { ascending: false });
+    .order("updated_at", { ascending: false })
+    .limit(10000);
 
   if (error) {
     console.error("getProducts error:", error.message);
@@ -118,6 +121,106 @@ export async function getProducts(): Promise<Product[]> {
   }
 
   return (data ?? []).map(mapProduct);
+}
+
+// ─── Filtered + Paginated Products ───
+
+const DEFAULT_PAGE_SIZE = 24;
+
+export async function getFilteredProducts(
+  params: ProductFilterParams
+): Promise<PaginatedProducts> {
+  const supabase = createAdminClient();
+  const page = params.page ?? 1;
+  const pageSize = params.pageSize ?? DEFAULT_PAGE_SIZE;
+  const offset = (page - 1) * pageSize;
+
+  let query = supabase
+    .from("products")
+    .select(PRODUCT_LIST_COLUMNS, { count: "exact" })
+    .is("deleted_at", null);
+
+  // Store filter (single)
+  if (params.storeId) {
+    query = query.eq("store_id", params.storeId);
+  }
+
+  // Store filter (multi)
+  if (params.storeIds && params.storeIds.length > 0) {
+    query = query.in("store_id", params.storeIds);
+  }
+
+  // Stock filter
+  if (params.stockFilter === "in_stock") {
+    query = query.eq("in_stock", true);
+  } else if (params.stockFilter === "out_of_stock") {
+    query = query.eq("in_stock", false);
+  }
+
+  // Discount filter
+  if (params.discountFilter) {
+    switch (params.discountFilter) {
+      case "none":
+        query = query.or("discount_percentage.is.null,discount_percentage.eq.0");
+        break;
+      case "any":
+        query = query.gt("discount_percentage", 0);
+        break;
+      default: {
+        const minDiscount = parseInt(params.discountFilter, 10);
+        if (!isNaN(minDiscount) && minDiscount > 0) {
+          query = query.gte("discount_percentage", minDiscount);
+        }
+        break;
+      }
+    }
+  }
+
+  // Price range
+  if (params.minPrice !== undefined && !isNaN(params.minPrice)) {
+    query = query.gte("price", params.minPrice);
+  }
+  if (params.maxPrice !== undefined && !isNaN(params.maxPrice)) {
+    query = query.lte("price", params.maxPrice);
+  }
+
+  // Brand filter (multi)
+  if (params.brands && params.brands.length > 0) {
+    query = query.in("brand", params.brands);
+  }
+
+  // Search
+  if (params.search && params.search.trim()) {
+    const q = `%${params.search.trim()}%`;
+    query = query.or(
+      `cleaned_title.ilike.${q},title.ilike.${q},brand.ilike.${q},sku.ilike.${q}`
+    );
+  }
+
+  // Sort
+  const sortBy = params.sortBy ?? "updated_at";
+  const sortDir = params.sortDir ?? "desc";
+  query = query.order(sortBy, { ascending: sortDir === "asc" });
+
+  // Pagination
+  query = query.range(offset, offset + pageSize - 1);
+
+  const { data, error, count } = await query;
+
+  if (error) {
+    console.error("getFilteredProducts error:", error.message);
+    return { products: [], totalCount: 0, page, pageSize, totalPages: 0 };
+  }
+
+  const totalCount = count ?? 0;
+
+  return {
+    products: (data ?? []).map(mapProduct),
+    totalCount,
+    page,
+    pageSize,
+    totalPages: Math.ceil(totalCount / pageSize),
+  };
 }
 
 // Lightweight version for dashboard — only fetches what the overview cards need

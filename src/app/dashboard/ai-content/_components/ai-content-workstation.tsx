@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import {
   Search,
   X,
@@ -32,6 +32,7 @@ import { Pagination } from "@/components/domain/pagination";
 import { ProductCard } from "./product-card";
 import { ContentDialog } from "./content-dialog";
 import { StoreGroupView } from "./store-group-view";
+import { useFilterNavigation } from "@/hooks/use-filter-navigation";
 
 // ═══════════════════════════════════
 // ─── MAIN WORKSTATION ───
@@ -39,42 +40,82 @@ import { StoreGroupView } from "./store-group-view";
 
 interface AIContentWorkstationProps {
   products: Product[];
+  totalCount: number;
+  totalPages: number;
+  currentPage: number;
   stores: Store[];
   aiContent: AIGeneratedContent[];
+  filters: {
+    search: string;
+    storeIds: string[];
+    discountFilter: string | null;
+    sortBy: string | null;
+    sortDir: string | null;
+  };
 }
 
 export function AIContentWorkstation({
   products,
+  totalCount,
+  totalPages,
+  currentPage,
   stores,
   aiContent,
+  filters,
 }: AIContentWorkstationProps) {
   const t = useTranslations("AIContent");
+  const { setFilter, setFilters, clearAll: clearUrlFilters, isPending } = useFilterNavigation();
 
-  const storeMap = Object.fromEntries(stores.map((s) => [s.id, s]));
+  const storeMap = useMemo(
+    () => Object.fromEntries(stores.map((s) => [s.id, s])),
+    [stores]
+  );
   const storeNames = useMemo(() => stores.map((s) => s.name).sort(), [stores]);
-  const brandNames = useMemo(() => {
-    const brands = new Set<string>();
-    for (const p of products) {
-      if (p.brand) brands.add(p.brand);
-    }
-    return Array.from(brands).sort();
-  }, [products]);
+
+  // Name-to-ID and ID-to-name maps for store filter conversion
+  const storeNameToId = useMemo(
+    () => Object.fromEntries(stores.map((s) => [s.name, s.id])),
+    [stores]
+  );
+  const storeIdToName = useMemo(
+    () => Object.fromEntries(stores.map((s) => [s.id, s.name])),
+    [stores]
+  );
 
   // ── State ──
   const [localContent, setLocalContent] = useState(aiContent);
   const [localProducts, setLocalProducts] = useState(products);
-  const [search, setSearch] = useState("");
-  const [storeFilters, setStoreFilters] = useState<string[]>([]);
-  const [brandFilters, setBrandFilters] = useState<string[]>([]);
+
+  // Sync when server data changes (e.g., after navigation)
+  useEffect(() => {
+    setLocalProducts(products);
+  }, [products]);
+  useEffect(() => {
+    setLocalContent(aiContent);
+  }, [aiContent]);
+
+  // Client-only filters (not in URL)
   const [contentStatusFilters, setContentStatusFilters] = useState<string[]>([]);
-  const [discountFilter, setDiscountFilter] = useState<string | null>("17");
   const [googleFilter, setGoogleFilter] = useState<string | null>(null);
-  const [discountSort, setDiscountSort] = useState<string | null>(null);
-  const [priceSort, setPriceSort] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
   const [expandedStores, setExpandedStores] = useState<Set<string>>(new Set());
+
+  // Debounced search input
+  const [searchInput, setSearchInput] = useState(filters.search);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  useEffect(() => {
+    setSearchInput(filters.search);
+  }, [filters.search]);
+
+  function handleSearchChange(value: string) {
+    setSearchInput(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setFilter("search", value || null);
+    }, 400);
+  }
 
   // Selection
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
@@ -106,35 +147,9 @@ export function AIContentWorkstation({
   // ── Derived ──
   const contentMap = useMemo(() => buildContentMap(localContent), [localContent]);
 
+  // Client-side filtering (content status + google merchant only)
   const filtered = useMemo(() => {
     let result = localProducts;
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.title.toLowerCase().includes(q) ||
-          (p.brand && p.brand.toLowerCase().includes(q)) ||
-          (p.sku && p.sku.toLowerCase().includes(q))
-      );
-    }
-
-    if (storeFilters.length > 0) {
-      result = result.filter(
-        (p) => storeMap[p.store_id]?.name && storeFilters.includes(storeMap[p.store_id].name)
-      );
-    }
-
-    if (brandFilters.length > 0) {
-      result = result.filter((p) => p.brand && brandFilters.includes(p.brand));
-    }
-
-    if (discountFilter) {
-      const min = parseInt(discountFilter);
-      result = result.filter(
-        (p) => p.discount_percentage && p.discount_percentage >= min
-      );
-    }
 
     if (contentStatusFilters.length > 0) {
       result = result.filter((p) => {
@@ -160,34 +175,8 @@ export function AIContentWorkstation({
       });
     }
 
-    result = [...result];
-    if (discountSort) {
-      result.sort((a, b) => {
-        const da = a.discount_percentage || 0;
-        const db = b.discount_percentage || 0;
-        return discountSort === "desc" ? db - da : da - db;
-      });
-    } else if (priceSort) {
-      result.sort((a, b) =>
-        priceSort === "desc" ? b.price - a.price : a.price - b.price
-      );
-    }
-
     return result;
-  }, [
-    localProducts,
-    search,
-    storeFilters,
-    brandFilters,
-    contentStatusFilters,
-    discountFilter,
-    googleFilter,
-    discountSort,
-    priceSort,
-    storeMap,
-    contentMap,
-    googleSentProducts,
-  ]);
+  }, [localProducts, contentStatusFilters, googleFilter, contentMap, googleSentProducts]);
 
   // Content status counts (for filter badges)
   const contentCounts = useMemo(() => {
@@ -205,14 +194,7 @@ export function AIContentWorkstation({
     return { noContent, dealsOnly, postsOnly, complete };
   }, [localProducts, contentMap]);
 
-  // Pagination
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginatedProducts = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filtered.slice(start, start + ITEMS_PER_PAGE);
-  }, [filtered, currentPage]);
-
-  // Store groups (for store view)
+  // Store groups (for store view) — use filtered (after client-side filters)
   const storeGroups = useMemo((): StoreGroupData[] => {
     const groups = new Map<string, Product[]>();
     for (const p of filtered) {
@@ -258,7 +240,15 @@ export function AIContentWorkstation({
       .sort((a, b) => b.products.length - a.products.length);
   }, [filtered, contentMap, storeMap]);
 
-  const hasAnyFilter = storeFilters.length > 0 || brandFilters.length > 0 || contentStatusFilters.length > 0 || discountFilter || googleFilter;
+  const hasClientFilter = contentStatusFilters.length > 0 || googleFilter;
+  const hasServerFilter = filters.storeIds.length > 0 || filters.discountFilter || filters.search;
+  const hasAnyFilter = hasClientFilter || hasServerFilter;
+
+  // Convert URL store IDs to names for the MultiSearchableFilter display
+  const selectedStoreNames = useMemo(
+    () => filters.storeIds.map((id) => storeIdToName[id]).filter(Boolean),
+    [filters.storeIds, storeIdToName]
+  );
 
   // ── Filter options ──
   const contentStatusOptions = [
@@ -291,22 +281,21 @@ export function AIContentWorkstation({
     { label: t("lowToHigh"), value: "asc" },
   ];
 
+  // Current sort state derived from URL
+  const discountSort = filters.sortBy === "discount_percentage" ? filters.sortDir : null;
+  const priceSort = filters.sortBy === "price" ? filters.sortDir : null;
+
   // ── Actions ──
 
   function clearAll() {
-    setStoreFilters([]);
-    setBrandFilters([]);
     setContentStatusFilters([]);
-    setDiscountFilter("17");
     setGoogleFilter(null);
-    setDiscountSort(null);
-    setPriceSort(null);
-    setSearch("");
-    setCurrentPage(1);
+    setSearchInput("");
+    clearUrlFilters();
   }
 
   function handlePageChange(page: number) {
-    setCurrentPage(page);
+    setFilter("page", String(page));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -561,6 +550,12 @@ export function AIContentWorkstation({
     setExpandedStores(new Set());
   }
 
+  // ── Store filter handlers (name <-> id conversion) ──
+  function handleStoreFilterChange(names: string[]) {
+    const ids = names.map((n) => storeNameToId[n]).filter(Boolean);
+    setFilter("stores", ids.length > 0 ? ids.join(",") : null);
+  }
+
   // ═══════════════════════════════════
   // ─── RENDER ───
   // ═══════════════════════════════════
@@ -568,7 +563,7 @@ export function AIContentWorkstation({
   return (
     <div>
       {/* Discount notice banner */}
-      {discountFilter && (
+      {filters.discountFilter && (
         <div
           className="flex items-center gap-2 px-4 py-2 mb-4 border-2"
           style={{
@@ -585,7 +580,7 @@ export function AIContentWorkstation({
               color: "var(--muted-foreground)",
             }}
           >
-            {t("discountNotice", { min: discountFilter })}
+            {t("discountNotice", { min: filters.discountFilter })}
           </p>
         </div>
       )}
@@ -599,11 +594,8 @@ export function AIContentWorkstation({
             style={{ color: "var(--muted-foreground)" }}
           />
           <Input
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setCurrentPage(1);
-            }}
+            value={searchInput}
+            onChange={(e) => handleSearchChange(e.target.value)}
             placeholder={t("searchProducts")}
             className="pl-8 pr-3 py-2 text-xs border-2 outline-none transition-colors duration-150 focus:border-primary"
             style={{
@@ -632,10 +624,7 @@ export function AIContentWorkstation({
             },
           ]}
           value={viewMode}
-          onChange={(v) => {
-            setViewMode(v);
-            setCurrentPage(1);
-          }}
+          onChange={setViewMode}
         />
 
         {/* Filter toggle */}
@@ -728,7 +717,7 @@ export function AIContentWorkstation({
         )}
 
         {/* Clear all */}
-        {(hasAnyFilter || search.trim()) && (
+        {(hasAnyFilter || filters.search) && (
           <button
             onClick={clearAll}
             className="flex items-center gap-1 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
@@ -750,12 +739,12 @@ export function AIContentWorkstation({
             color: "var(--muted-foreground)",
           }}
         >
-          {hasAnyFilter || search.trim()
+          {hasAnyFilter || filters.search
             ? t("productsFiltered", {
                 filtered: filtered.length,
-                total: localProducts.length,
+                total: totalCount,
               })
-            : t("productsFound", { count: localProducts.length })}
+            : t("productsFound", { count: totalCount })}
         </p>
       </div>
 
@@ -769,24 +758,8 @@ export function AIContentWorkstation({
             emptyText={t("noResults")}
             selectedText={(count) => t("storesSelected", { count })}
             options={storeNames}
-            value={storeFilters}
-            onChange={(v) => {
-              setStoreFilters(v);
-              setCurrentPage(1);
-            }}
-          />
-          <MultiSearchableFilter
-            label={t("brand")}
-            resetLabel={t("allBrands")}
-            searchPlaceholder={t("searchBrand")}
-            emptyText={t("noResults")}
-            selectedText={(count) => t("brandsSelected", { count })}
-            options={brandNames}
-            value={brandFilters}
-            onChange={(v) => {
-              setBrandFilters(v);
-              setCurrentPage(1);
-            }}
+            value={selectedStoreNames}
+            onChange={handleStoreFilterChange}
           />
           <MultiSimpleFilter
             label={t("contentStatus")}
@@ -794,30 +767,21 @@ export function AIContentWorkstation({
             selectedText={(count) => t("contentSelected", { count })}
             options={contentStatusOptions}
             value={contentStatusFilters}
-            onChange={(v) => {
-              setContentStatusFilters(v);
-              setCurrentPage(1);
-            }}
+            onChange={setContentStatusFilters}
           />
           <SimpleFilter
             label={t("discount")}
             resetLabel={t("allDiscounts")}
             options={discountOptions}
-            value={discountFilter}
-            onChange={(v) => {
-              setDiscountFilter(v);
-              setCurrentPage(1);
-            }}
+            value={filters.discountFilter}
+            onChange={(v) => setFilter("discount", v)}
           />
           <SimpleFilter
             label={t("googleMerchant")}
             resetLabel={t("googleAll")}
             options={googleMerchantOptions}
             value={googleFilter}
-            onChange={(v) => {
-              setGoogleFilter(v);
-              setCurrentPage(1);
-            }}
+            onChange={setGoogleFilter}
           />
           <SimpleFilter
             label={t("sortDiscount")}
@@ -825,9 +789,11 @@ export function AIContentWorkstation({
             options={sortDiscountOptions}
             value={discountSort}
             onChange={(v) => {
-              setDiscountSort(v);
-              if (v) setPriceSort(null);
-              setCurrentPage(1);
+              if (v) {
+                setFilters({ sortBy: "discount_percentage", sortDir: v });
+              } else {
+                setFilters({ sortBy: null, sortDir: null });
+              }
             }}
           />
           <SimpleFilter
@@ -836,87 +802,93 @@ export function AIContentWorkstation({
             options={sortPriceOptions}
             value={priceSort}
             onChange={(v) => {
-              setPriceSort(v);
-              if (v) setDiscountSort(null);
-              setCurrentPage(1);
+              if (v) {
+                setFilters({ sortBy: "price", sortDir: v });
+              } else {
+                setFilters({ sortBy: null, sortDir: null });
+              }
             }}
           />
         </div>
       )}
 
       {/* ── ALL PRODUCTS VIEW ── */}
-      {viewMode === "all" && (
-        <>
-          {paginatedProducts.length === 0 ? (
-            <div
-              className="border-2 py-16 text-center"
-              style={{
-                backgroundColor: "var(--card)",
-                borderColor: "var(--border)",
-              }}
-            >
-              <p
-                className="text-[11px] font-bold uppercase tracking-[0.15em]"
+      <div
+        style={{ opacity: isPending ? 0.6 : 1, transition: "opacity 150ms" }}
+      >
+        {viewMode === "all" && (
+          <>
+            {filtered.length === 0 ? (
+              <div
+                className="border-2 py-16 text-center"
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  color: "var(--muted-foreground)",
+                  backgroundColor: "var(--card)",
+                  borderColor: "var(--border)",
                 }}
               >
-                {t("noProducts")}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
-              {paginatedProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  store={storeMap[product.store_id]}
-                  entry={contentMap.get(product.id)}
-                  search={search}
-                  isSelected={selectedProducts.has(product.id)}
-                  googleStatus={getGoogleStatus(product.id)}
-                  t={t}
-                  onOpenModal={openModal}
-                  onToggleSelect={toggleSelect}
-                  onSendToGoogle={handleSendToGoogle}
-                  onDelete={handleDeleteProduct}
-                />
-              ))}
-            </div>
-          )}
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
-        </>
-      )}
+                <p
+                  className="text-[11px] font-bold uppercase tracking-[0.15em]"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--muted-foreground)",
+                  }}
+                >
+                  {t("noProducts")}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
+                {filtered.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    store={storeMap[product.store_id]}
+                    entry={contentMap.get(product.id)}
+                    search={filters.search}
+                    isSelected={selectedProducts.has(product.id)}
+                    googleStatus={getGoogleStatus(product.id)}
+                    t={t}
+                    onOpenModal={openModal}
+                    onToggleSelect={toggleSelect}
+                    onSendToGoogle={handleSendToGoogle}
+                    onDelete={handleDeleteProduct}
+                  />
+                ))}
+              </div>
+            )}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          </>
+        )}
 
-      {/* ── STORE GROUPED VIEW ── */}
-      {viewMode === "stores" && (
-        <StoreGroupView
-          storeGroups={storeGroups}
-          expandedStores={expandedStores}
-          contentMap={contentMap}
-          storeMap={storeMap}
-          search={search}
-          selectedProducts={selectedProducts}
-          googleSentProducts={googleSentProducts}
-          googleSendingProducts={googleSendingProducts}
-          bulkGenerating={bulkGenerating}
-          t={t}
-          onToggleStore={toggleStore}
-          onExpandAll={expandAll}
-          onCollapseAll={collapseAll}
-          onBulkGenerate={handleBulkGenerate}
-          onOpenModal={openModal}
-          onToggleSelect={toggleSelect}
-          onToggleStoreProducts={handleToggleStoreProducts}
-          onSendToGoogle={handleSendToGoogle}
-          onDeleteProduct={handleDeleteProduct}
-        />
-      )}
+        {/* ── STORE GROUPED VIEW ── */}
+        {viewMode === "stores" && (
+          <StoreGroupView
+            storeGroups={storeGroups}
+            expandedStores={expandedStores}
+            contentMap={contentMap}
+            storeMap={storeMap}
+            search={filters.search}
+            selectedProducts={selectedProducts}
+            googleSentProducts={googleSentProducts}
+            googleSendingProducts={googleSendingProducts}
+            bulkGenerating={bulkGenerating}
+            t={t}
+            onToggleStore={toggleStore}
+            onExpandAll={expandAll}
+            onCollapseAll={collapseAll}
+            onBulkGenerate={handleBulkGenerate}
+            onOpenModal={openModal}
+            onToggleSelect={toggleSelect}
+            onToggleStoreProducts={handleToggleStoreProducts}
+            onSendToGoogle={handleSendToGoogle}
+            onDeleteProduct={handleDeleteProduct}
+          />
+        )}
+      </div>
 
       {/* ── CONTENT DIALOG ── */}
       <ContentDialog

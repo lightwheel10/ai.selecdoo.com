@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   Eye,
@@ -29,13 +29,23 @@ import { StatusBadge } from "@/components/domain/status-badge";
 import { Pagination } from "@/components/domain/pagination";
 import { ProductImage } from "@/components/domain/product-image";
 import { useTranslations } from "next-intl";
+import { useFilterNavigation } from "@/hooks/use-filter-navigation";
 import type { Product, Store } from "@/types";
-
-const ITEMS_PER_PAGE = 24;
 
 interface ProductCatalogProps {
   products: Product[];
+  totalCount: number;
+  totalPages: number;
+  currentPage: number;
   stores: Store[];
+  filters: {
+    search: string;
+    storeId: string | null;
+    stockFilter: string | null;
+    discountFilter: string | null;
+    minPrice: string;
+    maxPrice: string;
+  };
 }
 
 function formatRelativeTime(
@@ -76,14 +86,14 @@ function Highlight({ text, query }: { text: string; query: string }) {
   );
 }
 
-// ─── Searchable Combobox ───
+// ─── Searchable Combobox (store filter — displays name, passes id) ───
 
-function SearchableFilter({
+function StoreFilter({
   label,
   resetLabel,
   searchPlaceholder,
   emptyText,
-  options,
+  stores,
   value,
   onChange,
 }: {
@@ -91,11 +101,12 @@ function SearchableFilter({
   resetLabel: string;
   searchPlaceholder: string;
   emptyText: string;
-  options: string[];
+  stores: Store[];
   value: string | null;
-  onChange: (v: string | null) => void;
+  onChange: (storeId: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const selectedStore = stores.find((s) => s.id === value);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -110,7 +121,7 @@ function SearchableFilter({
             color: value ? "#CAFF04" : "var(--muted-foreground)",
           }}
         >
-          {value || label}
+          {selectedStore?.name || label}
           <ChevronDown className="w-3 h-3" />
         </button>
       </PopoverTrigger>
@@ -147,7 +158,6 @@ function SearchableFilter({
               </span>
             </CommandEmpty>
             <CommandGroup>
-              {/* Reset option */}
               {value && (
                 <CommandItem
                   onSelect={() => {
@@ -161,23 +171,23 @@ function SearchableFilter({
                   {resetLabel}
                 </CommandItem>
               )}
-              {options.map((option) => (
+              {stores.map((store) => (
                 <CommandItem
-                  key={option}
-                  value={option}
+                  key={store.id}
+                  value={store.name}
                   onSelect={() => {
-                    onChange(option === value ? null : option);
+                    onChange(store.id === value ? null : store.id);
                     setOpen(false);
                   }}
                   className="text-[10px] font-bold uppercase tracking-[0.15em]"
                   style={{ fontFamily: "var(--font-mono)", borderRadius: 0 }}
                 >
-                  {value === option ? (
+                  {value === store.id ? (
                     <Check className="w-3 h-3 mr-1.5 text-[#CAFF04]" />
                   ) : (
                     <span className="w-3 mr-1.5" />
                   )}
-                  {option}
+                  {store.name}
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -273,119 +283,77 @@ function SimpleFilter({
 
 // ─── Main Catalog ───
 
-export function ProductCatalog({ products, stores }: ProductCatalogProps) {
+export function ProductCatalog({
+  products,
+  totalCount,
+  totalPages,
+  currentPage,
+  stores,
+  filters,
+}: ProductCatalogProps) {
   const t = useTranslations("Products");
   const ts = useTranslations("Status");
   const tt = useTranslations("Time");
 
-  const storeMap = Object.fromEntries(stores.map((s) => [s.id, s]));
-  const storeNames = useMemo(() => stores.map((s) => s.name).sort(), [stores]);
+  const { setFilter, clearAll, isPending } = useFilterNavigation();
 
-  // Filter state
-  const [search, setSearch] = useState("");
-  const [storeFilter, setStoreFilter] = useState<string | null>(null);
-  const [stockFilter, setStockFilter] = useState<string | null>(null);
-  const [discountFilter, setDiscountFilter] = useState<string | null>(null);
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
+  const storeMap = useMemo(
+    () => Object.fromEntries(stores.map((s) => [s.id, s])),
+    [stores]
+  );
+  const sortedStores = useMemo(
+    () => [...stores].sort((a, b) => a.name.localeCompare(b.name)),
+    [stores]
+  );
 
-  const hasAnyFilter =
-    storeFilter || stockFilter || discountFilter || minPrice || maxPrice;
+  // Debounced search input
+  const [searchInput, setSearchInput] = useState(filters.search);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
 
-  const filtered = useMemo(() => {
-    let result = products;
+  // Sync search input when URL changes externally (back/forward)
+  useEffect(() => {
+    setSearchInput(filters.search);
+  }, [filters.search]);
 
-    // Search
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.title.toLowerCase().includes(q) ||
-          (p.brand && p.brand.toLowerCase().includes(q)) ||
-          (p.sku && p.sku.toLowerCase().includes(q))
-      );
-    }
+  function handleSearchChange(value: string) {
+    setSearchInput(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setFilter("search", value || null);
+    }, 400);
+  }
 
-    // Store
-    if (storeFilter) {
-      result = result.filter((p) => storeMap[p.store_id]?.name === storeFilter);
-    }
-
-    // Stock
-    if (stockFilter) {
-      result = result.filter((p) => p.stock_status === stockFilter);
-    }
-
-    // Discount
-    if (discountFilter) {
-      switch (discountFilter) {
-        case "none":
-          result = result.filter(
-            (p) => !p.discount_percentage || p.discount_percentage === 0
-          );
-          break;
-        case "any":
-          result = result.filter(
-            (p) => p.discount_percentage && p.discount_percentage > 0
-          );
-          break;
-        case "10":
-          result = result.filter(
-            (p) => p.discount_percentage && p.discount_percentage >= 10
-          );
-          break;
-        case "20":
-          result = result.filter(
-            (p) => p.discount_percentage && p.discount_percentage >= 20
-          );
-          break;
-        case "30":
-          result = result.filter(
-            (p) => p.discount_percentage && p.discount_percentage >= 30
-          );
-          break;
-        case "50":
-          result = result.filter(
-            (p) => p.discount_percentage && p.discount_percentage >= 50
-          );
-          break;
-      }
-    }
-
-    // Price range
-    const min = parseFloat(minPrice);
-    const max = parseFloat(maxPrice);
-    if (!isNaN(min)) {
-      result = result.filter((p) => p.price >= min);
-    }
-    if (!isNaN(max)) {
-      result = result.filter((p) => p.price <= max);
-    }
-
-    return result;
-  }, [products, search, storeFilter, stockFilter, discountFilter, minPrice, maxPrice, storeMap]);
-
-  const [currentPage, setCurrentPage] = useState(1);
+  // Price inputs — local state with debounce
+  const [localMinPrice, setLocalMinPrice] = useState(filters.minPrice);
+  const [localMaxPrice, setLocalMaxPrice] = useState(filters.maxPrice);
+  const minPriceRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const maxPriceRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [search, storeFilter, stockFilter, discountFilter, minPrice, maxPrice]);
+    setLocalMinPrice(filters.minPrice);
+  }, [filters.minPrice]);
+  useEffect(() => {
+    setLocalMaxPrice(filters.maxPrice);
+  }, [filters.maxPrice]);
 
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-
-  const paginatedProducts = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filtered.slice(start, start + ITEMS_PER_PAGE);
-  }, [filtered, currentPage]);
-
-  function clearAll() {
-    setStoreFilter(null);
-    setStockFilter(null);
-    setDiscountFilter(null);
-    setMinPrice("");
-    setMaxPrice("");
-    setSearch("");
+  function handleMinPriceChange(value: string) {
+    setLocalMinPrice(value);
+    if (minPriceRef.current) clearTimeout(minPriceRef.current);
+    minPriceRef.current = setTimeout(() => {
+      setFilter("minPrice", value || null);
+    }, 600);
   }
+
+  function handleMaxPriceChange(value: string) {
+    setLocalMaxPrice(value);
+    if (maxPriceRef.current) clearTimeout(maxPriceRef.current);
+    maxPriceRef.current = setTimeout(() => {
+      setFilter("maxPrice", value || null);
+    }, 600);
+  }
+
+  const hasAnyFilter =
+    filters.storeId || filters.stockFilter || filters.discountFilter || filters.minPrice || filters.maxPrice;
 
   const stockOptions = [
     { label: ts("inStock"), value: "in_stock" },
@@ -412,8 +380,8 @@ export function ProductCatalog({ products, stores }: ProductCatalogProps) {
             style={{ color: "var(--muted-foreground)" }}
           />
           <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => handleSearchChange(e.target.value)}
             placeholder={t("searchProducts")}
             className="pl-8 pr-3 py-2 text-xs border-2 outline-none transition-colors duration-150 focus:border-primary"
             style={{
@@ -427,15 +395,15 @@ export function ProductCatalog({ products, stores }: ProductCatalogProps) {
           />
         </div>
 
-        {/* Store — searchable */}
-        <SearchableFilter
+        {/* Store — searchable, ID-based */}
+        <StoreFilter
           label={t("store")}
           resetLabel={t("allStores")}
           searchPlaceholder={t("searchStore")}
           emptyText={t("noResults")}
-          options={storeNames}
-          value={storeFilter}
-          onChange={setStoreFilter}
+          stores={sortedStores}
+          value={filters.storeId}
+          onChange={(id) => setFilter("store", id)}
         />
 
         {/* Stock — simple */}
@@ -443,8 +411,8 @@ export function ProductCatalog({ products, stores }: ProductCatalogProps) {
           label={t("stock")}
           resetLabel={t("allStock")}
           options={stockOptions}
-          value={stockFilter}
-          onChange={setStockFilter}
+          value={filters.stockFilter}
+          onChange={(v) => setFilter("stock", v)}
         />
 
         {/* Discount — simple */}
@@ -452,22 +420,22 @@ export function ProductCatalog({ products, stores }: ProductCatalogProps) {
           label={t("discount")}
           resetLabel={t("allDiscounts")}
           options={discountOptions}
-          value={discountFilter}
-          onChange={setDiscountFilter}
+          value={filters.discountFilter}
+          onChange={(v) => setFilter("discount", v)}
         />
 
         {/* Price range */}
         <div className="flex items-center gap-1">
           <input
             type="number"
-            value={minPrice}
-            onChange={(e) => setMinPrice(e.target.value)}
+            value={localMinPrice}
+            onChange={(e) => handleMinPriceChange(e.target.value)}
             placeholder={t("minPrice")}
             className="w-[70px] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 outline-none transition-colors duration-150 focus:border-[#CAFF04]"
             style={{
               backgroundColor: "transparent",
-              borderColor: minPrice ? "rgba(202,255,4,0.3)" : "var(--border)",
-              color: minPrice ? "#CAFF04" : "var(--muted-foreground)",
+              borderColor: localMinPrice ? "rgba(202,255,4,0.3)" : "var(--border)",
+              color: localMinPrice ? "#CAFF04" : "var(--muted-foreground)",
               borderRadius: 0,
               fontFamily: "var(--font-mono)",
             }}
@@ -483,14 +451,14 @@ export function ProductCatalog({ products, stores }: ProductCatalogProps) {
           </span>
           <input
             type="number"
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value)}
+            value={localMaxPrice}
+            onChange={(e) => handleMaxPriceChange(e.target.value)}
             placeholder={t("maxPrice")}
             className="w-[70px] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 outline-none transition-colors duration-150 focus:border-[#CAFF04]"
             style={{
               backgroundColor: "transparent",
-              borderColor: maxPrice ? "rgba(202,255,4,0.3)" : "var(--border)",
-              color: maxPrice ? "#CAFF04" : "var(--muted-foreground)",
+              borderColor: localMaxPrice ? "rgba(202,255,4,0.3)" : "var(--border)",
+              color: localMaxPrice ? "#CAFF04" : "var(--muted-foreground)",
               borderRadius: 0,
               fontFamily: "var(--font-mono)",
             }}
@@ -498,7 +466,7 @@ export function ProductCatalog({ products, stores }: ProductCatalogProps) {
         </div>
 
         {/* Clear all */}
-        {(hasAnyFilter || search.trim()) && (
+        {(hasAnyFilter || filters.search) && (
           <button
             onClick={clearAll}
             className="flex items-center gap-1 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
@@ -520,211 +488,205 @@ export function ProductCatalog({ products, stores }: ProductCatalogProps) {
             color: "var(--muted-foreground)",
           }}
         >
-          {hasAnyFilter || search.trim()
+          {hasAnyFilter || filters.search
             ? t("productsFiltered", {
-                filtered: filtered.length,
-                total: products.length,
+                filtered: totalCount,
+                total: totalCount,
               })
-            : t("productsFound", { count: products.length })}
+            : t("productsFound", { count: totalCount })}
         </p>
       </div>
 
       {/* Product grid */}
-      {filtered.length === 0 ? (
-        <div
-          className="border-2 py-16 text-center"
-          style={{
-            backgroundColor: "var(--card)",
-            borderColor: "var(--border)",
-          }}
-        >
-          <p
-            className="text-[11px] font-bold uppercase tracking-[0.15em]"
+      <div
+        style={{ opacity: isPending ? 0.6 : 1, transition: "opacity 150ms" }}
+      >
+        {products.length === 0 ? (
+          <div
+            className="border-2 py-16 text-center"
             style={{
-              fontFamily: "var(--font-mono)",
-              color: "var(--muted-foreground)",
+              backgroundColor: "var(--card)",
+              borderColor: "var(--border)",
             }}
           >
-            {t("noProducts")}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
-          {paginatedProducts.map((product, index) => {
-            const store = storeMap[product.store_id];
-            const hasDiscount =
-              product.discount_percentage && product.discount_percentage > 0;
+            <p
+              className="text-[11px] font-bold uppercase tracking-[0.15em]"
+              style={{
+                fontFamily: "var(--font-mono)",
+                color: "var(--muted-foreground)",
+              }}
+            >
+              {t("noProducts")}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
+            {products.map((product, index) => {
+              const store = storeMap[product.store_id];
+              const hasDiscount =
+                product.discount_percentage && product.discount_percentage > 0;
 
-            return (
-              <div
-                key={product.id}
-                className="border-2 flex flex-col"
-                style={{
-                  backgroundColor: "var(--card)",
-                  borderColor: "var(--border)",
-                }}
-              >
-                {/* Image */}
+              return (
                 <div
-                  className="relative w-full aspect-square"
-                  style={{ backgroundColor: "var(--input)" }}
+                  key={product.id}
+                  className="border-2 flex flex-col"
+                  style={{
+                    backgroundColor: "var(--card)",
+                    borderColor: "var(--border)",
+                  }}
                 >
-                  <ProductImage
-                    src={product.image_url}
-                    alt={product.title}
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                    priority={index < 5}
-                  />
-                  {hasDiscount && (
-                    <span
-                      className="absolute top-2 left-2 text-[10px] font-bold px-1.5 py-0.5"
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        backgroundColor: "rgba(34,197,94,0.9)",
-                        color: "#fff",
-                      }}
-                    >
-                      -{product.discount_percentage}%
-                    </span>
-                  )}
-                  <div className="absolute top-2 right-2">
-                    <StatusBadge status={product.stock_status} />
-                  </div>
-                </div>
-
-                {/* Body */}
-                <div className="p-3 flex flex-col flex-1">
-                  {/* Store */}
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <div
-                      className="w-4 h-4 flex-shrink-0 flex items-center justify-center text-[7px] font-bold"
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        backgroundColor: "rgba(202,255,4,0.10)",
-                        color: "#CAFF04",
-                      }}
-                    >
-                      {store?.name[0] || "?"}
-                    </div>
-                    <span
-                      className="text-[9px] font-bold uppercase tracking-[0.15em]"
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        color: "var(--muted-foreground)",
-                      }}
-                    >
-                      {store?.name || t("unknown")}
-                    </span>
-                  </div>
-
-                  {/* Title */}
-                  <p className="text-[12px] font-semibold line-clamp-2 mb-1">
-                    <Highlight text={product.title} query={search} />
-                  </p>
-
-                  {/* Brand + SKU */}
-                  <p
-                    className="text-[9px] font-bold uppercase tracking-[0.15em] mb-3"
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      color: "var(--muted-foreground)",
-                    }}
-                  >
-                    <Highlight text={product.brand || t("noBrand")} query={search} />
-                    {product.sku && <> / <Highlight text={product.sku} query={search} /></>}
-                  </p>
-
-                  {/* Price */}
+                  {/* Image */}
                   <div
-                    className="mt-auto flex items-baseline gap-2 pt-3 mb-3"
-                    style={{ borderTop: "1px solid var(--border)" }}
+                    className="relative w-full aspect-square"
+                    style={{ backgroundColor: "var(--input)" }}
                   >
-                    <span
-                      className="text-sm font-bold"
-                      style={{ fontFamily: "var(--font-display)" }}
-                    >
-                      ${product.price.toFixed(2)}
-                    </span>
-                    {hasDiscount && product.original_price && (
+                    <ProductImage
+                      src={product.image_url}
+                      alt={product.title}
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      priority={index < 5}
+                    />
+                    {hasDiscount && (
                       <span
-                        className="text-[10px] line-through"
-                        style={{ color: "var(--muted-foreground)" }}
+                        className="absolute top-2 left-2 text-[10px] font-bold px-1.5 py-0.5"
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          backgroundColor: "rgba(34,197,94,0.9)",
+                          color: "#fff",
+                        }}
                       >
-                        ${product.original_price.toFixed(2)}
+                        -{product.discount_percentage}%
                       </span>
                     )}
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex flex-wrap gap-1.5">
-                    {/* Ghost — View */}
-                    <Link
-                      href={`/dashboard/products/${product.id}`}
-                      className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 hover:opacity-80"
+                  {/* Body */}
+                  <div className="p-3 flex flex-col flex-1">
+                    {/* Store */}
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <div
+                        className="w-4 h-4 flex-shrink-0 flex items-center justify-center text-[7px] font-bold"
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          backgroundColor: "rgba(202,255,4,0.10)",
+                          color: "#CAFF04",
+                        }}
+                      >
+                        {store?.name[0] || "?"}
+                      </div>
+                      <span
+                        className="text-[9px] font-bold uppercase tracking-[0.15em]"
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          color: "var(--muted-foreground)",
+                        }}
+                      >
+                        {store?.name || t("unknown")}
+                      </span>
+                    </div>
+
+                    {/* Title */}
+                    <p className="text-[12px] font-semibold line-clamp-2 mb-1 min-h-[2.5em]">
+                      <Highlight text={product.title} query={filters.search} />
+                    </p>
+
+                    {/* Stock status */}
+                    <div className="mb-3">
+                      <StatusBadge status={product.stock_status} />
+                    </div>
+
+                    {/* Price */}
+                    <div
+                      className="mt-auto flex items-baseline gap-2 pt-3 mb-3"
+                      style={{ borderTop: "1px solid var(--border)" }}
+                    >
+                      <span
+                        className="text-sm font-bold"
+                        style={{ fontFamily: "var(--font-display)" }}
+                      >
+                        ${product.price.toFixed(2)}
+                      </span>
+                      {hasDiscount && product.original_price && (
+                        <span
+                          className="text-[10px] line-through"
+                          style={{ color: "var(--muted-foreground)" }}
+                        >
+                          ${product.original_price.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {/* Ghost — View */}
+                      <Link
+                        href={`/dashboard/products/${product.id}`}
+                        className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 hover:opacity-80"
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          backgroundColor: "transparent",
+                          borderColor: "var(--border)",
+                          color: "var(--muted-foreground)",
+                        }}
+                      >
+                        <Eye className="w-3 h-3" />
+                        {t("view")}
+                      </Link>
+                      {/* Success semantic — Deals */}
+                      <button
+                        onClick={() => {/* TODO: deal workflow */}}
+                        className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          backgroundColor: "#22C55E12",
+                          border: "1.5px solid #22C55E40",
+                          color: "#22C55E",
+                        }}
+                      >
+                        <Tags className="w-3 h-3" />
+                        {t("deals")}
+                      </button>
+                      {/* Info semantic — Posts */}
+                      <button
+                        onClick={() => {/* TODO: post workflow */}}
+                        className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          backgroundColor: "#5AC8FA12",
+                          border: "1.5px solid #5AC8FA40",
+                          color: "#5AC8FA",
+                        }}
+                      >
+                        <PenSquare className="w-3 h-3" />
+                        {t("posts")}
+                      </button>
+                    </div>
+
+                    {/* Updated timestamp */}
+                    <p
+                      suppressHydrationWarning
+                      className="text-[9px] font-bold tracking-wider mt-3"
                       style={{
                         fontFamily: "var(--font-mono)",
-                        backgroundColor: "transparent",
-                        borderColor: "var(--border)",
                         color: "var(--muted-foreground)",
                       }}
                     >
-                      <Eye className="w-3 h-3" />
-                      {t("view")}
-                    </Link>
-                    {/* Success semantic — Deals */}
-                    <button
-                      onClick={() => {/* TODO: deal workflow */}}
-                      className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        backgroundColor: "#22C55E12",
-                        border: "1.5px solid #22C55E40",
-                        color: "#22C55E",
-                      }}
-                    >
-                      <Tags className="w-3 h-3" />
-                      {t("deals")}
-                    </button>
-                    {/* Info semantic — Posts */}
-                    <button
-                      onClick={() => {/* TODO: post workflow */}}
-                      className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        backgroundColor: "#5AC8FA12",
-                        border: "1.5px solid #5AC8FA40",
-                        color: "#5AC8FA",
-                      }}
-                    >
-                      <PenSquare className="w-3 h-3" />
-                      {t("posts")}
-                    </button>
+                      {t("updated", {
+                        time: formatRelativeTime(product.updated_at, tt),
+                      })}
+                    </p>
                   </div>
-
-                  {/* Updated timestamp */}
-                  <p
-                    suppressHydrationWarning
-                    className="text-[9px] font-bold tracking-wider mt-3"
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      color: "var(--muted-foreground)",
-                    }}
-                  >
-                    {t("updated", {
-                      time: formatRelativeTime(product.updated_at, tt),
-                    })}
-                  </p>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}
-        onPageChange={setCurrentPage}
+        onPageChange={(p) => setFilter("page", String(p))}
       />
     </div>
   );

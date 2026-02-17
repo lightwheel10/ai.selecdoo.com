@@ -5,6 +5,7 @@ import type { Product, Store } from "@/types";
 import type { ContentEntry } from "./utils";
 import { Highlight } from "./highlight";
 import { ContentStatusBadge } from "./content-status-badge";
+import { StatusBadge } from "@/components/domain/status-badge";
 import { ProductImage } from "@/components/domain/product-image";
 
 interface ProductCardProps {
@@ -147,23 +148,14 @@ export function ProductCard({
         </div>
 
         {/* Title */}
-        <p className="text-[12px] font-semibold line-clamp-2 mb-1">
+        <p className="text-[12px] font-semibold line-clamp-2 mb-1 min-h-[2.5em]">
           <Highlight text={product.title} query={search} />
         </p>
 
-        {/* Brand */}
-        <p
-          className="text-[9px] font-bold uppercase tracking-[0.15em] mb-3"
-          style={{
-            fontFamily: "var(--font-mono)",
-            color: "var(--muted-foreground)",
-          }}
-        >
-          <Highlight
-            text={product.brand || t("noBrand")}
-            query={search}
-          />
-        </p>
+        {/* Stock status */}
+        <div className="mb-3">
+          <StatusBadge status={product.stock_status} />
+        </div>
 
         {/* Price */}
         <div

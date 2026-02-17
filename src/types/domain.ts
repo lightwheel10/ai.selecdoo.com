@@ -238,6 +238,31 @@ export interface DashboardStats {
   ai_generated_delta: number;
 }
 
+// ─── Product Filtering ───
+
+export interface ProductFilterParams {
+  search?: string;
+  storeId?: string;
+  storeIds?: string[];
+  stockFilter?: "in_stock" | "out_of_stock";
+  discountFilter?: string; // "none", "any", "1", "10", "17", "20", "30", "50"
+  minPrice?: number;
+  maxPrice?: number;
+  brands?: string[];
+  sortBy?: "updated_at" | "discount_percentage" | "price";
+  sortDir?: "asc" | "desc";
+  page?: number;
+  pageSize?: number;
+}
+
+export interface PaginatedProducts {
+  products: Product[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 // ─── AI Activity (Admin) ───
 
 export type AICleanStatus = "success" | "error" | "skipped";
