@@ -164,20 +164,22 @@ export async function POST(req: Request) {
         };
 
     const apifyRes = await fetch(
-      `https://api.apify.com/v2/acts/${actorId}/runs?token=${APIFY_TOKEN}`,
+      `https://api.apify.com/v2/acts/${actorId}/runs`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${APIFY_TOKEN}`,
+        },
         body: JSON.stringify(actorInput),
       }
     );
 
     if (!apifyRes.ok) {
-      const errText = await apifyRes.text();
-      console.error("Apify start failed:", errText);
+      console.error("Apify start failed:", await apifyRes.text());
       await supabase
         .from("scrape_jobs")
-        .update({ status: "failed", error_message: "Failed to start Apify run" })
+        .update({ status: "failed", error_message: "Failed to start scraper" })
         .eq("id", job.id);
       return NextResponse.json({ error: "Failed to start scraper" }, { status: 500 });
     }

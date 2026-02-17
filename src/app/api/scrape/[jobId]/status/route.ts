@@ -56,7 +56,8 @@ export async function GET(
     }
 
     const runRes = await fetch(
-      `https://api.apify.com/v2/actor-runs/${job.apify_run_id}?token=${APIFY_TOKEN}`
+      `https://api.apify.com/v2/actor-runs/${job.apify_run_id}`,
+      { headers: { Authorization: `Bearer ${APIFY_TOKEN}` } }
     );
 
     if (!runRes.ok) {
@@ -73,17 +74,17 @@ export async function GET(
         status: "running",
         products_found: itemCount,
         products_updated: 0,
-        apify_status: runStatus,
       });
     }
 
     // Failed
     if (runStatus === "FAILED" || runStatus === "ABORTED" || runStatus === "TIMED-OUT") {
+      console.error(`Apify run ${job.apify_run_id} ended with status: ${runStatus}`);
       await supabase
         .from("scrape_jobs")
         .update({
           status: "failed",
-          error_message: `Apify run ${runStatus}`,
+          error_message: "Scrape failed",
           completed_at: new Date().toISOString(),
         })
         .eq("id", jobId);
@@ -94,7 +95,7 @@ export async function GET(
           supabase,
           job.monitoring_log_id,
           { newCount: 0, updatedCount: 0, removedCount: 0, totalChanges: 0 },
-          `Apify run ${runStatus}`
+          "Scrape failed"
         );
       }
 
@@ -102,7 +103,7 @@ export async function GET(
         status: "failed",
         products_found: 0,
         products_updated: 0,
-        error_message: `Apify run ${runStatus}`,
+        error_message: "Scrape failed",
       });
     }
 
@@ -112,7 +113,8 @@ export async function GET(
 
       // Fetch all items from dataset
       const itemsRes = await fetch(
-        `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&limit=10000`
+        `https://api.apify.com/v2/datasets/${datasetId}/items?limit=10000`,
+        { headers: { Authorization: `Bearer ${APIFY_TOKEN}` } }
       );
 
       if (!itemsRes.ok) {
@@ -151,10 +153,13 @@ export async function GET(
 
         if (store?.url) {
           const fallbackRes = await fetch(
-            `https://api.apify.com/v2/acts/${APIFY_FALLBACK_ACTOR_ID}/runs?token=${APIFY_TOKEN}`,
+            `https://api.apify.com/v2/acts/${APIFY_FALLBACK_ACTOR_ID}/runs`,
             {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${APIFY_TOKEN}`,
+              },
               body: JSON.stringify({
                 storeUrls: [{ url: store.url }],
                 maxProducts: 5000,
@@ -269,12 +274,11 @@ export async function GET(
       });
     }
 
-    // Unknown status
+    // Unknown status — keep polling
     return NextResponse.json({
       status: "running",
       products_found: 0,
       products_updated: 0,
-      apify_status: runStatus,
     });
   } catch (err) {
     console.error("Status API error:", err);

@@ -96,18 +96,22 @@ export async function GET(req: Request) {
             };
 
         const apifyRes = await fetch(
-          `https://api.apify.com/v2/acts/${actorId}/runs?token=${APIFY_TOKEN}`,
+          `https://api.apify.com/v2/acts/${actorId}/runs`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${APIFY_TOKEN}`,
+            },
             body: JSON.stringify(actorInput),
           }
         );
 
         if (!apifyRes.ok) {
+          console.error(`Cron: Apify start failed for store ${store.id}:`, await apifyRes.text());
           await supabase
             .from("scrape_jobs")
-            .update({ status: "failed", error_message: "Failed to start Apify run" })
+            .update({ status: "failed", error_message: "Failed to start scraper" })
             .eq("id", job.id);
           continue;
         }
