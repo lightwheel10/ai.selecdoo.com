@@ -85,7 +85,17 @@
     "confirmDeleteDescription": "This will permanently remove job {id} and all associated data. This cannot be undone.",
     "cancel": "Cancel",
     "jobDeleted": "Job deleted",
-    "jobDeletedDescription": "Job {id} has been removed."
+    "jobDeletedDescription": "Job {id} has been removed.",
+    "filterPending": "Pending",
+    "filterAllStatuses": "All Statuses",
+    "filterAllStores": "All Stores",
+    "filterSearchStore": "Search stores...",
+    "filterNoResults": "No results",
+    "filterToday": "Today",
+    "filterThisWeek": "This Week",
+    "filterOlder": "Older",
+    "filterAllDates": "All Dates",
+    "clearFilters": "Clear"
   },
   "Status": {
     "active": "Active",

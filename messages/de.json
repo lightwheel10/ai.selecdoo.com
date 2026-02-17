@@ -85,7 +85,17 @@
     "confirmDeleteDescription": "Auftrag {id} und alle zugehörigen Daten werden dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.",
     "cancel": "Abbrechen",
     "jobDeleted": "Auftrag gelöscht",
-    "jobDeletedDescription": "Auftrag {id} wurde entfernt."
+    "jobDeletedDescription": "Auftrag {id} wurde entfernt.",
+    "filterPending": "Ausstehend",
+    "filterAllStatuses": "Alle Status",
+    "filterAllStores": "Alle Shops",
+    "filterSearchStore": "Shops suchen...",
+    "filterNoResults": "Keine Ergebnisse",
+    "filterToday": "Heute",
+    "filterThisWeek": "Diese Woche",
+    "filterOlder": "Älter",
+    "filterAllDates": "Alle Daten",
+    "clearFilters": "Zurücksetzen"
   },
   "Status": {
     "active": "Aktiv",
