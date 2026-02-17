@@ -1,10 +1,20 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createMonitoringLog, updateMonitoringConfigTimestamps } from "@/lib/monitoring-helpers";
 
 const APIFY_TOKEN = process.env.APIFY_API_KEY!;
 const APIFY_ACTOR_ID = process.env.APIFY_ACTOR_ID!;
 const APIFY_WOO_ACTOR_ID = process.env.APIFY_WOO_ACTOR_ID;
+
+async function authenticate() {
+  if (process.env.NODE_ENV === "development" && process.env.DEV_BYPASS === "true") {
+    return { id: "dev-bypass" } as { id: string };
+  }
+  const supabaseAuth = await createClient();
+  const { data: { user } } = await supabaseAuth.auth.getUser();
+  return user;
+}
 
 type Platform = "shopify" | "woocommerce";
 
@@ -42,6 +52,10 @@ async function detectPlatform(storeUrl: string): Promise<Platform> {
 
 export async function POST(req: Request) {
   try {
+    if (!await authenticate()) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { store_id, update_monitoring } = await req.json();
     if (!store_id) {
       return NextResponse.json({ error: "store_id required" }, { status: 400 });
