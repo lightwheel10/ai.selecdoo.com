@@ -76,8 +76,15 @@ async function detectPlatform(storeUrl: string): Promise<Platform> {
   return "shopify"; // default fallback
 }
 
+const MAX_BODY_SIZE = 16_384; // 16 KB
+
 export async function POST(req: Request) {
   try {
+    const contentLength = parseInt(req.headers.get("content-length") ?? "0", 10);
+    if (contentLength > MAX_BODY_SIZE) {
+      return NextResponse.json({ error: "Request body too large" }, { status: 413 });
+    }
+
     if (!await authenticate()) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

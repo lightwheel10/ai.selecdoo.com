@@ -56,8 +56,15 @@ function validateStoreUrl(raw: string): { ok: true; url: string } | { ok: false;
   return { ok: true, url: normalized };
 }
 
+const MAX_BODY_SIZE = 16_384; // 16 KB
+
 export async function POST(req: Request) {
   try {
+    const contentLength = parseInt(req.headers.get("content-length") ?? "0", 10);
+    if (contentLength > MAX_BODY_SIZE) {
+      return NextResponse.json({ error: "Request body too large" }, { status: 413 });
+    }
+
     // Authenticate
     let userId: string | null = null;
     if (process.env.NODE_ENV === "development" && process.env.DEV_BYPASS === "true") {

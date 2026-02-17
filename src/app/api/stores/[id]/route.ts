@@ -30,6 +30,7 @@ const FIELD_MAP: Record<string, string> = {
 const VALID_PLATFORMS = ["shopify", "woocommerce", "magento", "custom"];
 const VALID_STATUSES = ["active", "paused"];
 
+const MAX_BODY_SIZE = 16_384; // 16 KB
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function authenticate() {
@@ -49,6 +50,11 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const contentLength = parseInt(req.headers.get("content-length") ?? "0", 10);
+    if (contentLength > MAX_BODY_SIZE) {
+      return NextResponse.json({ error: "Request body too large" }, { status: 413 });
+    }
+
     const { id } = await params;
 
     if (!await authenticate()) {
