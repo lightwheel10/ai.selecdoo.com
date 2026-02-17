@@ -18,8 +18,34 @@ async function authenticate() {
 
 type Platform = "shopify" | "woocommerce";
 
+const PRIVATE_IP_RANGES = [
+  /^127\./,                         // 127.0.0.0/8 loopback
+  /^10\./,                          // 10.0.0.0/8 private
+  /^172\.(1[6-9]|2\d|3[01])\./,    // 172.16.0.0/12 private
+  /^192\.168\./,                    // 192.168.0.0/16 private
+  /^169\.254\./,                    // 169.254.0.0/16 link-local (AWS metadata)
+  /^0\./,                           // 0.0.0.0/8
+];
+
+function isSafeUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (!["https:", "http:"].includes(parsed.protocol)) return false;
+    const hostname = parsed.hostname;
+    if (hostname === "localhost" || hostname === "[::1]") return false;
+    if (PRIVATE_IP_RANGES.some((r) => r.test(hostname))) return false;
+    if (!hostname.includes(".")) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function detectPlatform(storeUrl: string): Promise<Platform> {
   const base = storeUrl.replace(/\/+$/, "");
+
+  // Safety check — don't fetch private/internal URLs
+  if (!isSafeUrl(base)) return "shopify";
 
   // Check Shopify: /products.json is a Shopify-only endpoint
   try {

@@ -2,6 +2,60 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+// ─── URL Validation ───
+
+const PRIVATE_IP_RANGES = [
+  /^127\./,                         // 127.0.0.0/8 loopback
+  /^10\./,                          // 10.0.0.0/8 private
+  /^172\.(1[6-9]|2\d|3[01])\./,    // 172.16.0.0/12 private
+  /^192\.168\./,                    // 192.168.0.0/16 private
+  /^169\.254\./,                    // 169.254.0.0/16 link-local (AWS metadata)
+  /^0\./,                           // 0.0.0.0/8
+];
+
+function validateStoreUrl(raw: string): { ok: true; url: string } | { ok: false; error: string } {
+  let normalized = raw.trim();
+  if (!normalized.startsWith("http")) {
+    normalized = `https://${normalized}`;
+  }
+  normalized = normalized.replace(/\/+$/, "");
+
+  let parsed: URL;
+  try {
+    parsed = new URL(normalized);
+  } catch {
+    return { ok: false, error: "Invalid URL format" };
+  }
+
+  // Require https (allow http only in development)
+  if (parsed.protocol !== "https:" && !(process.env.NODE_ENV === "development" && parsed.protocol === "http:")) {
+    return { ok: false, error: "Only HTTPS URLs are allowed" };
+  }
+
+  // Block dangerous schemes that might have slipped through
+  if (!["https:", "http:"].includes(parsed.protocol)) {
+    return { ok: false, error: "Invalid URL scheme" };
+  }
+
+  // Block IP addresses in hostname (prevents SSRF to private ranges)
+  const hostname = parsed.hostname;
+  if (PRIVATE_IP_RANGES.some((r) => r.test(hostname))) {
+    return { ok: false, error: "Private or reserved IP addresses are not allowed" };
+  }
+
+  // Block localhost variants
+  if (hostname === "localhost" || hostname === "[::1]") {
+    return { ok: false, error: "Localhost URLs are not allowed" };
+  }
+
+  // Must have a dot in hostname (no bare hostnames like "http://internal")
+  if (!hostname.includes(".")) {
+    return { ok: false, error: "Invalid hostname" };
+  }
+
+  return { ok: true, url: normalized };
+}
+
 export async function POST(req: Request) {
   try {
     // Authenticate
@@ -24,23 +78,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
     }
 
-    // Normalize URL
-    let normalized = url.trim();
-    if (!normalized.startsWith("http")) {
-      normalized = `https://${normalized}`;
+    // Validate and normalize URL
+    const validation = validateStoreUrl(url);
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
-    normalized = normalized.replace(/\/+$/, "");
+    const normalized = validation.url;
 
     // Extract store name from hostname
-    let storeName: string;
-    try {
-      const hostname = new URL(normalized).hostname;
-      storeName = hostname.replace(/^www\./, "").split(".")[0];
-      // Capitalize first letter
-      storeName = storeName.charAt(0).toUpperCase() + storeName.slice(1);
-    } catch {
-      return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
-    }
+    const hostname = new URL(normalized).hostname;
+    const storeName =
+      hostname.replace(/^www\./, "").split(".")[0].charAt(0).toUpperCase() +
+      hostname.replace(/^www\./, "").split(".")[0].slice(1);
 
     const supabase = createAdminClient();
 
