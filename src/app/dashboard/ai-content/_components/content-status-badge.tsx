@@ -60,7 +60,7 @@ export function ContentStatusBadge({
       style={{
         fontFamily: "var(--font-mono)",
         color: "var(--muted-foreground)",
-        backgroundColor: "rgba(255,255,255,0.05)",
+        backgroundColor: "var(--subtle-overlay)",
         border: "1.5px solid var(--border)",
       }}
     >

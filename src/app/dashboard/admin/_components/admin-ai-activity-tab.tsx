@@ -52,9 +52,9 @@ function SimpleFilter({
           className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
           style={{
             fontFamily: "var(--font-mono)",
-            backgroundColor: value ? "rgba(202,255,4,0.06)" : "transparent",
-            borderColor: value ? "rgba(202,255,4,0.3)" : "var(--border)",
-            color: value ? "#CAFF04" : "var(--muted-foreground)",
+            backgroundColor: value ? "var(--primary-muted)" : "transparent",
+            borderColor: value ? "var(--primary-muted)" : "var(--border)",
+            color: value ? "var(--primary-text)" : "var(--muted-foreground)",
           }}
         >
           {activeLabel || label}
@@ -69,7 +69,7 @@ function SimpleFilter({
         {value && (
           <button
             onClick={() => { onChange(null); setOpen(false); }}
-            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
+            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-[var(--subtle-overlay)]"
             style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
           >
             <X className="w-3 h-3 opacity-50" />
@@ -80,11 +80,11 @@ function SimpleFilter({
           <button
             key={option.value}
             onClick={() => { onChange(option.value === value ? null : option.value); setOpen(false); }}
-            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
+            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-[var(--subtle-overlay)]"
             style={{ fontFamily: "var(--font-mono)", borderRadius: 0 }}
           >
             {value === option.value ? (
-              <Check className="w-3 h-3 text-[#CAFF04]" />
+              <Check className="w-3 h-3" style={{ color: "var(--primary-text)" }} />
             ) : (
               <span className="w-3" />
             )}
@@ -168,7 +168,7 @@ export function AdminAIActivityTab({ activityLogs, stores }: AdminAIActivityTabP
           className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
           style={{
             fontFamily: "var(--font-mono)",
-            backgroundColor: "#CAFF04",
+            backgroundColor: "var(--primary)",
             color: "#000",
             borderRadius: 0,
           }}
@@ -339,9 +339,9 @@ export function AdminAIActivityTab({ activityLogs, stores }: AdminAIActivityTabP
                     style={{
                       fontFamily: "var(--font-mono)",
                       borderRadius: 0,
-                      backgroundColor: cleanScope === scope ? "rgba(202,255,4,0.10)" : "transparent",
-                      borderColor: cleanScope === scope ? "rgba(202,255,4,0.3)" : "var(--border)",
-                      color: cleanScope === scope ? "#CAFF04" : "var(--muted-foreground)",
+                      backgroundColor: cleanScope === scope ? "var(--primary-muted)" : "transparent",
+                      borderColor: cleanScope === scope ? "var(--primary-muted)" : "var(--border)",
+                      color: cleanScope === scope ? "var(--primary-text)" : "var(--muted-foreground)",
                     }}
                   >
                     {scope === "descriptions" && t("scopeDescriptions")}
@@ -385,7 +385,7 @@ export function AdminAIActivityTab({ activityLogs, stores }: AdminAIActivityTabP
               className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80 disabled:opacity-50"
               style={{
                 fontFamily: "var(--font-mono)",
-                backgroundColor: "#CAFF04",
+                backgroundColor: "var(--primary)",
                 color: "#000",
                 borderRadius: 0,
               }}

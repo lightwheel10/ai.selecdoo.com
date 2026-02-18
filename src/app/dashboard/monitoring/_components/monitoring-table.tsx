@@ -147,7 +147,7 @@ export function MonitoringTable({ configs, logs }: MonitoringTableProps) {
                 style={{
                   fontFamily: "var(--font-mono)",
                   color: "var(--muted-foreground)",
-                  backgroundColor: "rgba(255,255,255,0.02)",
+                  backgroundColor: "var(--table-header-bg)",
                 }}
               >
                 {header}
@@ -167,7 +167,7 @@ export function MonitoringTable({ configs, logs }: MonitoringTableProps) {
             return (
               <TableRow
                 key={config.id}
-                className="border-b hover:bg-white/[0.02]"
+                className="border-b hover:bg-[var(--table-header-bg)]"
                 style={{ borderColor: "var(--border)" }}
               >
                 {/* Store */}
@@ -177,8 +177,8 @@ export function MonitoringTable({ configs, logs }: MonitoringTableProps) {
                       className="w-6 h-6 flex-shrink-0 flex items-center justify-center text-[9px] font-bold"
                       style={{
                         fontFamily: "var(--font-mono)",
-                        backgroundColor: "rgba(202,255,4,0.10)",
-                        color: "#CAFF04",
+                        backgroundColor: "var(--primary-muted)",
+                        color: "var(--primary-text)",
                       }}
                     >
                       {config.store_name[0]}
@@ -208,11 +208,11 @@ export function MonitoringTable({ configs, logs }: MonitoringTableProps) {
                     className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider px-2 py-0.5"
                     style={{
                       fontFamily: "var(--font-mono)",
-                      color: config.enabled ? "#22C55E" : "#555555",
+                      color: config.enabled ? "#22C55E" : "var(--muted-foreground)",
                       backgroundColor: config.enabled
                         ? "rgba(34,197,94,0.07)"
-                        : "rgba(85,85,85,0.07)",
-                      border: `1.5px solid ${config.enabled ? "rgba(34,197,94,0.25)" : "rgba(85,85,85,0.25)"}`,
+                        : "var(--status-neutral-bg)",
+                      border: `1.5px solid ${config.enabled ? "rgba(34,197,94,0.25)" : "var(--status-neutral-border)"}`,
                     }}
                   >
                     {config.enabled ? t("enabled") : t("disabled")}
@@ -301,9 +301,9 @@ export function MonitoringTable({ configs, logs }: MonitoringTableProps) {
                       className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
                       style={{
                         fontFamily: "var(--font-mono)",
-                        backgroundColor: "#CAFF0412",
-                        border: "1.5px solid #CAFF0440",
-                        color: "#CAFF04",
+                        backgroundColor: "var(--primary-muted)",
+                        border: "1.5px solid var(--primary-muted)",
+                        color: "var(--primary-text)",
                       }}
                     >
                       {isRunning ? (

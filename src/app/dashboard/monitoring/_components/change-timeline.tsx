@@ -472,9 +472,9 @@ export function ChangeTimeline({ changes }: ChangeTimelineProps) {
             className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border transition-colors hover:border-primary/50"
             style={{
               fontFamily: "var(--font-mono)",
-              backgroundColor: storeFilter ? "rgba(202,255,4,0.07)" : "transparent",
-              borderColor: storeFilter ? "rgba(202,255,4,0.25)" : "var(--border)",
-              color: storeFilter ? "#CAFF04" : "var(--muted-foreground)",
+              backgroundColor: storeFilter ? "var(--primary-muted)" : "transparent",
+              borderColor: storeFilter ? "var(--primary-muted)" : "var(--border)",
+              color: storeFilter ? "var(--primary-text)" : "var(--muted-foreground)",
             }}
           >
             {storeFilter
@@ -513,10 +513,10 @@ export function ChangeTimeline({ changes }: ChangeTimelineProps) {
               <div className="py-1 max-h-[240px] overflow-y-auto scrollbar-none">
                 <button
                   onClick={() => { setStoreFilter(null); setStoreDropdownOpen(false); setStoreSearch(""); }}
-                  className="w-full text-left px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
+                  className="w-full text-left px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-[var(--subtle-overlay)]"
                   style={{
                     fontFamily: "var(--font-mono)",
-                    color: !storeFilter ? "#CAFF04" : "var(--muted-foreground)",
+                    color: !storeFilter ? "var(--primary-text)" : "var(--muted-foreground)",
                   }}
                 >
                   {t("allStores")}
@@ -527,10 +527,10 @@ export function ChangeTimeline({ changes }: ChangeTimelineProps) {
                     <button
                       key={store.id}
                       onClick={() => { setStoreFilter(store.id); setStoreDropdownOpen(false); setStoreSearch(""); }}
-                      className="w-full text-left px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
+                      className="w-full text-left px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-[var(--subtle-overlay)]"
                       style={{
                         fontFamily: "var(--font-mono)",
-                        color: storeFilter === store.id ? "#CAFF04" : "var(--muted-foreground)",
+                        color: storeFilter === store.id ? "var(--primary-text)" : "var(--muted-foreground)",
                       }}
                     >
                       {store.name}
@@ -615,7 +615,7 @@ export function ChangeTimeline({ changes }: ChangeTimelineProps) {
                   className="flex items-center gap-2 px-3 py-2.5"
                   style={{
                     borderBottom: "2px solid var(--border)",
-                    backgroundColor: "rgba(255,255,255,0.02)",
+                    backgroundColor: "var(--table-header-bg)",
                   }}
                 >
                   <Icon className="w-3.5 h-3.5" style={{ color }} />
@@ -655,7 +655,7 @@ export function ChangeTimeline({ changes }: ChangeTimelineProps) {
                 {hasMore && (
                   <button
                     onClick={() => toggleSection(type)}
-                    className="w-full py-2 text-[9px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
+                    className="w-full py-2 text-[9px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-[var(--subtle-overlay)]"
                     style={{
                       fontFamily: "var(--font-mono)",
                       color: "var(--muted-foreground)",
@@ -668,7 +668,7 @@ export function ChangeTimeline({ changes }: ChangeTimelineProps) {
                 {isExpanded && items.length > MAX_PER_SECTION && (
                   <button
                     onClick={() => toggleSection(type)}
-                    className="w-full py-2 text-[9px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
+                    className="w-full py-2 text-[9px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-[var(--subtle-overlay)]"
                     style={{
                       fontFamily: "var(--font-mono)",
                       color: "var(--muted-foreground)",

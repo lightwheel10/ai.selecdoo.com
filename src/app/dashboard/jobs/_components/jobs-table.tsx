@@ -64,9 +64,9 @@ function SimpleFilter({
           className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
           style={{
             fontFamily: "var(--font-mono)",
-            backgroundColor: value ? "rgba(202,255,4,0.06)" : "transparent",
-            borderColor: value ? "rgba(202,255,4,0.3)" : "var(--border)",
-            color: value ? "#CAFF04" : "var(--muted-foreground)",
+            backgroundColor: value ? "var(--primary-muted)" : "transparent",
+            borderColor: value ? "var(--primary-muted)" : "var(--border)",
+            color: value ? "var(--primary-text)" : "var(--muted-foreground)",
           }}
         >
           {activeLabel || label}
@@ -88,7 +88,7 @@ function SimpleFilter({
               onChange(null);
               setOpen(false);
             }}
-            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
+            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-[var(--subtle-overlay)]"
             style={{
               fontFamily: "var(--font-mono)",
               color: "var(--muted-foreground)",
@@ -105,11 +105,11 @@ function SimpleFilter({
               onChange(option.value === value ? null : option.value);
               setOpen(false);
             }}
-            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
+            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-[var(--subtle-overlay)]"
             style={{ fontFamily: "var(--font-mono)", borderRadius: 0 }}
           >
             {value === option.value ? (
-              <Check className="w-3 h-3 text-[#CAFF04]" />
+              <Check className="w-3 h-3" style={{ color: "var(--primary-text)" }} />
             ) : (
               <span className="w-3" />
             )}
@@ -150,9 +150,9 @@ function SearchableFilter({
           className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
           style={{
             fontFamily: "var(--font-mono)",
-            backgroundColor: value ? "rgba(202,255,4,0.06)" : "transparent",
-            borderColor: value ? "rgba(202,255,4,0.3)" : "var(--border)",
-            color: value ? "#CAFF04" : "var(--muted-foreground)",
+            backgroundColor: value ? "var(--primary-muted)" : "transparent",
+            borderColor: value ? "var(--primary-muted)" : "var(--border)",
+            color: value ? "var(--primary-text)" : "var(--muted-foreground)",
           }}
         >
           {value || label}
@@ -217,7 +217,7 @@ function SearchableFilter({
                   style={{ fontFamily: "var(--font-mono)", borderRadius: 0 }}
                 >
                   {value === option ? (
-                    <Check className="w-3 h-3 mr-1.5 text-[#CAFF04]" />
+                    <Check className="w-3 h-3 mr-1.5 text-[var(--primary-text)]" />
                   ) : (
                     <span className="w-3 mr-1.5" />
                   )}
@@ -416,7 +416,7 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
         <ArrowUpDown
           className="w-2.5 h-2.5 transition-colors"
           style={{
-            color: isActive ? "#CAFF04" : "var(--muted-foreground)",
+            color: isActive ? "var(--primary-text)" : "var(--muted-foreground)",
             opacity: isActive ? 1 : 0.4,
             transform: isActive && sortDir === "desc" ? "scaleY(-1)" : undefined,
           }}
@@ -669,7 +669,7 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
               {filtered.map((job) => (
                 <TableRow
                   key={job.id}
-                  className="border-b hover:bg-white/[0.02]"
+                  className="border-b hover:bg-[var(--table-header-bg)]"
                   style={{ borderColor: "var(--border)" }}
                 >
                   {/* Store */}
@@ -691,7 +691,7 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
                             className="text-[9px] font-bold"
                             style={{
                               fontFamily: "var(--font-mono)",
-                              color: "#CAFF04",
+                              color: "var(--primary-text)",
                             }}
                           >
                             {job.store_name[0]}

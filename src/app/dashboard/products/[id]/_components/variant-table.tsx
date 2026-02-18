@@ -62,7 +62,7 @@ export function VariantTable({ variants, currency }: VariantTableProps) {
             className="border-b-2 hover:bg-transparent"
             style={{
               borderColor: "var(--border)",
-              backgroundColor: "rgba(255,255,255,0.02)",
+              backgroundColor: "var(--table-header-bg)",
             }}
           >
             {[t("variant"), t("sku"), t("price"), t("previousPrice"), t("stock")].map(
@@ -87,7 +87,7 @@ export function VariantTable({ variants, currency }: VariantTableProps) {
             .map((v, i) => (
               <TableRow
                 key={i}
-                className="border-b hover:bg-white/[0.02]"
+                className="border-b hover:bg-[var(--table-header-bg)]"
                 style={{ borderColor: "var(--border)" }}
               >
                 <TableCell className="text-center">

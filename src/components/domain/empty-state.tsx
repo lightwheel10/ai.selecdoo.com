@@ -19,11 +19,11 @@ export function EmptyState({ icon: Icon, title, description, action }: EmptyStat
       <div
         className="w-12 h-12 flex items-center justify-center mb-4 border-2"
         style={{
-          borderColor: "rgba(202,255,4,0.2)",
-          backgroundColor: "rgba(202,255,4,0.05)",
+          borderColor: "var(--primary-muted)",
+          backgroundColor: "var(--primary-muted)",
         }}
       >
-        <Icon className="w-5 h-5" style={{ color: "#CAFF04" }} />
+        <Icon className="w-5 h-5" style={{ color: "var(--primary-text)" }} />
       </div>
       <p
         className="text-[10px] font-bold uppercase tracking-[0.15em] mb-2"

@@ -10,7 +10,6 @@ import {
   Zap,
   Shield,
   Clock,
-  ChevronRight,
   Terminal,
 } from "lucide-react";
 
@@ -31,14 +30,16 @@ export default function LandingPage() {
 
       <div className="relative z-10">
         {/* ─── Nav ─── */}
-        <nav className="flex items-center justify-between max-w-5xl mx-auto px-6 h-14">
+        <nav
+          className="flex items-center justify-between max-w-5xl mx-auto px-6 h-14 animate-fade-in"
+        >
           <div className="flex items-center gap-2.5">
             <div
               className="w-7 h-7 flex items-center justify-center text-[10px] font-bold"
               style={{
                 fontFamily: "var(--font-mono)",
-                backgroundColor: "#CAFF04",
-                color: "#0A0A0A",
+                backgroundColor: "var(--primary)",
+                color: "var(--primary-foreground)",
               }}
             >
               S
@@ -65,43 +66,52 @@ export default function LandingPage() {
         <section className="max-w-5xl mx-auto px-6 pt-24 pb-20">
           <div
             className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] blur-[200px] pointer-events-none"
-            style={{ backgroundColor: "#CAFF04", opacity: 0.04 }}
+            style={{ backgroundColor: "var(--primary)", opacity: 0.04 }}
           />
 
           <div
-            className="inline-flex items-center gap-2 mb-6 px-2.5 py-1 border-2"
+            className="inline-flex items-center gap-2 mb-6 px-2.5 py-1 border-2 animate-fade-in-up"
             style={{
-              borderColor: "rgba(202,255,4,0.3)",
-              backgroundColor: "rgba(202,255,4,0.05)",
+              borderColor: "var(--primary-muted)",
+              backgroundColor: "var(--primary-muted)",
             }}
           >
-            <Terminal className="w-3 h-3" style={{ color: "#CAFF04" }} />
+            <Terminal className="w-3 h-3" style={{ color: "var(--primary-text)" }} />
             <span
               className="text-[9px] font-bold uppercase tracking-[0.15em]"
-              style={{ fontFamily: "var(--font-mono)", color: "#CAFF04" }}
+              style={{ fontFamily: "var(--font-mono)", color: "var(--primary-text)" }}
             >
               Product Intelligence Platform
             </span>
           </div>
 
           <h1
-            className="text-4xl sm:text-6xl font-bold tracking-[-0.04em] leading-[1.05] mb-5"
-            style={{ fontFamily: "var(--font-display)" }}
+            className="text-4xl sm:text-6xl font-bold tracking-[-0.04em] leading-[1.05] mb-5 animate-fade-in-up"
+            style={{ fontFamily: "var(--font-display)", animationDelay: "0.1s" }}
           >
             Monitor every
             <br />
-            <span style={{ color: "var(--accent)" }}>Shopify product.</span>
+            <span
+              className="px-3 py-1 inline-block"
+              style={{
+                backgroundColor: "var(--primary)",
+                color: "var(--primary-foreground)",
+              }}
+            >Shopify product.</span>
           </h1>
 
           <p
-            className="text-sm max-w-md leading-relaxed mb-8"
-            style={{ color: "var(--muted-foreground)" }}
+            className="text-sm max-w-md leading-relaxed mb-8 animate-fade-in-up"
+            style={{ color: "var(--muted-foreground)", animationDelay: "0.2s" }}
           >
             Scrape, track, and generate AI content for your Shopify stores.
             Know when prices change, stock runs out, or new products drop.
           </p>
 
-          <div className="flex items-center gap-3">
+          <div
+            className="animate-fade-in-up"
+            style={{ animationDelay: "0.3s" }}
+          >
             <Link
               href="/login"
               className="inline-flex items-center gap-2 px-5 py-3 text-xs font-bold uppercase tracking-wider border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none bg-primary text-primary-foreground border-primary shadow-[4px_4px_0px] shadow-primary"
@@ -110,24 +120,14 @@ export default function LandingPage() {
               Get Started
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
-            <a
-              href="#features"
-              className="inline-flex items-center gap-1.5 px-4 py-3 text-xs font-bold uppercase tracking-wider border-2 transition-all duration-150"
-              style={{
-                fontFamily: "var(--font-mono)",
-                borderColor: "var(--border)",
-                color: "var(--foreground)",
-                opacity: 0.7,
-              }}
-            >
-              Learn More
-              <ChevronRight className="w-3.5 h-3.5" />
-            </a>
           </div>
         </section>
 
         {/* ─── Stats ─── */}
-        <section className="max-w-5xl mx-auto px-6 pb-20">
+        <section
+          className="max-w-5xl mx-auto px-6 pb-20 animate-fade-in-up"
+          style={{ animationDelay: "0.4s" }}
+        >
           <div
             className="grid grid-cols-2 sm:grid-cols-4 border-2"
             style={{
@@ -150,7 +150,7 @@ export default function LandingPage() {
               >
                 <stat.icon
                   className="w-4 h-4 mx-auto mb-2"
-                  style={{ color: "#CAFF04" }}
+                  style={{ color: "var(--primary-text)" }}
                 />
                 <p
                   className="text-xl sm:text-2xl font-bold mb-1"
@@ -174,12 +174,15 @@ export default function LandingPage() {
 
         {/* ─── Features ─── */}
         <section id="features" className="max-w-5xl mx-auto px-6 pb-24">
-          <div className="mb-10">
+          <div
+            className="mb-10 animate-fade-in-up"
+            style={{ animationDelay: "0.1s" }}
+          >
             <p
               className="text-[10px] font-bold uppercase tracking-[0.15em] mb-3"
               style={{
                 fontFamily: "var(--font-mono)",
-                color: "#CAFF04",
+                color: "var(--primary-text)",
               }}
             >
               Core Features
@@ -211,23 +214,24 @@ export default function LandingPage() {
                 title: "AI Content",
                 desc: "Generate optimized product descriptions, SEO copy, and marketing content powered by AI.",
               },
-            ].map((f) => (
+            ].map((f, i) => (
               <div
                 key={f.title}
-                className="p-5 border-2 transition-colors duration-150 hover:border-[rgba(202,255,4,0.3)]"
+                className="p-5 border-2 transition-all duration-200 hover:border-[var(--primary-border)] hover:-translate-y-0.5 animate-fade-in-up"
                 style={{
                   backgroundColor: "var(--card)",
                   borderColor: "var(--border)",
+                  animationDelay: `${0.2 + i * 0.1}s`,
                 }}
               >
                 <div
                   className="w-9 h-9 flex items-center justify-center mb-4 border-2"
                   style={{
-                    borderColor: "rgba(202,255,4,0.2)",
-                    backgroundColor: "rgba(202,255,4,0.05)",
+                    borderColor: "var(--primary-muted)",
+                    backgroundColor: "var(--primary-muted)",
                   }}
                 >
-                  <f.icon className="w-4 h-4" style={{ color: "#CAFF04" }} />
+                  <f.icon className="w-4 h-4" style={{ color: "var(--primary-text)" }} />
                 </div>
                 <p
                   className="text-[10px] font-bold uppercase tracking-[0.15em] mb-2"
@@ -251,12 +255,15 @@ export default function LandingPage() {
 
         {/* ─── How It Works ─── */}
         <section className="max-w-5xl mx-auto px-6 pb-24">
-          <div className="mb-10">
+          <div
+            className="mb-10 animate-fade-in-up"
+            style={{ animationDelay: "0.1s" }}
+          >
             <p
               className="text-[10px] font-bold uppercase tracking-[0.15em] mb-3"
               style={{
                 fontFamily: "var(--font-mono)",
-                color: "#CAFF04",
+                color: "var(--primary-text)",
               }}
             >
               How It Works
@@ -289,13 +296,14 @@ export default function LandingPage() {
                 title: "Analyze & Act",
                 desc: "View dashboards, compare competitor pricing, and generate AI content to stay ahead.",
               },
-            ].map((s) => (
+            ].map((s, i) => (
               <div
                 key={s.step}
-                className="p-5 border-2 relative"
+                className="p-5 border-2 relative animate-fade-in-up"
                 style={{
                   backgroundColor: "var(--card)",
                   borderColor: "var(--border)",
+                  animationDelay: `${0.2 + i * 0.1}s`,
                 }}
               >
                 <p
@@ -341,22 +349,25 @@ export default function LandingPage() {
         </section>
 
         {/* ─── CTA ─── */}
-        <section className="max-w-5xl mx-auto px-6 pb-24">
+        <section
+          className="max-w-5xl mx-auto px-6 pb-24 animate-fade-in-up"
+          style={{ animationDelay: "0.2s" }}
+        >
           <div
             className="p-8 sm:p-12 border-2 text-center relative overflow-hidden"
             style={{
               backgroundColor: "var(--card)",
-              borderColor: "rgba(202,255,4,0.3)",
+              borderColor: "var(--primary-border)",
             }}
           >
             <div
               className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-[200px] blur-[150px] pointer-events-none"
-              style={{ backgroundColor: "#CAFF04", opacity: 0.06 }}
+              style={{ backgroundColor: "var(--primary)", opacity: 0.06 }}
             />
             <div className="relative z-10">
               <Zap
                 className="w-6 h-6 mx-auto mb-4"
-                style={{ color: "#CAFF04" }}
+                style={{ color: "var(--primary-text)" }}
               />
               <h2
                 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3"
@@ -385,8 +396,8 @@ export default function LandingPage() {
 
         {/* ─── Footer ─── */}
         <footer
-          className="border-t py-8"
-          style={{ borderColor: "var(--border)" }}
+          className="border-t py-8 animate-fade-in"
+          style={{ borderColor: "var(--border)", animationDelay: "0.3s" }}
         >
           <div className="max-w-5xl mx-auto px-6 flex flex-col items-center gap-2 text-center">
             <p

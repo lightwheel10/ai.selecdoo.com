@@ -151,14 +151,14 @@ export function StoreGroupView({
                 {/* ── Store Header ── */}
                 <button
                   onClick={() => onToggleStore(group.store.id)}
-                  className="w-full text-left px-4 py-3 transition-colors hover:bg-white/[0.02]"
+                  className="w-full text-left px-4 py-3 transition-colors hover:bg-[var(--table-header-bg)]"
                 >
                   {/* Row 1: Name + Stats */}
                   <div className="flex items-center gap-3">
                     <ChevronRight
                       className="w-4 h-4 flex-shrink-0 transition-transform duration-150"
                       style={{
-                        color: "#CAFF04",
+                        color: "var(--primary-text)",
                         transform: isExpanded
                           ? "rotate(90deg)"
                           : "rotate(0deg)",
@@ -170,8 +170,8 @@ export function StoreGroupView({
                       className="w-7 h-7 flex-shrink-0 flex items-center justify-center text-[10px] font-bold"
                       style={{
                         fontFamily: "var(--font-mono)",
-                        backgroundColor: "rgba(202,255,4,0.10)",
-                        color: "#CAFF04",
+                        backgroundColor: "var(--primary-muted)",
+                        color: "var(--primary-text)",
                       }}
                     >
                       {group.store.name[0]}
@@ -242,10 +242,10 @@ export function StoreGroupView({
                           className="w-4 h-4 border-2 flex items-center justify-center transition-colors"
                           style={{
                             backgroundColor: allStoreSelected
-                              ? "#CAFF04"
+                              ? "var(--primary)"
                               : "transparent",
                             borderColor: allStoreSelected
-                              ? "#CAFF04"
+                              ? "var(--primary-text)"
                               : "var(--border)",
                           }}
                         >
@@ -255,7 +255,7 @@ export function StoreGroupView({
                               height="10"
                               viewBox="0 0 10 10"
                               fill="none"
-                              stroke="#0A0A0A"
+                              stroke="var(--primary-foreground)"
                               strokeWidth="2"
                               strokeLinecap="square"
                             >
@@ -399,7 +399,7 @@ function StatPill({ label, color }: { label: string; color: string }) {
       style={{
         fontFamily: "var(--font-mono)",
         color,
-        backgroundColor: "rgba(255,255,255,0.04)",
+        backgroundColor: "var(--subtle-overlay)",
       }}
     >
       {label}

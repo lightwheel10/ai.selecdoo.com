@@ -63,13 +63,13 @@ export function Pagination({
             style={{
               fontFamily: "var(--font-mono)",
               backgroundColor:
-                currentPage === page ? "rgba(202,255,4,0.06)" : "transparent",
+                currentPage === page ? "var(--primary-muted)" : "transparent",
               borderColor:
                 currentPage === page
-                  ? "rgba(202,255,4,0.3)"
+                  ? "var(--primary-muted)"
                   : "var(--border)",
               color:
-                currentPage === page ? "#CAFF04" : "var(--muted-foreground)",
+                currentPage === page ? "var(--primary-text)" : "var(--muted-foreground)",
             }}
           >
             {page}

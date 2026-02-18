@@ -9,6 +9,7 @@
     "admin": "Admin",
     "monitoring": "Überwachung",
     "signOut": "Abmelden",
+    "settings": "Einstellungen",
     "devMode": "Entwicklermodus"
   },
   "Overview": {
@@ -424,6 +425,10 @@
     "loading": "Produkt wird geladen...",
     "recommendedProducts": "Empfohlene Produkte",
     "noRecommendations": "Keine Empfehlungen verfügbar"
+  },
+  "Settings": {
+    "placeholderTitle": "Einstellungs-Platzhalter",
+    "placeholderDescription": "Dies ist eine Platzhalterseite fuer Einstellungen. Als naechstes koennen wir Bereiche und Berechtigungen festlegen."
   },
   "Admin": {
     "pageTitle": "Admin-Dashboard",

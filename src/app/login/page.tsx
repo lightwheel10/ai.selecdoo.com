@@ -161,8 +161,8 @@ export default function LoginPage() {
                 className="w-8 h-8 flex items-center justify-center text-[11px] font-bold"
                 style={{
                   fontFamily: "var(--font-mono)",
-                  backgroundColor: "#CAFF04",
-                color: "#0A0A0A",
+                  backgroundColor: "var(--primary)",
+                color: "var(--primary-foreground)",
               }}
             >
               S
@@ -315,7 +315,7 @@ export default function LoginPage() {
                   className="text-[10px] font-bold uppercase tracking-[0.15em] mb-2"
                   style={{
                     fontFamily: "var(--font-mono)",
-                    color: "#CAFF04",
+                    color: "var(--primary-text)",
                   }}
                 >
                   Check Your Email
@@ -373,10 +373,10 @@ export default function LoginPage() {
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-40 disabled:pointer-events-none"
                   style={{
                     fontFamily: "var(--font-mono)",
-                    backgroundColor: "#CAFF04",
-                    color: "#0A0A0A",
-                    borderColor: "#CAFF04",
-                    boxShadow: "3px 3px 0px #CAFF04",
+                    backgroundColor: "var(--primary)",
+                    color: "var(--primary-foreground)",
+                    borderColor: "var(--primary)",
+                    boxShadow: "3px 3px 0px var(--primary)",
                   }}
                 >
                   {loading ? (
@@ -424,18 +424,18 @@ export default function LoginPage() {
                 <div
                   className="w-14 h-14 flex items-center justify-center mb-5 border-2"
                   style={{
-                    backgroundColor: "rgba(202,255,4,0.08)",
-                    borderColor: "rgba(202,255,4,0.2)",
+                    backgroundColor: "var(--primary-muted)",
+                    borderColor: "var(--primary-muted)",
                   }}
                 >
-                  <Mail className="w-6 h-6" style={{ color: "#CAFF04" }} />
+                  <Mail className="w-6 h-6" style={{ color: "var(--primary-text)" }} />
                 </div>
 
                 <h1
                   className="text-[10px] font-bold uppercase tracking-[0.15em] mb-2"
                   style={{
                     fontFamily: "var(--font-mono)",
-                    color: "#CAFF04",
+                    color: "var(--primary-text)",
                   }}
                 >
                   Check Your Email

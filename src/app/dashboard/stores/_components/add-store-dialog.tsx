@@ -75,7 +75,7 @@ export function AddStoreDialog() {
             className="text-[10px] font-bold uppercase tracking-[0.15em]"
             style={{
               fontFamily: "var(--font-mono)",
-              color: "#CAFF04",
+              color: "var(--primary-text)",
             }}
           >
             {t("addStore")}

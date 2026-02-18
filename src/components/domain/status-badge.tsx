@@ -30,14 +30,14 @@ const statusColors: Record<Status, { color: string; bg: string; border: string }
   error: { color: "#FF453A", bg: "rgba(255,69,58,0.07)", border: "rgba(255,69,58,0.25)" },
   in_stock: { color: "#22C55E", bg: "rgba(34,197,94,0.07)", border: "rgba(34,197,94,0.25)" },
   out_of_stock: { color: "#FF453A", bg: "rgba(255,69,58,0.07)", border: "rgba(255,69,58,0.25)" },
-  pending: { color: "#555555", bg: "rgba(85,85,85,0.07)", border: "rgba(85,85,85,0.25)" },
+  pending: { color: "var(--muted-foreground)", bg: "var(--status-neutral-bg)", border: "var(--status-neutral-border)" },
   running: { color: "#5AC8FA", bg: "rgba(90,200,250,0.07)", border: "rgba(90,200,250,0.25)" },
   completed: { color: "#22C55E", bg: "rgba(34,197,94,0.07)", border: "rgba(34,197,94,0.25)" },
   failed: { color: "#FF453A", bg: "rgba(255,69,58,0.07)", border: "rgba(255,69,58,0.25)" },
   success: { color: "#22C55E", bg: "rgba(34,197,94,0.07)", border: "rgba(34,197,94,0.25)" },
   skipped: { color: "#FF9F0A", bg: "rgba(255,159,10,0.07)", border: "rgba(255,159,10,0.25)" },
   published: { color: "#22C55E", bg: "rgba(34,197,94,0.07)", border: "rgba(34,197,94,0.25)" },
-  unpublished: { color: "#555555", bg: "rgba(85,85,85,0.07)", border: "rgba(85,85,85,0.25)" },
+  unpublished: { color: "var(--muted-foreground)", bg: "var(--status-neutral-bg)", border: "var(--status-neutral-border)" },
 };
 
 interface StatusBadgeProps {

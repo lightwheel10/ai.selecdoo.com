@@ -8,6 +8,7 @@
     "aiContent": "AI Content",
     "admin": "Admin",
     "monitoring": "Monitoring",
+    "settings": "Settings",
     "signOut": "Sign Out",
     "devMode": "Dev Mode"
   },
@@ -424,6 +425,10 @@
     "loading": "Loading product...",
     "recommendedProducts": "Recommended Products",
     "noRecommendations": "No recommendations available"
+  },
+  "Settings": {
+    "placeholderTitle": "Settings Placeholder",
+    "placeholderDescription": "This is a placeholder page for settings. We can define sections and permissions next."
   },
   "Admin": {
     "pageTitle": "Admin Dashboard",

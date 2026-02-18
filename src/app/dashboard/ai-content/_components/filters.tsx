@@ -44,9 +44,9 @@ export function SearchableFilter({
           className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
           style={{
             fontFamily: "var(--font-mono)",
-            backgroundColor: value ? "rgba(202,255,4,0.06)" : "transparent",
-            borderColor: value ? "rgba(202,255,4,0.3)" : "var(--border)",
-            color: value ? "#CAFF04" : "var(--muted-foreground)",
+            backgroundColor: value ? "var(--primary-muted)" : "transparent",
+            borderColor: value ? "var(--primary-border)" : "var(--border)",
+            color: value ? "var(--primary-text)" : "var(--muted-foreground)",
           }}
         >
           {value || label}
@@ -106,7 +106,7 @@ export function SearchableFilter({
                   style={{ fontFamily: "var(--font-mono)", borderRadius: 0 }}
                 >
                   {value === option ? (
-                    <Check className="w-3 h-3 mr-1.5 text-[#CAFF04]" />
+                    <Check className="w-3 h-3 mr-1.5 text-[var(--primary-text)]" />
                   ) : (
                     <span className="w-3 mr-1.5" />
                   )}
@@ -170,12 +170,12 @@ export function MultiSearchableFilter({
           style={{
             fontFamily: "var(--font-mono)",
             backgroundColor: hasSelection
-              ? "rgba(202,255,4,0.06)"
+              ? "var(--primary-muted)"
               : "transparent",
             borderColor: hasSelection
-              ? "rgba(202,255,4,0.3)"
+              ? "var(--primary-border)"
               : "var(--border)",
-            color: hasSelection ? "#CAFF04" : "var(--muted-foreground)",
+            color: hasSelection ? "var(--primary-text)" : "var(--muted-foreground)",
           }}
         >
           {displayLabel}
@@ -183,8 +183,8 @@ export function MultiSearchableFilter({
             <span
               className="text-[9px] font-bold px-1 py-0.5 ml-0.5"
               style={{
-                backgroundColor: "rgba(202,255,4,0.15)",
-                color: "#CAFF04",
+                backgroundColor: "var(--primary-muted)",
+                color: "var(--primary-text)",
               }}
             >
               {value.length}
@@ -248,10 +248,10 @@ export function MultiSearchableFilter({
                       className="w-3 h-3 mr-1.5 border flex-shrink-0 flex items-center justify-center"
                       style={{
                         backgroundColor: isSelected
-                          ? "#CAFF04"
+                          ? "var(--primary)"
                           : "transparent",
                         borderColor: isSelected
-                          ? "#CAFF04"
+                          ? "var(--primary-text)"
                           : "var(--border)",
                       }}
                     >
@@ -261,7 +261,7 @@ export function MultiSearchableFilter({
                           height="8"
                           viewBox="0 0 10 10"
                           fill="none"
-                          stroke="#0A0A0A"
+                          stroke="var(--primary-foreground)"
                           strokeWidth="2"
                           strokeLinecap="square"
                         >
@@ -306,9 +306,9 @@ export function SimpleFilter({
           className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
           style={{
             fontFamily: "var(--font-mono)",
-            backgroundColor: value ? "rgba(202,255,4,0.06)" : "transparent",
-            borderColor: value ? "rgba(202,255,4,0.3)" : "var(--border)",
-            color: value ? "#CAFF04" : "var(--muted-foreground)",
+            backgroundColor: value ? "var(--primary-muted)" : "transparent",
+            borderColor: value ? "var(--primary-border)" : "var(--border)",
+            color: value ? "var(--primary-text)" : "var(--muted-foreground)",
           }}
         >
           {activeLabel || label}
@@ -330,7 +330,7 @@ export function SimpleFilter({
               onChange(null);
               setOpen(false);
             }}
-            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
+            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-[var(--subtle-overlay)]"
             style={{
               fontFamily: "var(--font-mono)",
               color: "var(--muted-foreground)",
@@ -347,11 +347,11 @@ export function SimpleFilter({
               onChange(option.value === value ? null : option.value);
               setOpen(false);
             }}
-            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
+            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-[var(--subtle-overlay)]"
             style={{ fontFamily: "var(--font-mono)", borderRadius: 0 }}
           >
             {value === option.value ? (
-              <Check className="w-3 h-3 text-[#CAFF04]" />
+              <Check className="w-3 h-3 text-[var(--primary-text)]" />
             ) : (
               <span className="w-3" />
             )}
@@ -361,7 +361,7 @@ export function SimpleFilter({
                 className="text-[9px] font-bold px-1.5 py-0.5 ml-1"
                 style={{
                   fontFamily: "var(--font-mono)",
-                  backgroundColor: "rgba(255,255,255,0.06)",
+                  backgroundColor: "var(--subtle-overlay)",
                   color: "var(--muted-foreground)",
                 }}
               >
@@ -419,12 +419,12 @@ export function MultiSimpleFilter({
           style={{
             fontFamily: "var(--font-mono)",
             backgroundColor: hasSelection
-              ? "rgba(202,255,4,0.06)"
+              ? "var(--primary-muted)"
               : "transparent",
             borderColor: hasSelection
-              ? "rgba(202,255,4,0.3)"
+              ? "var(--primary-border)"
               : "var(--border)",
-            color: hasSelection ? "#CAFF04" : "var(--muted-foreground)",
+            color: hasSelection ? "var(--primary-text)" : "var(--muted-foreground)",
           }}
         >
           {displayLabel}
@@ -432,8 +432,8 @@ export function MultiSimpleFilter({
             <span
               className="text-[9px] font-bold px-1 py-0.5 ml-0.5"
               style={{
-                backgroundColor: "rgba(202,255,4,0.15)",
-                color: "#CAFF04",
+                backgroundColor: "var(--primary-muted)",
+                color: "var(--primary-text)",
               }}
             >
               {value.length}
@@ -457,7 +457,7 @@ export function MultiSimpleFilter({
               onChange([]);
               setOpen(false);
             }}
-            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
+            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-[var(--subtle-overlay)]"
             style={{
               fontFamily: "var(--font-mono)",
               color: "var(--muted-foreground)",
@@ -473,14 +473,14 @@ export function MultiSimpleFilter({
             <button
               key={option.value}
               onClick={() => toggleOption(option.value)}
-              className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
+              className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-[var(--subtle-overlay)]"
               style={{ fontFamily: "var(--font-mono)", borderRadius: 0 }}
             >
               <div
                 className="w-3 h-3 border flex-shrink-0 flex items-center justify-center"
                 style={{
-                  backgroundColor: isSelected ? "#CAFF04" : "transparent",
-                  borderColor: isSelected ? "#CAFF04" : "var(--border)",
+                  backgroundColor: isSelected ? "var(--primary)" : "transparent",
+                  borderColor: isSelected ? "var(--primary-text)" : "var(--border)",
                 }}
               >
                 {isSelected && (
@@ -489,7 +489,7 @@ export function MultiSimpleFilter({
                     height="8"
                     viewBox="0 0 10 10"
                     fill="none"
-                    stroke="#0A0A0A"
+                    stroke="var(--primary-foreground)"
                     strokeWidth="2"
                     strokeLinecap="square"
                   >
@@ -503,7 +503,7 @@ export function MultiSimpleFilter({
                   className="text-[9px] font-bold px-1.5 py-0.5 ml-1"
                   style={{
                     fontFamily: "var(--font-mono)",
-                    backgroundColor: "rgba(255,255,255,0.06)",
+                    backgroundColor: "var(--subtle-overlay)",
                     color: "var(--muted-foreground)",
                   }}
                 >
@@ -539,11 +539,11 @@ export function ToggleGroup({
           style={{
             fontFamily: "var(--font-mono)",
             backgroundColor:
-              value === opt.value ? "rgba(202,255,4,0.06)" : "transparent",
+              value === opt.value ? "var(--primary-muted)" : "transparent",
             borderColor:
-              value === opt.value ? "rgba(202,255,4,0.3)" : "var(--border)",
+              value === opt.value ? "var(--primary-border)" : "var(--border)",
             color:
-              value === opt.value ? "#CAFF04" : "var(--muted-foreground)",
+              value === opt.value ? "var(--primary-text)" : "var(--muted-foreground)",
             zIndex: value === opt.value ? 1 : 0,
           }}
         >

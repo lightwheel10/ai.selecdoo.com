@@ -31,7 +31,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
     <>
       {parts.map((part, i) =>
         regex.test(part) ? (
-          <mark key={i} className="bg-transparent" style={{ color: "#CAFF04" }}>
+          <mark key={i} className="bg-transparent" style={{ color: "var(--primary-text)" }}>
             {part}
           </mark>
         ) : (
@@ -98,7 +98,7 @@ function QuickRescrape({
             className="text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
             style={{
               fontFamily: "var(--font-mono)",
-              color: "#CAFF04",
+              color: "var(--primary-text)",
             }}
           >
             {showAll ? showLessLabel : `${showAllLabel} (${activeStores.length})`}
@@ -411,7 +411,7 @@ export function ScrapeView({ stores, products: initialProducts }: ScrapeViewProp
             className="text-[10px] font-bold uppercase tracking-[0.15em]"
             style={{
               fontFamily: "var(--font-mono)",
-              color: "#CAFF04",
+              color: "var(--primary-text)",
             }}
           >
             {t("newScrape")}
@@ -488,9 +488,9 @@ export function ScrapeView({ stores, products: initialProducts }: ScrapeViewProp
               className="mt-3 px-3 py-2 text-[10px] font-bold tracking-wider"
               style={{
                 fontFamily: "var(--font-mono)",
-                backgroundColor: "rgba(202,255,4,0.06)",
-                border: "1.5px solid rgba(202,255,4,0.2)",
-                color: "#CAFF04",
+                backgroundColor: "var(--primary-muted)",
+                border: "1.5px solid var(--primary-border)",
+                color: "var(--primary-text)",
               }}
             >
               {t("alreadyMonitored", { name: matchedStore.name })}

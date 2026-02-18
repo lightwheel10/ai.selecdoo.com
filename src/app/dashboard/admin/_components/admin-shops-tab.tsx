@@ -42,7 +42,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
     <>
       {parts.map((part, i) =>
         regex.test(part) ? (
-          <mark key={i} className="bg-transparent" style={{ color: "#CAFF04" }}>
+          <mark key={i} className="bg-transparent" style={{ color: "var(--primary-text)" }}>
             {part}
           </mark>
         ) : (
@@ -106,9 +106,9 @@ function SimpleFilter({
           className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
           style={{
             fontFamily: "var(--font-mono)",
-            backgroundColor: value ? "rgba(202,255,4,0.06)" : "transparent",
-            borderColor: value ? "rgba(202,255,4,0.3)" : "var(--border)",
-            color: value ? "#CAFF04" : "var(--muted-foreground)",
+            backgroundColor: value ? "var(--primary-muted)" : "transparent",
+            borderColor: value ? "var(--primary-muted)" : "var(--border)",
+            color: value ? "var(--primary-text)" : "var(--muted-foreground)",
           }}
         >
           {activeLabel || label}
@@ -127,7 +127,7 @@ function SimpleFilter({
         {value && (
           <button
             onClick={() => { onChange(null); setOpen(false); }}
-            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
+            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-[var(--subtle-overlay)]"
             style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
           >
             <X className="w-3 h-3 opacity-50" />
@@ -138,11 +138,11 @@ function SimpleFilter({
           <button
             key={option.value}
             onClick={() => { onChange(option.value === value ? null : option.value); setOpen(false); }}
-            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
+            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-[var(--subtle-overlay)]"
             style={{ fontFamily: "var(--font-mono)", borderRadius: 0 }}
           >
             {value === option.value ? (
-              <Check className="w-3 h-3 text-[#CAFF04]" />
+              <Check className="w-3 h-3" style={{ color: "var(--primary-text)" }} />
             ) : (
               <span className="w-3" />
             )}
@@ -259,12 +259,12 @@ function StoreHeaderCard({ store }: { store: Store }) {
       className="flex items-center gap-3 px-4 py-3 border-2 mb-4"
       style={{
         borderColor: "var(--border)",
-        backgroundColor: "rgba(202,255,4,0.03)",
+        backgroundColor: "var(--primary-muted)",
       }}
     >
       <div
         className="w-9 h-9 flex-shrink-0 relative overflow-hidden"
-        style={{ backgroundColor: "rgba(202,255,4,0.10)" }}
+        style={{ backgroundColor: "var(--primary-muted)" }}
       >
         <Image
           src={`https://www.google.com/s2/favicons?domain=${new URL(store.url).hostname}&sz=32`}
@@ -316,9 +316,9 @@ function DescriptionTabButton({
       className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors"
       style={{
         fontFamily: "var(--font-mono)",
-        backgroundColor: active ? "rgba(202,255,4,0.12)" : "transparent",
-        color: active ? "#CAFF04" : "var(--muted-foreground)",
-        border: `1.5px solid ${active ? "rgba(202,255,4,0.3)" : "var(--border)"}`,
+        backgroundColor: active ? "var(--primary-muted)" : "transparent",
+        color: active ? "var(--primary-text)" : "var(--muted-foreground)",
+        border: `1.5px solid ${active ? "var(--primary-muted)" : "var(--border)"}`,
       }}
     >
       {label}
@@ -655,7 +655,7 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
                       style={{
                         fontFamily: "var(--font-mono)",
                         color: "var(--muted-foreground)",
-                        backgroundColor: "rgba(255,255,255,0.02)",
+                        backgroundColor: "var(--table-header-bg)",
                       }}
                     >
                       {header}
@@ -668,7 +668,7 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
               {filtered.map((store) => (
                 <TableRow
                   key={store.id}
-                  className="border-b hover:bg-white/[0.02]"
+                  className="border-b hover:bg-[var(--table-header-bg)]"
                   style={{ borderColor: "var(--border)" }}
                 >
                   {/* Name */}
@@ -677,7 +677,7 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
                       <div
                         className="w-7 h-7 flex-shrink-0 relative overflow-hidden"
                         style={{
-                          backgroundColor: "rgba(202,255,4,0.10)",
+                          backgroundColor: "var(--primary-muted)",
                         }}
                       >
                         <Image
@@ -1065,7 +1065,7 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
               className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
               style={{
                 fontFamily: "var(--font-mono)",
-                backgroundColor: "#CAFF04",
+                backgroundColor: "var(--primary)",
                 color: "#000",
                 borderRadius: 0,
               }}

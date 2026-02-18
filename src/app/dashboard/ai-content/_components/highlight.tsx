@@ -11,7 +11,7 @@ export function Highlight({ text, query }: { text: string; query: string }) {
     <>
       {parts.map((part, i) =>
         regex.test(part) ? (
-          <mark key={i} className="bg-transparent" style={{ color: "#CAFF04" }}>
+          <mark key={i} className="bg-transparent" style={{ color: "var(--primary-text)" }}>
             {part}
           </mark>
         ) : (

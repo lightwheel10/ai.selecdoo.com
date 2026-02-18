@@ -20,6 +20,7 @@ const segmentToKey: Record<string, string> = {
   "ai-content": "aiContent",
   admin: "admin",
   monitoring: "monitoring",
+  settings: "settings",
 };
 
 export function AppBreadcrumb() {

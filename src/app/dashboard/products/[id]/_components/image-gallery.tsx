@@ -63,7 +63,7 @@ export function ImageGallery({ medias, mainImage, title }: ImageGalleryProps) {
               className="relative w-14 h-14 flex-shrink-0 overflow-hidden transition-all duration-150"
               style={{
                 border: i === selected
-                  ? "2px solid #CAFF04"
+                  ? "2px solid var(--primary-text)"
                   : "2px solid var(--border)",
                 opacity: i === selected ? 1 : 0.6,
               }}

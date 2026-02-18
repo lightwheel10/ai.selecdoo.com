@@ -77,7 +77,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
           <mark
             key={i}
             className="bg-transparent"
-            style={{ color: "#CAFF04" }}
+            style={{ color: "var(--primary-text)" }}
           >
             {part}
           </mark>
@@ -119,9 +119,9 @@ function StoreFilter({
           className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
           style={{
             fontFamily: "var(--font-mono)",
-            backgroundColor: value ? "rgba(202,255,4,0.06)" : "transparent",
-            borderColor: value ? "rgba(202,255,4,0.3)" : "var(--border)",
-            color: value ? "#CAFF04" : "var(--muted-foreground)",
+            backgroundColor: value ? "var(--primary-muted)" : "transparent",
+            borderColor: value ? "var(--primary-muted)" : "var(--border)",
+            color: value ? "var(--primary-text)" : "var(--muted-foreground)",
           }}
         >
           {selectedStore?.name || label}
@@ -186,7 +186,7 @@ function StoreFilter({
                   style={{ fontFamily: "var(--font-mono)", borderRadius: 0 }}
                 >
                   {value === store.id ? (
-                    <Check className="w-3 h-3 mr-1.5 text-[#CAFF04]" />
+                    <Check className="w-3 h-3 mr-1.5 text-[var(--primary-text)]" />
                   ) : (
                     <span className="w-3 mr-1.5" />
                   )}
@@ -227,9 +227,9 @@ function SimpleFilter({
           className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
           style={{
             fontFamily: "var(--font-mono)",
-            backgroundColor: value ? "rgba(202,255,4,0.06)" : "transparent",
-            borderColor: value ? "rgba(202,255,4,0.3)" : "var(--border)",
-            color: value ? "#CAFF04" : "var(--muted-foreground)",
+            backgroundColor: value ? "var(--primary-muted)" : "transparent",
+            borderColor: value ? "var(--primary-muted)" : "var(--border)",
+            color: value ? "var(--primary-text)" : "var(--muted-foreground)",
           }}
         >
           {activeLabel || label}
@@ -251,7 +251,7 @@ function SimpleFilter({
               onChange(null);
               setOpen(false);
             }}
-            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
+            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-[var(--subtle-overlay)]"
             style={{
               fontFamily: "var(--font-mono)",
               color: "var(--muted-foreground)",
@@ -268,11 +268,11 @@ function SimpleFilter({
               onChange(option.value === value ? null : option.value);
               setOpen(false);
             }}
-            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-white/[0.04]"
+            className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:bg-[var(--subtle-overlay)]"
             style={{ fontFamily: "var(--font-mono)", borderRadius: 0 }}
           >
             {value === option.value ? (
-              <Check className="w-3 h-3 text-[#CAFF04]" />
+              <Check className="w-3 h-3" style={{ color: "var(--primary-text)" }} />
             ) : (
               <span className="w-3" />
             )}
@@ -463,11 +463,11 @@ export function ProductCatalog({
             value={localMinPrice}
             onChange={(e) => handleMinPriceChange(e.target.value)}
             placeholder={t("minPrice")}
-            className="w-[70px] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 outline-none transition-colors duration-150 focus:border-[#CAFF04]"
+            className="w-[70px] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 outline-none transition-colors duration-150 focus:border-[var(--primary-text)]"
             style={{
               backgroundColor: "transparent",
-              borderColor: localMinPrice ? "rgba(202,255,4,0.3)" : "var(--border)",
-              color: localMinPrice ? "#CAFF04" : "var(--muted-foreground)",
+              borderColor: localMinPrice ? "var(--primary-muted)" : "var(--border)",
+              color: localMinPrice ? "var(--primary-text)" : "var(--muted-foreground)",
               borderRadius: 0,
               fontFamily: "var(--font-mono)",
             }}
@@ -486,11 +486,11 @@ export function ProductCatalog({
             value={localMaxPrice}
             onChange={(e) => handleMaxPriceChange(e.target.value)}
             placeholder={t("maxPrice")}
-            className="w-[70px] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 outline-none transition-colors duration-150 focus:border-[#CAFF04]"
+            className="w-[70px] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 outline-none transition-colors duration-150 focus:border-[var(--primary-text)]"
             style={{
               backgroundColor: "transparent",
-              borderColor: localMaxPrice ? "rgba(202,255,4,0.3)" : "var(--border)",
-              color: localMaxPrice ? "#CAFF04" : "var(--muted-foreground)",
+              borderColor: localMaxPrice ? "var(--primary-muted)" : "var(--border)",
+              color: localMaxPrice ? "var(--primary-text)" : "var(--muted-foreground)",
               borderRadius: 0,
               fontFamily: "var(--font-mono)",
             }}
@@ -606,8 +606,8 @@ export function ProductCatalog({
                         className="w-4 h-4 flex-shrink-0 flex items-center justify-center text-[7px] font-bold"
                         style={{
                           fontFamily: "var(--font-mono)",
-                          backgroundColor: "rgba(202,255,4,0.10)",
-                          color: "#CAFF04",
+                          backgroundColor: "var(--primary-muted)",
+                          color: "var(--primary-text)",
                         }}
                       >
                         {store?.name[0] || "?"}

@@ -6,7 +6,8 @@ import { LogOut } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { signOut } from "@/app/actions/auth";
 import { setLocale } from "@/app/actions/locale";
-import { NAV_ITEMS } from "@/lib/constants";
+import { NAV_BOTTOM, NAV_ITEMS } from "@/lib/constants";
+import { ThemeToggle } from "@/components/domain/theme-toggle";
 import {
   Sidebar,
   SidebarContent,
@@ -52,8 +53,8 @@ export function AppSidebar({ user }: AppSidebarProps) {
             className="w-7 h-7 flex items-center justify-center text-[10px] font-bold"
             style={{
               fontFamily: "var(--font-mono)",
-              backgroundColor: "#CAFF04",
-              color: "#0A0A0A",
+              backgroundColor: "var(--primary)",
+              color: "var(--primary-foreground)",
             }}
           >
             S
@@ -83,21 +84,21 @@ export function AppSidebar({ user }: AppSidebarProps) {
                       isActive={active}
                       className="h-9"
                       style={{
-                        borderLeft: active ? "3px solid #CAFF04" : "3px solid transparent",
-                        backgroundColor: active ? "rgba(202,255,4,0.10)" : "transparent",
+                        borderLeft: active ? "3px solid var(--primary-text)" : "3px solid transparent",
+                        backgroundColor: active ? "var(--primary-muted)" : "transparent",
                         borderRadius: 0,
                       }}
                     >
                       <Link href={item.href}>
                         <item.icon
                           className="w-4 h-4"
-                          style={{ color: active ? "#CAFF04" : "var(--muted-foreground)" }}
+                          style={{ color: active ? "var(--primary-text)" : "var(--muted-foreground)" }}
                         />
                         <span
                           className="text-[10px] font-bold uppercase tracking-[0.15em]"
                           style={{
                             fontFamily: "var(--font-mono)",
-                            color: active ? "#CAFF04" : "var(--muted-foreground)",
+                            color: active ? "var(--primary-text)" : "var(--muted-foreground)",
                           }}
                         >
                           {t(item.labelKey)}
@@ -119,6 +120,41 @@ export function AppSidebar({ user }: AppSidebarProps) {
         <SidebarMenu>
           <SidebarMenuItem>
             <div className="px-3 py-2">
+              {/* Bottom Nav */}
+              {NAV_BOTTOM.length > 0 && (
+                <div className="mb-3">
+                  {NAV_BOTTOM.map((item) => {
+                    const active = isActive(item.href);
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className="h-8 px-2 flex items-center gap-2"
+                        style={{
+                          borderLeft: active ? "3px solid var(--primary-text)" : "3px solid transparent",
+                          backgroundColor: active ? "var(--primary-muted)" : "transparent",
+                          borderRadius: 0,
+                        }}
+                      >
+                        <item.icon
+                          className="w-4 h-4"
+                          style={{ color: active ? "var(--primary-text)" : "var(--muted-foreground)" }}
+                        />
+                        <span
+                          className="text-[10px] font-bold uppercase tracking-[0.15em]"
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            color: active ? "var(--primary-text)" : "var(--muted-foreground)",
+                          }}
+                        >
+                          {t(item.labelKey)}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+
               {/* Language Toggle */}
               <div className="flex gap-0 mb-3">
                 <button
@@ -126,11 +162,11 @@ export function AppSidebar({ user }: AppSidebarProps) {
                   className="flex-1 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors"
                   style={{
                     fontFamily: "var(--font-mono)",
-                    backgroundColor: locale === "en" ? "#CAFF04" : "transparent",
-                    color: locale === "en" ? "#0A0A0A" : "var(--muted-foreground)",
-                    borderTop: `2px solid ${locale === "en" ? "#CAFF04" : "var(--border)"}`,
-                    borderBottom: `2px solid ${locale === "en" ? "#CAFF04" : "var(--border)"}`,
-                    borderLeft: `2px solid ${locale === "en" ? "#CAFF04" : "var(--border)"}`,
+                    backgroundColor: locale === "en" ? "var(--primary)" : "transparent",
+                    color: locale === "en" ? "var(--primary-foreground)" : "var(--muted-foreground)",
+                    borderTop: `2px solid ${locale === "en" ? "var(--primary)" : "var(--border)"}`,
+                    borderBottom: `2px solid ${locale === "en" ? "var(--primary)" : "var(--border)"}`,
+                    borderLeft: `2px solid ${locale === "en" ? "var(--primary)" : "var(--border)"}`,
                     borderRight: `1px solid var(--border)`,
                   }}
                 >
@@ -141,16 +177,21 @@ export function AppSidebar({ user }: AppSidebarProps) {
                   className="flex-1 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors"
                   style={{
                     fontFamily: "var(--font-mono)",
-                    backgroundColor: locale === "de" ? "#CAFF04" : "transparent",
-                    color: locale === "de" ? "#0A0A0A" : "var(--muted-foreground)",
-                    borderTop: `2px solid ${locale === "de" ? "#CAFF04" : "var(--border)"}`,
-                    borderBottom: `2px solid ${locale === "de" ? "#CAFF04" : "var(--border)"}`,
-                    borderRight: `2px solid ${locale === "de" ? "#CAFF04" : "var(--border)"}`,
+                    backgroundColor: locale === "de" ? "var(--primary)" : "transparent",
+                    color: locale === "de" ? "var(--primary-foreground)" : "var(--muted-foreground)",
+                    borderTop: `2px solid ${locale === "de" ? "var(--primary)" : "var(--border)"}`,
+                    borderBottom: `2px solid ${locale === "de" ? "var(--primary)" : "var(--border)"}`,
+                    borderRight: `2px solid ${locale === "de" ? "var(--primary)" : "var(--border)"}`,
                     borderLeft: `1px solid var(--border)`,
                   }}
                 >
                   DE
                 </button>
+              </div>
+
+              {/* Theme Toggle */}
+              <div className="mb-3">
+                <ThemeToggle />
               </div>
 
               {/* User email */}
@@ -171,7 +212,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
                   className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
                   style={{
                     fontFamily: "var(--font-mono)",
-                    color: "#FF453A",
+                    color: "var(--destructive)",
                   }}
                 >
                   <LogOut className="w-3.5 h-3.5" />

@@ -43,7 +43,7 @@ export function ProductCard({
       className="border-2 flex flex-col relative group"
       style={{
         backgroundColor: "var(--card)",
-        borderColor: isSelected ? "#CAFF04" : "var(--border)",
+        borderColor: isSelected ? "var(--primary-text)" : "var(--border)",
       }}
     >
       {/* Checkbox */}
@@ -57,8 +57,8 @@ export function ProductCard({
         <div
           className="w-4 h-4 border-2 flex items-center justify-center transition-colors"
           style={{
-            backgroundColor: isSelected ? "#CAFF04" : "rgba(0,0,0,0.5)",
-            borderColor: isSelected ? "#CAFF04" : "var(--border)",
+            backgroundColor: isSelected ? "var(--primary)" : "rgba(0,0,0,0.5)",
+            borderColor: isSelected ? "var(--primary-text)" : "var(--border)",
           }}
         >
           {isSelected && (
@@ -67,7 +67,7 @@ export function ProductCard({
               height="10"
               viewBox="0 0 10 10"
               fill="none"
-              stroke="#0A0A0A"
+              stroke="var(--primary-foreground)"
               strokeWidth="2"
               strokeLinecap="square"
             >
@@ -117,8 +117,8 @@ export function ProductCard({
             className="w-4 h-4 flex-shrink-0 flex items-center justify-center text-[7px] font-bold"
             style={{
               fontFamily: "var(--font-mono)",
-              backgroundColor: "rgba(202,255,4,0.10)",
-              color: "#CAFF04",
+              backgroundColor: "var(--primary-muted)",
+              color: "var(--primary-text)",
             }}
           >
             {store?.name[0] || "?"}
@@ -190,7 +190,7 @@ export function ProductCard({
                 border: entry?.hasDeal
                   ? "1.5px solid #22C55E"
                   : "1.5px solid #22C55E40",
-                color: entry?.hasDeal ? "#0A0A0A" : "#22C55E",
+                color: entry?.hasDeal ? "var(--primary-foreground)" : "#22C55E",
               }}
             >
               <Tags className="w-3 h-3" />
@@ -206,7 +206,7 @@ export function ProductCard({
                 border: entry?.hasPost
                   ? "1.5px solid #5AC8FA"
                   : "1.5px solid #5AC8FA40",
-                color: entry?.hasPost ? "#0A0A0A" : "#5AC8FA",
+                color: entry?.hasPost ? "var(--primary-foreground)" : "#5AC8FA",
               }}
             >
               <PenSquare className="w-3 h-3" />
@@ -229,7 +229,7 @@ export function ProductCard({
                 googleStatus === "sent"
                   ? "1.5px solid #FF9F0A"
                   : "1.5px solid #FF9F0A40",
-              color: googleStatus === "sent" ? "#0A0A0A" : "#FF9F0A",
+              color: googleStatus === "sent" ? "var(--primary-foreground)" : "#FF9F0A",
             }}
           >
             {googleStatus === "sending" ? (

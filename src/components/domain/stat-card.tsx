@@ -9,7 +9,7 @@ interface StatCardProps {
 const changeColors = {
   positive: { color: "#22C55E", bg: "rgba(34,197,94,0.07)", border: "rgba(34,197,94,0.25)" },
   negative: { color: "#FF453A", bg: "rgba(255,69,58,0.07)", border: "rgba(255,69,58,0.25)" },
-  neutral: { color: "#555555", bg: "rgba(85,85,85,0.07)", border: "rgba(85,85,85,0.25)" },
+  neutral: { color: "var(--muted-foreground)", bg: "var(--status-neutral-bg)", border: "var(--status-neutral-border)" },
 };
 
 export function StatCard({ label, value, change, changeType = "neutral", subtitle }: StatCardProps) {

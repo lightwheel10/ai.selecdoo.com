@@ -149,7 +149,7 @@ export function MonitoringDashboard({
       <div>
         <button
           onClick={() => setTableCollapsed(!tableCollapsed)}
-          className="w-full flex items-center gap-2.5 px-4 py-3 border-2 transition-colors hover:bg-white/[0.02] group"
+          className="w-full flex items-center gap-2.5 px-4 py-3 border-2 transition-colors hover:bg-[var(--table-header-bg)] group"
           style={{
             backgroundColor: "var(--card)",
             borderColor: "var(--border)",
@@ -159,12 +159,12 @@ export function MonitoringDashboard({
           {tableCollapsed ? (
             <ChevronRight
               className="w-4 h-4 transition-transform"
-              style={{ color: "#CAFF04" }}
+              style={{ color: "var(--primary-text)" }}
             />
           ) : (
             <ChevronDown
               className="w-4 h-4 transition-transform"
-              style={{ color: "#CAFF04" }}
+              style={{ color: "var(--primary-text)" }}
             />
           )}
           <span
@@ -180,7 +180,7 @@ export function MonitoringDashboard({
             className="text-[10px] font-bold tracking-wider"
             style={{
               fontFamily: "var(--font-mono)",
-              color: "#CAFF04",
+              color: "var(--primary-text)",
             }}
           >
             {configs.length}
@@ -216,7 +216,7 @@ export function MonitoringDashboard({
             <Zap
               className="w-4 h-4"
               style={{
-                color: monitoringStatus.isActive ? "#CAFF04" : "#555555",
+                color: monitoringStatus.isActive ? "var(--primary-text)" : "var(--muted-foreground)",
               }}
             />
             <span
@@ -232,11 +232,11 @@ export function MonitoringDashboard({
               className="text-[10px] font-bold uppercase tracking-[0.15em] px-2 py-0.5"
               style={{
                 fontFamily: "var(--font-mono)",
-                color: monitoringStatus.isActive ? "#22C55E" : "#555555",
+                color: monitoringStatus.isActive ? "#22C55E" : "var(--muted-foreground)",
                 backgroundColor: monitoringStatus.isActive
                   ? "rgba(34,197,94,0.07)"
-                  : "rgba(85,85,85,0.07)",
-                border: `1.5px solid ${monitoringStatus.isActive ? "rgba(34,197,94,0.25)" : "rgba(85,85,85,0.25)"}`,
+                  : "var(--status-neutral-bg)",
+                border: `1.5px solid ${monitoringStatus.isActive ? "rgba(34,197,94,0.25)" : "var(--status-neutral-border)"}`,
               }}
             >
               {monitoringStatus.isActive ? t("enabled") : t("disabled")}

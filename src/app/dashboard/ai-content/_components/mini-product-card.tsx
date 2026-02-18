@@ -47,8 +47,8 @@ export function MiniProductCard({
     <div
       className="flex items-center gap-3 px-3 py-2 border-2 group transition-colors"
       style={{
-        backgroundColor: isSelected ? "rgba(202,255,4,0.03)" : "var(--card)",
-        borderColor: isSelected ? "#CAFF04" : "var(--border)",
+        backgroundColor: isSelected ? "var(--primary-muted)" : "var(--card)",
+        borderColor: isSelected ? "var(--primary-text)" : "var(--border)",
       }}
     >
       {/* Checkbox */}
@@ -62,8 +62,8 @@ export function MiniProductCard({
         <div
           className="w-4 h-4 border-2 flex items-center justify-center transition-colors"
           style={{
-            backgroundColor: isSelected ? "#CAFF04" : "transparent",
-            borderColor: isSelected ? "#CAFF04" : "var(--border)",
+            backgroundColor: isSelected ? "var(--primary)" : "transparent",
+            borderColor: isSelected ? "var(--primary-text)" : "var(--border)",
           }}
         >
           {isSelected && (
@@ -72,7 +72,7 @@ export function MiniProductCard({
               height="10"
               viewBox="0 0 10 10"
               fill="none"
-              stroke="#0A0A0A"
+              stroke="var(--primary-foreground)"
               strokeWidth="2"
               strokeLinecap="square"
             >
@@ -150,7 +150,7 @@ export function MiniProductCard({
             border: entry?.hasDeal
               ? "1.5px solid #22C55E"
               : "1.5px solid #22C55E40",
-            color: entry?.hasDeal ? "#0A0A0A" : "#22C55E",
+            color: entry?.hasDeal ? "var(--primary-foreground)" : "#22C55E",
           }}
           title={entry?.hasDeal ? t("viewDeal") : t("generateDeal")}
         >
@@ -166,7 +166,7 @@ export function MiniProductCard({
             border: entry?.hasPost
               ? "1.5px solid #5AC8FA"
               : "1.5px solid #5AC8FA40",
-            color: entry?.hasPost ? "#0A0A0A" : "#5AC8FA",
+            color: entry?.hasPost ? "var(--primary-foreground)" : "#5AC8FA",
           }}
           title={entry?.hasPost ? t("viewPost") : t("generatePost")}
         >
@@ -188,7 +188,7 @@ export function MiniProductCard({
               googleStatus === "sent"
                 ? "1.5px solid #FF9F0A"
                 : "1.5px solid #FF9F0A40",
-            color: googleStatus === "sent" ? "#0A0A0A" : "#FF9F0A",
+            color: googleStatus === "sent" ? "var(--primary-foreground)" : "#FF9F0A",
           }}
           title={
             googleStatus === "sent"

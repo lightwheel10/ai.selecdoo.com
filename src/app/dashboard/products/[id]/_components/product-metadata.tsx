@@ -43,7 +43,7 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
       className="text-[9px] font-bold uppercase tracking-[0.15em] mt-4 mb-1 pb-1"
       style={{
         fontFamily: "var(--font-mono)",
-        color: "#CAFF04",
+        color: "var(--primary-text)",
         borderBottom: "1px solid var(--border)",
       }}
     >

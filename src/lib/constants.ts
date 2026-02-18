@@ -7,6 +7,7 @@ import {
   Sparkles,
   ShieldCheck,
   Activity,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 
@@ -27,6 +28,8 @@ export const NAV_ITEMS: NavItem[] = [
   { labelKey: "monitoring", icon: Activity, href: "/dashboard/monitoring" },
 ];
 
-export const NAV_BOTTOM: NavItem[] = [];
+export const NAV_BOTTOM: NavItem[] = [
+  { labelKey: "settings", icon: Settings, href: "/dashboard/settings" },
+];
 
 export const APP_NAME = "Selecdoo";

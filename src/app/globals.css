@@ -48,8 +48,56 @@
   --radius-4xl: 0px;
 }
 
+/* Light mode (default) */
 :root {
   --radius: 0;
+  --background: #F5F5F0;
+  --foreground: #0A0A0A;
+  --card: #FFFFFF;
+  --card-foreground: #0A0A0A;
+  --popover: #FAFAF5;
+  --popover-foreground: #0A0A0A;
+  --primary: #CAFF04;
+  --primary-foreground: #0A0A0A;
+  --secondary: #F0F0EB;
+  --secondary-foreground: #0A0A0A;
+  --muted: #F0F0EB;
+  --muted-foreground: #999999;
+  --accent: #CAFF04;
+  --accent-foreground: #0A0A0A;
+  --destructive: #FF453A;
+  --border: #E0E0DA;
+  --input: #F0F0EB;
+  --ring: #CAFF04;
+  --chart-1: #22C55E;
+  --chart-2: #FF9F0A;
+  --chart-3: #FF453A;
+  --chart-4: #5AC8FA;
+  --chart-5: #9ABF03;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #0A0A0A;
+  --sidebar-primary: #CAFF04;
+  --sidebar-primary-foreground: #0A0A0A;
+  --sidebar-accent: #F0F0EB;
+  --sidebar-accent-foreground: #0A0A0A;
+  --sidebar-border: #E0E0DA;
+  --sidebar-ring: #CAFF04;
+  --primary-text: #7A9900;
+  --primary-muted: rgba(202,255,4,0.15);
+  --surface: #FFFFFF;
+  --border-strong: #1A1A1A;
+  --text-secondary: #5A5A5A;
+  --input-bg: #F0F0EB;
+  --primary-border: rgba(122,153,0,0.35);
+  --hard-shadow: 4px 4px 0px #1A1A1A;
+  --table-header-bg: rgba(0,0,0,0.02);
+  --subtle-overlay: rgba(0,0,0,0.04);
+  --status-neutral-bg: rgba(153,153,153,0.07);
+  --status-neutral-border: rgba(153,153,153,0.25);
+}
+
+/* Dark mode */
+.dark {
   --background: #0A0A0A;
   --foreground: #FAFAFA;
   --card: #141414;
@@ -68,11 +116,6 @@
   --border: #2A2A2A;
   --input: #111111;
   --ring: #CAFF04;
-  --chart-1: #22C55E;
-  --chart-2: #FF9F0A;
-  --chart-3: #FF453A;
-  --chart-4: #5AC8FA;
-  --chart-5: #9ABF03;
   --sidebar: #141414;
   --sidebar-foreground: #FAFAFA;
   --sidebar-primary: #CAFF04;
@@ -81,6 +124,18 @@
   --sidebar-accent-foreground: #FAFAFA;
   --sidebar-border: #2A2A2A;
   --sidebar-ring: #CAFF04;
+  --primary-text: #CAFF04;
+  --primary-muted: rgba(202,255,4,0.10);
+  --surface: #141414;
+  --border-strong: #404040;
+  --text-secondary: #A0A0A0;
+  --input-bg: #111111;
+  --primary-border: rgba(202,255,4,0.3);
+  --hard-shadow: 4px 4px 0px #CAFF04;
+  --table-header-bg: rgba(255,255,255,0.02);
+  --subtle-overlay: rgba(255,255,255,0.04);
+  --status-neutral-bg: rgba(85,85,85,0.07);
+  --status-neutral-border: rgba(85,85,85,0.25);
 }
 
 @layer base {
@@ -92,6 +147,22 @@
   }
 }
 
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 @layer utilities {
   .scrollbar-none {
     -ms-overflow-style: none;
@@ -99,5 +170,13 @@
     &::-webkit-scrollbar {
       display: none;
     }
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.5s ease-out both;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out both;
   }
 }

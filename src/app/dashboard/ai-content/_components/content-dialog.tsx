@@ -125,8 +125,8 @@ export function ContentDialog({
                       className="w-4 h-4 flex-shrink-0 flex items-center justify-center text-[7px] font-bold"
                       style={{
                         fontFamily: "var(--font-mono)",
-                        backgroundColor: "rgba(202,255,4,0.10)",
-                        color: "#CAFF04",
+                        backgroundColor: "var(--primary-muted)",
+                        color: "var(--primary-text)",
                       }}
                     >
                       {storeMap[modal.product.store_id]?.name[0] || "?"}
@@ -171,7 +171,7 @@ export function ContentDialog({
                         style={{
                           fontFamily: "var(--font-mono)",
                           color: "var(--muted-foreground)",
-                          backgroundColor: "rgba(255,255,255,0.04)",
+                          backgroundColor: "var(--subtle-overlay)",
                           border: "1px solid var(--border)",
                         }}
                       >
@@ -332,7 +332,7 @@ function ContentView({
           <textarea
             value={editText}
             onChange={(e) => onEditTextChange(e.target.value)}
-            className="w-full text-[12px] leading-relaxed p-3 border-2 mb-2 resize-y outline-none transition-colors focus:border-[#CAFF04]"
+            className="w-full text-[12px] leading-relaxed p-3 border-2 mb-2 resize-y outline-none transition-colors focus:border-primary"
             style={{
               backgroundColor: "var(--input)",
               borderColor: "var(--border)",
@@ -603,7 +603,7 @@ function GenerateView({
               fontFamily: "var(--font-mono)",
               backgroundColor: accentColor,
               borderColor: accentColor,
-              color: "#0A0A0A",
+              color: "var(--primary-foreground)",
               boxShadow: `3px 3px 0px ${accentColor}`,
             }}
           >

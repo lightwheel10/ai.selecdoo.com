@@ -33,7 +33,7 @@ const activityIcons: Record<ActivityType, { icon: typeof TrendingDown; color: st
   store_added: { icon: Store, color: "#5AC8FA" },
   scrape_complete: { icon: Scan, color: "#9ABF03" },
   monitoring_alert: { icon: Bell, color: "#FF9F0A" },
-  ai_content_generated: { icon: Sparkles, color: "#CAFF04" },
+  ai_content_generated: { icon: Sparkles, color: "var(--primary-text)" },
 };
 
 function formatDuration(start: string, end: string | null, inProgressText: string) {
@@ -154,7 +154,7 @@ export default async function DashboardPage() {
               className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
               style={{
                 fontFamily: "var(--font-mono)",
-                color: "#CAFF04",
+                color: "var(--primary-text)",
               }}
             >
               {t("viewAll")}
@@ -203,7 +203,7 @@ export default async function DashboardPage() {
                         className="text-[9px] font-bold"
                         style={{
                           fontFamily: "var(--font-mono)",
-                          color: "#CAFF04",
+                          color: "var(--primary-text)",
                         }}
                       >
                         {job.store_name[0]}
@@ -277,7 +277,7 @@ export default async function DashboardPage() {
               className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
               style={{
                 fontFamily: "var(--font-mono)",
-                color: "#CAFF04",
+                color: "var(--primary-text)",
               }}
             >
               {t("viewAll")}

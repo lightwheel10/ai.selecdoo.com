@@ -328,7 +328,7 @@ export function ProductDetailView({ product, store }: ProductDetailViewProps) {
             className="text-[10px] font-bold uppercase tracking-[0.15em] mb-3"
             style={{
               fontFamily: "var(--font-mono)",
-              color: "#CAFF04",
+              color: "var(--primary-text)",
             }}
           >
             {t("variants")}
@@ -345,7 +345,7 @@ export function ProductDetailView({ product, store }: ProductDetailViewProps) {
               className="text-[10px] font-bold uppercase tracking-[0.15em]"
               style={{
                 fontFamily: "var(--font-mono)",
-                color: "#CAFF04",
+                color: "var(--primary-text)",
               }}
             >
               {t("description")}
@@ -363,15 +363,15 @@ export function ProductDetailView({ product, store }: ProductDetailViewProps) {
                       fontFamily: "var(--font-mono)",
                       backgroundColor:
                         descLang === lang
-                          ? "rgba(202,255,4,0.10)"
+                          ? "var(--primary-muted)"
                           : "transparent",
                       border:
                         descLang === lang
-                          ? "1.5px solid rgba(202,255,4,0.3)"
+                          ? "1.5px solid var(--primary-muted)"
                           : "1.5px solid var(--border)",
                       color:
                         descLang === lang
-                          ? "#CAFF04"
+                          ? "var(--primary-text)"
                           : "var(--muted-foreground)",
                     }}
                   >
@@ -416,7 +416,7 @@ export function ProductDetailView({ product, store }: ProductDetailViewProps) {
           className="text-[10px] font-bold uppercase tracking-[0.15em] mb-3"
           style={{
             fontFamily: "var(--font-mono)",
-            color: "#CAFF04",
+            color: "var(--primary-text)",
           }}
         >
           {t("metadata")}
@@ -431,7 +431,7 @@ export function ProductDetailView({ product, store }: ProductDetailViewProps) {
             className="text-[10px] font-bold uppercase tracking-[0.15em] mb-3"
             style={{
               fontFamily: "var(--font-mono)",
-              color: "#CAFF04",
+              color: "var(--primary-text)",
             }}
           >
             {t("recommendedProducts")}

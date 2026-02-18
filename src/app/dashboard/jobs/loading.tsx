@@ -42,7 +42,7 @@ export default function JobsLoading() {
           className="flex items-center px-4 h-10"
           style={{
             borderBottom: "2px solid var(--border)",
-            backgroundColor: "rgba(255,255,255,0.02)",
+            backgroundColor: "var(--table-header-bg)",
           }}
         >
           <div style={{ width: "15%" }}>

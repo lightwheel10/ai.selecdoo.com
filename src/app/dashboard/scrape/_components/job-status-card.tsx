@@ -29,7 +29,7 @@ export function JobStatusCard({
       ? "#22C55E"
       : phase === "failed"
         ? "#FF453A"
-        : "#CAFF04";
+        : "var(--primary-text)";
 
   const statusText =
     phase === "completed"

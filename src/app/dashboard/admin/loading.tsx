@@ -37,7 +37,7 @@ export default function AdminLoading() {
           className="flex items-center gap-4 px-4 py-3"
           style={{
             borderBottom: "2px solid var(--border)",
-            backgroundColor: "rgba(255,255,255,0.02)",
+            backgroundColor: "var(--table-header-bg)",
           }}
         >
           {[120, 100, 90, 60, 50, 40].map((w, i) => (

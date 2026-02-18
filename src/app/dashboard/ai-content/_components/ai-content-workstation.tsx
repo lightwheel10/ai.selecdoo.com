@@ -583,12 +583,12 @@ export function AIContentWorkstation({
         <div
           className="flex items-center gap-2 px-4 py-2 mb-4 border-2"
           style={{
-            backgroundColor: "rgba(202,255,4,0.04)",
+            backgroundColor: "var(--primary-muted)",
             borderColor: "var(--border)",
-            borderLeft: "4px solid #CAFF04",
+            borderLeft: "4px solid var(--primary-text)",
           }}
         >
-          <Tags className="w-3.5 h-3.5" style={{ color: "#CAFF04" }} />
+          <Tags className="w-3.5 h-3.5" style={{ color: "var(--primary-text)" }} />
           <p
             className="text-[10px] font-bold uppercase tracking-[0.15em]"
             style={{
@@ -650,12 +650,12 @@ export function AIContentWorkstation({
           style={{
             fontFamily: "var(--font-mono)",
             backgroundColor: showFilters
-              ? "rgba(202,255,4,0.06)"
+              ? "var(--primary-muted)"
               : "transparent",
             borderColor: showFilters
-              ? "rgba(202,255,4,0.3)"
+              ? "var(--primary-border)"
               : "var(--border)",
-            color: showFilters ? "#CAFF04" : "var(--muted-foreground)",
+            color: showFilters ? "var(--primary-text)" : "var(--muted-foreground)",
           }}
         >
           <SlidersHorizontal className="w-3 h-3" />
@@ -674,9 +674,9 @@ export function AIContentWorkstation({
             className="w-4 h-4 border-2 flex items-center justify-center transition-colors"
             style={{
               backgroundColor: allFilteredSelected
-                ? "#CAFF04"
+                ? "var(--primary)"
                 : "transparent",
-              borderColor: allFilteredSelected ? "#CAFF04" : "var(--border)",
+              borderColor: allFilteredSelected ? "var(--primary-text)" : "var(--border)",
             }}
           >
             {allFilteredSelected && (
@@ -685,7 +685,7 @@ export function AIContentWorkstation({
                 height="10"
                 viewBox="0 0 10 10"
                 fill="none"
-                stroke="#0A0A0A"
+                stroke="var(--primary-foreground)"
                 strokeWidth="2"
                 strokeLinecap="square"
               >
@@ -711,7 +711,7 @@ export function AIContentWorkstation({
               className="text-[10px] font-bold uppercase tracking-[0.15em]"
               style={{
                 fontFamily: "var(--font-mono)",
-                color: "#CAFF04",
+                color: "var(--primary-text)",
               }}
             >
               {t("selectedCount", { count: selectedProducts.size })}

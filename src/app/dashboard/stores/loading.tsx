@@ -27,7 +27,7 @@ export default function StoresLoading() {
           className="flex items-center px-4 py-2.5 border-b-2"
           style={{
             borderColor: "var(--border)",
-            backgroundColor: "rgba(255,255,255,0.02)",
+            backgroundColor: "var(--table-header-bg)",
           }}
         >
           <Skeleton className="h-2.5 w-14" style={{ width: "22%" }} />
