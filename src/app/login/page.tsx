@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, Zap, Loader2, ArrowRight } from "lucide-react";
@@ -16,17 +16,13 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [step, setStep] = useState<Step>("idle");
   const [otpCode, setOtpCode] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const initialError = useMemo(() => {
+    const urlError = searchParams.get("error");
+    return urlError === "verification_failed" ? "Verification failed. Please try again." : null;
+  }, [searchParams]);
+  const [error, setError] = useState<string | null>(initialError);
   const [loading, setLoading] = useState(false);
   const [cooldown, setCooldown] = useState(0);
-
-  // Check for error from magic link callback
-  useEffect(() => {
-    const urlError = searchParams.get("error");
-    if (urlError === "verification_failed") {
-      setError("Verification failed. Please try again.");
-    }
-  }, [searchParams]);
 
   // Cooldown timer
   useEffect(() => {
