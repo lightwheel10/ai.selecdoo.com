@@ -9,6 +9,11 @@ import { setLocale } from "@/app/actions/locale";
 import { NAV_BOTTOM, NAV_ITEMS } from "@/lib/constants";
 import { ThemeToggle } from "@/components/domain/theme-toggle";
 import {
+  canAccessAdmin,
+  canAccessSettings,
+  type AppRole,
+} from "@/lib/auth/roles";
+import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -23,13 +28,21 @@ import {
 
 interface AppSidebarProps {
   user: { email?: string } | null;
+  role: AppRole;
 }
 
-export function AppSidebar({ user }: AppSidebarProps) {
+export function AppSidebar({ user, role }: AppSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const t = useTranslations("Sidebar");
   const locale = useLocale();
+
+  const visibleMainItems = NAV_ITEMS.filter(
+    (item) => item.href !== "/dashboard/admin" || canAccessAdmin(role)
+  );
+  const visibleBottomItems = NAV_BOTTOM.filter(
+    (item) => item.href !== "/dashboard/settings" || canAccessSettings(role)
+  );
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
@@ -75,7 +88,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {NAV_ITEMS.map((item) => {
+              {visibleMainItems.map((item) => {
                 const active = isActive(item.href);
                 return (
                   <SidebarMenuItem key={item.href}>
@@ -121,9 +134,9 @@ export function AppSidebar({ user }: AppSidebarProps) {
           <SidebarMenuItem>
             <div className="px-3 py-2">
               {/* Bottom Nav */}
-              {NAV_BOTTOM.length > 0 && (
+              {visibleBottomItems.length > 0 && (
                 <div className="mb-3">
-                  {NAV_BOTTOM.map((item) => {
+                  {visibleBottomItems.map((item) => {
                     const active = isActive(item.href);
                     return (
                       <Link
