@@ -31,7 +31,7 @@ const statusColors: Record<Status, { color: string; bg: string; border: string }
   in_stock: { color: "#22C55E", bg: "rgba(34,197,94,0.07)", border: "rgba(34,197,94,0.25)" },
   out_of_stock: { color: "#FF453A", bg: "rgba(255,69,58,0.07)", border: "rgba(255,69,58,0.25)" },
   pending: { color: "#555555", bg: "rgba(85,85,85,0.07)", border: "rgba(85,85,85,0.25)" },
-  running: { color: "#0A84FF", bg: "rgba(10,132,255,0.07)", border: "rgba(10,132,255,0.25)" },
+  running: { color: "#5AC8FA", bg: "rgba(90,200,250,0.07)", border: "rgba(90,200,250,0.25)" },
   completed: { color: "#22C55E", bg: "rgba(34,197,94,0.07)", border: "rgba(34,197,94,0.25)" },
   failed: { color: "#FF453A", bg: "rgba(255,69,58,0.07)", border: "rgba(255,69,58,0.25)" },
   success: { color: "#22C55E", bg: "rgba(34,197,94,0.07)", border: "rgba(34,197,94,0.25)" },

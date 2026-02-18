@@ -17,7 +17,7 @@ export function JobStats({ total, completed, failed, running, labels }: JobStats
   const stats = [
     { label: labels.totalJobs, value: total, color: "var(--foreground)" },
     { label: labels.completed, value: completed, color: "#22C55E" },
-    { label: labels.running, value: running, color: "#0A84FF" },
+    { label: labels.running, value: running, color: "#5AC8FA" },
     { label: labels.failed, value: failed, color: "#FF453A" },
   ];
 
