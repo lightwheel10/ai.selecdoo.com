@@ -274,6 +274,7 @@ export function MonitoringTable({ configs, logs }: MonitoringTableProps) {
                 <TableCell>
                   <span
                     className="text-[10px] font-bold tracking-wider"
+                    suppressHydrationWarning
                     style={{
                       fontFamily: "var(--font-mono)",
                       color: "var(--muted-foreground)",
@@ -287,6 +288,7 @@ export function MonitoringTable({ configs, logs }: MonitoringTableProps) {
                 <TableCell>
                   <span
                     className="text-[10px] font-bold tracking-wider"
+                    suppressHydrationWarning
                     style={{
                       fontFamily: "var(--font-mono)",
                       color: config.next_check_at

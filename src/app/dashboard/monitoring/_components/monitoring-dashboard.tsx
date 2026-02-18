@@ -257,6 +257,7 @@ export function MonitoringDashboard({
             monitoringStatus.soonestConfig.next_check_at && (
               <p
                 className="text-[11px] font-semibold"
+                suppressHydrationWarning
                 style={{ color: "var(--foreground)" }}
               >
                 {t("nextCheckDetailed", {

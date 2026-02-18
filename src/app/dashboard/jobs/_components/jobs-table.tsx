@@ -735,6 +735,7 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
                   <TableCell>
                     <span
                       className="text-[10px] font-bold tracking-wider"
+                      suppressHydrationWarning
                       style={{
                         fontFamily: "var(--font-mono)",
                         color: "var(--muted-foreground)",

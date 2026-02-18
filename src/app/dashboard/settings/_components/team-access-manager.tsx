@@ -568,10 +568,10 @@ export function TeamAccessManager() {
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="text-[11px] text-muted-foreground">
+                    <TableCell className="text-[11px] text-muted-foreground" suppressHydrationWarning>
                       {formatDate(member.last_sign_in_at)}
                     </TableCell>
-                    <TableCell className="text-[11px] text-muted-foreground">
+                    <TableCell className="text-[11px] text-muted-foreground" suppressHydrationWarning>
                       {formatDate(member.created_at)}
                     </TableCell>
                   </TableRow>

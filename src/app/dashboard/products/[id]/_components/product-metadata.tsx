@@ -29,6 +29,7 @@ function MetaRow({
       </span>
       <span
         className="text-[11px] font-semibold text-right max-w-[60%] truncate"
+        suppressHydrationWarning
         style={{ fontFamily: "var(--font-mono)" }}
       >
         {value || na}

@@ -434,6 +434,7 @@ function ContentView({
               >
                 <span
                   className="text-[9px] font-bold uppercase tracking-[0.15em]"
+                  suppressHydrationWarning
                   style={{
                     fontFamily: "var(--font-mono)",
                     color: "var(--muted-foreground)",
@@ -536,6 +537,7 @@ function WebhookButton({
       <button
         onClick={onSend}
         className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
+        suppressHydrationWarning
         style={{
           fontFamily: "var(--font-mono)",
           backgroundColor: "#22C55E12",
