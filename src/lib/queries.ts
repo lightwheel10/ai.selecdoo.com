@@ -512,7 +512,8 @@ export async function getMonitoringConfigs(): Promise<MonitoringConfig[]> {
   const [{ data, error }, storeNames] = await Promise.all([
     supabase
       .from("monitoring_configs")
-      .select("*")
+      .select("*, stores!inner(deleted_at)")
+      .is("stores.deleted_at", null)
       .order("created_at", { ascending: false }),
     getStoreNameMap(),
   ]);
