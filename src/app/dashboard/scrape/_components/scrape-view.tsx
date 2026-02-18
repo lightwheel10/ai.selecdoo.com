@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { JobStatusCard } from "./job-status-card";
 import { ScrapeResults } from "./scrape-results";
 import type { Store, Product } from "@/types";
+import { canStartScrape } from "@/lib/auth/roles";
+import { useAuthAccess } from "@/components/domain/role-provider";
 
 type ScrapePhase = "idle" | "scraping" | "completed" | "failed";
 
@@ -172,6 +174,8 @@ interface ScrapeViewProps {
 export function ScrapeView({ stores, products: initialProducts }: ScrapeViewProps) {
   const t = useTranslations("Scrape");
   const searchParams = useSearchParams();
+  const access = useAuthAccess();
+  const allowStartScrape = canStartScrape(access);
 
   // Form state
   const [url, setUrl] = useState("");
@@ -261,7 +265,6 @@ export function ScrapeView({ stores, products: initialProducts }: ScrapeViewProp
     }
 
     loadJob(qJobId);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   // Find store matching the entered URL
@@ -336,7 +339,7 @@ export function ScrapeView({ stores, products: initialProducts }: ScrapeViewProp
 
   async function handleStartScrape(e: React.FormEvent) {
     e.preventDefault();
-    if (!url.trim() || phase === "scraping" || !storeId) return;
+    if (!allowStartScrape || !url.trim() || phase === "scraping" || !storeId) return;
 
     setPhase("scraping");
     setStatusKey("initializing");
@@ -453,7 +456,7 @@ export function ScrapeView({ stores, products: initialProducts }: ScrapeViewProp
                 setSelectedStoreId(null);
               }}
               placeholder={t("placeholder")}
-              disabled={isScraping}
+              disabled={isScraping || !allowStartScrape}
               className="flex-1 px-3 py-2.5 text-xs border-2 outline-none transition-colors duration-150 focus:border-primary"
               style={{
                 backgroundColor: "var(--input)",
@@ -465,7 +468,7 @@ export function ScrapeView({ stores, products: initialProducts }: ScrapeViewProp
             />
             <button
               type="submit"
-              disabled={!url.trim() || isScraping || !storeId}
+              disabled={!allowStartScrape || !url.trim() || isScraping || !storeId}
               className="flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-bold uppercase tracking-wider border-2 transition-all duration-150 whitespace-nowrap active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-40 disabled:pointer-events-none bg-primary text-primary-foreground border-primary shadow-[3px_3px_0px] shadow-primary"
               style={{ fontFamily: "var(--font-mono)" }}
             >
@@ -527,7 +530,9 @@ export function ScrapeView({ stores, products: initialProducts }: ScrapeViewProp
         </form>
 
         {/* Quick re-scrape — only in idle */}
-        {phase === "idle" && stores.filter((s) => s.status === "active").length > 0 && (
+        {allowStartScrape &&
+          phase === "idle" &&
+          stores.filter((s) => s.status === "active").length > 0 && (
           <QuickRescrape
             stores={stores}
             onSelect={handleQuickScrape}

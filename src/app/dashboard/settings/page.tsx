@@ -1,28 +1,21 @@
 import { getTranslations } from "next-intl/server";
-import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { canAccessSettings } from "@/lib/auth/roles";
-import { resolveAppRole } from "@/lib/auth/roles-server";
+import { canAccessSettings, canManageTeamRoles } from "@/lib/auth/roles";
+import { getAuthContext } from "@/lib/auth/session";
 import { TeamAccessManager } from "./_components/team-access-manager";
 
 export default async function SettingsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const isDevBypass =
-    process.env.NODE_ENV === "development" &&
-    process.env.DEV_BYPASS === "true";
+  const { user, role, permissions, isDevBypass } = await getAuthContext();
 
   if (!user && !isDevBypass) {
     redirect("/login");
   }
 
-  const role = isDevBypass ? "admin" : resolveAppRole(user);
-  if (!canAccessSettings(role)) {
+  if (!canAccessSettings({ role, permissions })) {
     redirect("/dashboard");
   }
+
+  const canManageTeam = canManageTeamRoles({ role, permissions });
 
   const [t, ts] = await Promise.all([
     getTranslations("Sidebar"),
@@ -41,28 +34,7 @@ export default async function SettingsPage() {
         {t("settings")}
       </h1>
 
-      <div
-        className="border-2 p-6"
-        style={{
-          backgroundColor: "var(--card)",
-          borderColor: "var(--border)",
-        }}
-      >
-        <p
-          className="text-[10px] font-bold uppercase tracking-[0.15em] mb-2"
-          style={{
-            fontFamily: "var(--font-mono)",
-            color: "var(--primary-text)",
-          }}
-        >
-          {ts("placeholderTitle")}
-        </p>
-        <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-          {ts("placeholderDescription")}
-        </p>
-      </div>
-
-      {role === "admin" ? (
+      {canManageTeam ? (
         <TeamAccessManager />
       ) : (
         <div

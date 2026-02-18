@@ -19,13 +19,15 @@ interface MiniProductCardProps {
   isSelected: boolean;
   googleStatus: "none" | "sending" | "sent";
   t: (key: string) => string;
+  canSelect?: boolean;
+  canDeleteProduct?: boolean;
   onOpenModal: (
     product: Product,
     contentType: "deal_post" | "social_post"
   ) => void;
   onToggleSelect: (productId: string) => void;
   onSendToGoogle: (product: Product) => void;
-  onDelete: (product: Product) => void;
+  onDelete?: (product: Product) => void;
 }
 
 export function MiniProductCard({
@@ -35,6 +37,8 @@ export function MiniProductCard({
   isSelected,
   googleStatus,
   t,
+  canSelect = true,
+  canDeleteProduct = false,
   onOpenModal,
   onToggleSelect,
   onSendToGoogle,
@@ -51,36 +55,37 @@ export function MiniProductCard({
         borderColor: isSelected ? "var(--primary-text)" : "var(--border)",
       }}
     >
-      {/* Checkbox */}
-      <label className="flex-shrink-0 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={isSelected}
-          onChange={() => onToggleSelect(product.id)}
-          className="sr-only"
-        />
-        <div
-          className="w-4 h-4 border-2 flex items-center justify-center transition-colors"
-          style={{
-            backgroundColor: isSelected ? "var(--primary)" : "transparent",
-            borderColor: isSelected ? "var(--primary-text)" : "var(--border)",
-          }}
-        >
-          {isSelected && (
-            <svg
-              width="10"
-              height="10"
-              viewBox="0 0 10 10"
-              fill="none"
-              stroke="var(--primary-foreground)"
-              strokeWidth="2"
-              strokeLinecap="square"
-            >
-              <path d="M2 5l2.5 2.5L8 3" />
-            </svg>
-          )}
-        </div>
-      </label>
+      {canSelect && (
+        <label className="flex-shrink-0 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => onToggleSelect(product.id)}
+            className="sr-only"
+          />
+          <div
+            className="w-4 h-4 border-2 flex items-center justify-center transition-colors"
+            style={{
+              backgroundColor: isSelected ? "var(--primary)" : "transparent",
+              borderColor: isSelected ? "var(--primary-text)" : "var(--border)",
+            }}
+          >
+            {isSelected && (
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 10 10"
+                fill="none"
+                stroke="var(--primary-foreground)"
+                strokeWidth="2"
+                strokeLinecap="square"
+              >
+                <path d="M2 5l2.5 2.5L8 3" />
+              </svg>
+            )}
+          </div>
+        </label>
+      )}
 
       {/* Thumbnail */}
       <div
@@ -205,21 +210,22 @@ export function MiniProductCard({
           )}
         </button>
 
-        {/* Delete (hover only) */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(product);
-          }}
-          className="w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-          style={{
-            backgroundColor: "rgba(255,69,58,0.15)",
-            border: "1.5px solid rgba(255,69,58,0.4)",
-          }}
-          title={t("deleteProduct")}
-        >
-          <Trash2 className="w-3 h-3" style={{ color: "#FF453A" }} />
-        </button>
+        {canDeleteProduct && onDelete && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(product);
+            }}
+            className="w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{
+              backgroundColor: "rgba(255,69,58,0.15)",
+              border: "1.5px solid rgba(255,69,58,0.4)",
+            }}
+            title={t("deleteProduct")}
+          >
+            <Trash2 className="w-3 h-3" style={{ color: "#FF453A" }} />
+          </button>
+        )}
       </div>
     </div>
   );

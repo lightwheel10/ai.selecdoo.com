@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
@@ -9,6 +10,7 @@ import { setLocale } from "@/app/actions/locale";
 import { NAV_BOTTOM, NAV_ITEMS } from "@/lib/constants";
 import { ThemeToggle } from "@/components/domain/theme-toggle";
 import {
+  type AppPermission,
   canAccessAdmin,
   canAccessSettings,
   type AppRole,
@@ -25,23 +27,29 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface AppSidebarProps {
   user: { email?: string } | null;
   role: AppRole;
+  permissions: AppPermission[];
 }
 
-export function AppSidebar({ user, role }: AppSidebarProps) {
+export function AppSidebar({ user, role, permissions }: AppSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const t = useTranslations("Sidebar");
   const locale = useLocale();
+  const [signOutOpen, setSignOutOpen] = useState(false);
 
   const visibleMainItems = NAV_ITEMS.filter(
-    (item) => item.href !== "/dashboard/admin" || canAccessAdmin(role)
+    (item) =>
+      item.href !== "/dashboard/admin" || canAccessAdmin({ role, permissions })
   );
   const visibleBottomItems = NAV_BOTTOM.filter(
-    (item) => item.href !== "/dashboard/settings" || canAccessSettings(role)
+    (item) =>
+      item.href !== "/dashboard/settings" ||
+      canAccessSettings({ role, permissions })
   );
 
   const isActive = (href: string) => {
@@ -217,23 +225,77 @@ export function AppSidebar({ user, role }: AppSidebarProps) {
               </p>
 
               {/* Sign Out */}
-              <form action={signOut}>
-                <button
-                  type="submit"
-                  className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    color: "var(--destructive)",
-                  }}
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  {t("signOut")}
-                </button>
-              </form>
+              <button
+                type="button"
+                onClick={() => setSignOutOpen(true)}
+                className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  color: "var(--destructive)",
+                }}
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                {t("signOut")}
+              </button>
             </div>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+
+      <Dialog open={signOutOpen} onOpenChange={setSignOutOpen}>
+        <DialogContent
+          className="border-2 p-0 gap-0"
+          style={{
+            borderColor: "var(--border)",
+            backgroundColor: "var(--card)",
+            borderRadius: 0,
+          }}
+        >
+          <DialogHeader className="px-6 pt-6 pb-4">
+            <DialogTitle
+              className="text-[10px] font-bold uppercase tracking-[0.15em]"
+              style={{
+                fontFamily: "var(--font-mono)",
+                color: "var(--primary-text)",
+              }}
+            >
+              {t("signOutConfirmTitle")}
+            </DialogTitle>
+            <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
+              {t("signOutConfirmDescription")}
+            </p>
+          </DialogHeader>
+          <div className="px-6 pb-6 flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setSignOutOpen(false)}
+              className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
+              style={{
+                fontFamily: "var(--font-mono)",
+                borderColor: "var(--border)",
+                color: "var(--muted-foreground)",
+                backgroundColor: "transparent",
+              }}
+            >
+              {t("cancel")}
+            </button>
+
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  backgroundColor: "var(--destructive)",
+                  color: "var(--destructive-foreground)",
+                }}
+              >
+                {t("signOutConfirmAction")}
+              </button>
+            </form>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Sidebar>
   );
 }

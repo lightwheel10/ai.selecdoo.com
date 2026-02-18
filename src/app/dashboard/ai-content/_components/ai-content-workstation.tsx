@@ -22,9 +22,7 @@ import {
 } from "@/components/ui/dialog";
 
 import {
-  ITEMS_PER_PAGE,
   buildContentMap,
-  generateFakeContent,
   type StoreGroupData,
 } from "./utils";
 import { MultiSearchableFilter, MultiSimpleFilter, SimpleFilter, ToggleGroup } from "./filters";
@@ -33,6 +31,8 @@ import { ProductCard } from "./product-card";
 import { ContentDialog } from "./content-dialog";
 import { StoreGroupView } from "./store-group-view";
 import { useFilterNavigation } from "@/hooks/use-filter-navigation";
+import { canDeleteProduct } from "@/lib/auth/roles";
+import { useAuthAccess } from "@/components/domain/role-provider";
 
 // ═══════════════════════════════════
 // ─── MAIN WORKSTATION ───
@@ -65,6 +65,9 @@ export function AIContentWorkstation({
 }: AIContentWorkstationProps) {
   const t = useTranslations("AIContent");
   const { setFilter, setFilters, clearAll: clearUrlFilters, isPending } = useFilterNavigation();
+  const access = useAuthAccess();
+  // Delete controls are admin-only in this screen.
+  const allowDeleteProduct = canDeleteProduct(access);
 
   const storeMap = useMemo(
     () => Object.fromEntries(stores.map((s) => [s.id, s])),
@@ -143,6 +146,13 @@ export function AIContentWorkstation({
 
   // Bulk delete confirm
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+
+  useEffect(() => {
+    if (!allowDeleteProduct) {
+      setSelectedProducts(new Set());
+      setShowBulkDeleteConfirm(false);
+    }
+  }, [allowDeleteProduct]);
 
   // ── Derived ──
   const contentMap = useMemo(() => buildContentMap(localContent), [localContent]);
@@ -304,23 +314,28 @@ export function AIContentWorkstation({
   }
 
   const handleGenerate = useCallback(
-    (product: Product, contentType: "deal_post" | "social_post") => {
+    async (product: Product, contentType: "deal_post" | "social_post") => {
       setIsGenerating(true);
-      setTimeout(() => {
-        const storeName = storeMap[product.store_id]?.name || "Store";
-        const text = generateFakeContent(product, storeName, contentType);
-        const newContent: AIGeneratedContent = {
-          id: `ai-gen-${Date.now()}`,
-          store_id: product.store_id,
-          store_name: storeName,
-          product_id: product.id,
-          product_title: product.title,
-          content_type: contentType,
-          content: text,
-          created_at: new Date().toISOString(),
-        };
-        setLocalContent((prev) => [...prev, newContent]);
-        setIsGenerating(false);
+      try {
+        const res = await fetch("/api/ai-content/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId: product.id, contentType }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: "Unknown error" }));
+          throw new Error(err.error || `HTTP ${res.status}`);
+        }
+
+        const newContent: AIGeneratedContent = await res.json();
+        // Remove any existing content for this product+type, then add new
+        setLocalContent((prev) => [
+          ...prev.filter(
+            (c) => !(c.product_id === product.id && c.content_type === contentType)
+          ),
+          newContent,
+        ]);
         setEditingContent(null);
         const typeLabel =
           contentType === "deal_post" ? t("dealPost") : t("socialPost");
@@ -330,42 +345,39 @@ export function AIContentWorkstation({
             title: product.title,
           }),
         });
-      }, 2500);
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : "Failed to generate content"
+        );
+      } finally {
+        setIsGenerating(false);
+      }
     },
-    [storeMap, t]
+    [t]
   );
 
   function handleRegenerate(
     product: Product,
     contentType: "deal_post" | "social_post"
   ) {
-    setLocalContent((prev) =>
-      prev.filter(
-        (c) =>
-          !(c.product_id === product.id && c.content_type === contentType)
-      )
-    );
+    // Generate handles upsert (deletes old + inserts new on server)
     handleGenerate(product, contentType);
   }
 
-  function handleSendToWebhook(
-    product: Product,
-    contentType: "deal_post" | "social_post"
-  ) {
-    const typeLabel =
-      contentType === "deal_post" ? t("dealPost") : t("socialPost");
-    toast(t("webhookSent"), {
-      description: t("webhookSentDescription", {
-        type: typeLabel,
-        title: product.title,
-      }),
-    });
+  function handleSendToWebhook() {
+    toast(t("comingSoon"));
   }
 
-  function handleSaveEdit(
+  async function handleSaveEdit(
     productId: string,
     contentType: "deal_post" | "social_post"
   ) {
+    // Find the content entry to get its ID
+    const entry = localContent.find(
+      (c) => c.product_id === productId && c.content_type === contentType
+    );
+
+    // Update local state immediately
     setLocalContent((prev) =>
       prev.map((c) =>
         c.product_id === productId && c.content_type === contentType
@@ -375,9 +387,25 @@ export function AIContentWorkstation({
     );
     setEditingContent(null);
     setEditText("");
+
+    // Persist to database
+    if (entry) {
+      try {
+        const res = await fetch(`/api/ai-content/${entry.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: editText }),
+        });
+        if (!res.ok) {
+          toast.error("Failed to save edit to database");
+        }
+      } catch {
+        toast.error("Failed to save edit to database");
+      }
+    }
   }
 
-  function handleBulkGenerate(
+  async function handleBulkGenerate(
     storeId: string,
     storeProducts: Product[],
     contentType: "deal_post" | "social_post"
@@ -397,41 +425,45 @@ export function AIContentWorkstation({
       total: needsContent.length,
     });
 
-    let i = 0;
-    const interval = setInterval(() => {
-      const product = needsContent[i];
-      const storeName = storeMap[product.store_id]?.name || "Store";
-      const text = generateFakeContent(product, storeName, contentType);
-      const newContent: AIGeneratedContent = {
-        id: `ai-gen-${Date.now()}-${i}`,
-        store_id: product.store_id,
-        store_name: storeName,
-        product_id: product.id,
-        product_title: product.title,
-        content_type: contentType,
-        content: text,
-        created_at: new Date().toISOString(),
-      };
-      setLocalContent((prev) => [...prev, newContent]);
+    let completed = 0;
+    for (const product of needsContent) {
+      try {
+        const res = await fetch("/api/ai-content/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId: product.id, contentType }),
+        });
 
-      i++;
-      setBulkGenerating((prev) =>
-        prev ? { ...prev, current: i } : null
-      );
-
-      if (i >= needsContent.length) {
-        clearInterval(interval);
-        setBulkGenerating(null);
-        const typeLabel = contentType === "deal_post" ? "deals" : "posts";
-        toast(
-          t("bulkComplete", {
-            count: needsContent.length,
-            type: typeLabel,
-            store: storeMap[storeId]?.name || "Store",
-          })
-        );
+        if (res.ok) {
+          const newContent: AIGeneratedContent = await res.json();
+          setLocalContent((prev) => [
+            ...prev.filter(
+              (c) =>
+                !(c.product_id === product.id && c.content_type === contentType)
+            ),
+            newContent,
+          ]);
+        }
+      } catch {
+        // Log and continue to next product
+        console.error(`Bulk generate failed for product ${product.id}`);
       }
-    }, 800);
+
+      completed++;
+      setBulkGenerating((prev) =>
+        prev ? { ...prev, current: completed } : null
+      );
+    }
+
+    setBulkGenerating(null);
+    const typeLabel = contentType === "deal_post" ? "deals" : "posts";
+    toast(
+      t("bulkComplete", {
+        count: needsContent.length,
+        type: typeLabel,
+        store: storeMap[storeId]?.name || "Store",
+      })
+    );
   }
 
   // Google Merchant
@@ -458,6 +490,7 @@ export function AIContentWorkstation({
 
   // Selection
   function toggleSelect(productId: string) {
+    if (!allowDeleteProduct) return;
     setSelectedProducts((prev) => {
       const next = new Set(prev);
       if (next.has(productId)) next.delete(productId);
@@ -467,6 +500,7 @@ export function AIContentWorkstation({
   }
 
   function toggleSelectAll() {
+    if (!allowDeleteProduct) return;
     const currentIds = filtered.map((p) => p.id);
     const allSelected = currentIds.every((id) => selectedProducts.has(id));
     if (allSelected) {
@@ -485,6 +519,7 @@ export function AIContentWorkstation({
   }
 
   function handleToggleStoreProducts(productIds: string[]) {
+    if (!allowDeleteProduct) return;
     const allSelected = productIds.every((id) => selectedProducts.has(id));
     if (allSelected) {
       setSelectedProducts((prev) => {
@@ -507,6 +542,7 @@ export function AIContentWorkstation({
 
   // Delete
   async function handleDeleteProduct(product: Product) {
+    if (!allowDeleteProduct) return;
     try {
       const res = await fetch(`/api/products/${product.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
@@ -526,6 +562,7 @@ export function AIContentWorkstation({
   }
 
   async function handleBulkDelete() {
+    if (!allowDeleteProduct) return;
     const ids = Array.from(selectedProducts);
     const results = await Promise.allSettled(
       ids.map((id) => fetch(`/api/products/${id}`, { method: "DELETE" }))
@@ -662,50 +699,53 @@ export function AIContentWorkstation({
           {t("showFilters")}
         </button>
 
-        {/* Select All */}
-        <label className="flex items-center gap-1.5 px-3 py-1.5 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={allFilteredSelected}
-            onChange={toggleSelectAll}
-            className="sr-only"
-          />
-          <div
-            className="w-4 h-4 border-2 flex items-center justify-center transition-colors"
-            style={{
-              backgroundColor: allFilteredSelected
-                ? "var(--primary)"
-                : "transparent",
-              borderColor: allFilteredSelected ? "var(--primary-text)" : "var(--border)",
-            }}
-          >
-            {allFilteredSelected && (
-              <svg
-                width="10"
-                height="10"
-                viewBox="0 0 10 10"
-                fill="none"
-                stroke="var(--primary-foreground)"
-                strokeWidth="2"
-                strokeLinecap="square"
-              >
-                <path d="M2 5l2.5 2.5L8 3" />
-              </svg>
-            )}
-          </div>
-          <span
-            className="text-[10px] font-bold uppercase tracking-[0.15em]"
-            style={{
-              fontFamily: "var(--font-mono)",
-              color: "var(--muted-foreground)",
-            }}
-          >
-            {t("selectAll")}
-          </span>
-        </label>
+        {allowDeleteProduct && (
+          <label className="flex items-center gap-1.5 px-3 py-1.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={allFilteredSelected}
+              onChange={toggleSelectAll}
+              className="sr-only"
+            />
+            <div
+              className="w-4 h-4 border-2 flex items-center justify-center transition-colors"
+              style={{
+                backgroundColor: allFilteredSelected
+                  ? "var(--primary)"
+                  : "transparent",
+                borderColor: allFilteredSelected
+                  ? "var(--primary-text)"
+                  : "var(--border)",
+              }}
+            >
+              {allFilteredSelected && (
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 10 10"
+                  fill="none"
+                  stroke="var(--primary-foreground)"
+                  strokeWidth="2"
+                  strokeLinecap="square"
+                >
+                  <path d="M2 5l2.5 2.5L8 3" />
+                </svg>
+              )}
+            </div>
+            <span
+              className="text-[10px] font-bold uppercase tracking-[0.15em]"
+              style={{
+                fontFamily: "var(--font-mono)",
+                color: "var(--muted-foreground)",
+              }}
+            >
+              {t("selectAll")}
+            </span>
+          </label>
+        )}
 
         {/* Selected count + Bulk Delete */}
-        {selectedProducts.size > 0 && (
+        {allowDeleteProduct && selectedProducts.size > 0 && (
           <>
             <span
               className="text-[10px] font-bold uppercase tracking-[0.15em]"
@@ -864,10 +904,12 @@ export function AIContentWorkstation({
                     isSelected={selectedProducts.has(product.id)}
                     googleStatus={getGoogleStatus(product.id)}
                     t={t}
+                    canSelect={allowDeleteProduct}
+                    canDeleteProduct={allowDeleteProduct}
                     onOpenModal={openModal}
                     onToggleSelect={toggleSelect}
                     onSendToGoogle={handleSendToGoogle}
-                    onDelete={handleDeleteProduct}
+                    onDelete={allowDeleteProduct ? handleDeleteProduct : undefined}
                   />
                 ))}
               </div>
@@ -886,11 +928,12 @@ export function AIContentWorkstation({
             storeGroups={storeGroups}
             expandedStores={expandedStores}
             contentMap={contentMap}
-            storeMap={storeMap}
             search={filters.search}
             selectedProducts={selectedProducts}
             googleSentProducts={googleSentProducts}
             googleSendingProducts={googleSendingProducts}
+            allowSelection={allowDeleteProduct}
+            allowDeleteProduct={allowDeleteProduct}
             bulkGenerating={bulkGenerating}
             t={t}
             onToggleStore={toggleStore}
@@ -901,7 +944,7 @@ export function AIContentWorkstation({
             onToggleSelect={toggleSelect}
             onToggleStoreProducts={handleToggleStoreProducts}
             onSendToGoogle={handleSendToGoogle}
-            onDeleteProduct={handleDeleteProduct}
+            onDeleteProduct={allowDeleteProduct ? handleDeleteProduct : undefined}
           />
         )}
       </div>
@@ -937,72 +980,74 @@ export function AIContentWorkstation({
       />
 
       {/* ── BULK DELETE CONFIRM DIALOG ── */}
-      <Dialog
-        open={showBulkDeleteConfirm}
-        onOpenChange={(open) => {
-          if (!open) setShowBulkDeleteConfirm(false);
-        }}
-      >
-        <DialogContent
-          className="border-2 p-0 gap-0 sm:max-w-md"
-          style={{
-            borderColor: "var(--border)",
-            backgroundColor: "var(--card)",
-            borderRadius: 0,
+      {allowDeleteProduct && (
+        <Dialog
+          open={showBulkDeleteConfirm}
+          onOpenChange={(open) => {
+            if (!open) setShowBulkDeleteConfirm(false);
           }}
         >
-          <DialogHeader className="px-6 pt-6 pb-4">
-            <DialogTitle
-              className="text-[13px] font-semibold"
-              style={{ color: "var(--foreground)" }}
-            >
-              {t("confirmBulkDelete", { count: selectedProducts.size })}
-            </DialogTitle>
-            <p
-              className="text-[11px] mt-2"
-              style={{
-                fontFamily: "var(--font-mono)",
-                color: "var(--muted-foreground)",
-              }}
-            >
-              {t("confirmBulkDeleteDescription", {
-                count: selectedProducts.size,
-              })}
-            </p>
-          </DialogHeader>
-          <div
-            className="flex items-center justify-end gap-2 px-6 pb-6 pt-2"
-            style={{ borderTop: "1px solid var(--border)" }}
+          <DialogContent
+            className="border-2 p-0 gap-0 sm:max-w-md"
+            style={{
+              borderColor: "var(--border)",
+              backgroundColor: "var(--card)",
+              borderRadius: 0,
+            }}
           >
-            <button
-              onClick={() => setShowBulkDeleteConfirm(false)}
-              className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
-              style={{
-                fontFamily: "var(--font-mono)",
-                backgroundColor: "transparent",
-                borderColor: "var(--border)",
-                color: "var(--muted-foreground)",
-              }}
+            <DialogHeader className="px-6 pt-6 pb-4">
+              <DialogTitle
+                className="text-[13px] font-semibold"
+                style={{ color: "var(--foreground)" }}
+              >
+                {t("confirmBulkDelete", { count: selectedProducts.size })}
+              </DialogTitle>
+              <p
+                className="text-[11px] mt-2"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  color: "var(--muted-foreground)",
+                }}
+              >
+                {t("confirmBulkDeleteDescription", {
+                  count: selectedProducts.size,
+                })}
+              </p>
+            </DialogHeader>
+            <div
+              className="flex items-center justify-end gap-2 px-6 pb-6 pt-2"
+              style={{ borderTop: "1px solid var(--border)" }}
             >
-              {t("cancel")}
-            </button>
-            <button
-              onClick={handleBulkDelete}
-              className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none shadow-[3px_3px_0px]"
-              style={{
-                fontFamily: "var(--font-mono)",
-                backgroundColor: "#FF453A",
-                borderColor: "#FF453A",
-                color: "#fff",
-                boxShadow: "3px 3px 0px #FF453A",
-              }}
-            >
-              <Trash2 className="w-3 h-3" />
-              {t("deleteSelected")}
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
+              <button
+                onClick={() => setShowBulkDeleteConfirm(false)}
+                className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  backgroundColor: "transparent",
+                  borderColor: "var(--border)",
+                  color: "var(--muted-foreground)",
+                }}
+              >
+                {t("cancel")}
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none shadow-[3px_3px_0px]"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  backgroundColor: "#FF453A",
+                  borderColor: "#FF453A",
+                  color: "#fff",
+                  boxShadow: "3px 3px 0px #FF453A",
+                }}
+              >
+                <Trash2 className="w-3 h-3" />
+                {t("deleteSelected")}
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

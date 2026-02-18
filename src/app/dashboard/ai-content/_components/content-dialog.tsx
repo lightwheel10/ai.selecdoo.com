@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   Check,
   X,
@@ -58,21 +58,34 @@ export function ContentDialog({
   onSaveEdit,
   onEditTextChange,
 }: ContentDialogProps) {
-  const [activeTab, setActiveTab] = useState<"deal_post" | "social_post">("deal_post");
-
-  // Sync tab when modal opens/changes
-  useEffect(() => {
-    if (modal) setActiveTab(modal.contentType);
-  }, [modal]);
-
-  const currentTab = modal ? activeTab : "deal_post";
+  const contentType = modal?.contentType ?? "deal_post";
   const entry = modal ? contentMap.get(modal.product.id) : undefined;
   const currentContent =
-    currentTab === "deal_post" ? entry?.deal : entry?.post;
+    contentType === "deal_post" ? entry?.deal : entry?.post;
 
   const hasDiscount =
     modal?.product.discount_percentage &&
     modal.product.discount_percentage > 0;
+
+  const accentColor = contentType === "deal_post" ? "#22C55E" : "#5AC8FA";
+  const TypeIcon = contentType === "deal_post" ? Tags : PenSquare;
+  const typeLabel = contentType === "deal_post" ? t("dealPost") : t("socialPost");
+
+  // Auto-generate when dialog opens with no existing content
+  const autoGenerateRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!modal) {
+      autoGenerateRef.current = null;
+      return;
+    }
+    const key = `${modal.product.id}:${modal.contentType}`;
+    const hasContent =
+      modal.contentType === "deal_post" ? entry?.hasDeal : entry?.hasPost;
+    if (!hasContent && !isGenerating && autoGenerateRef.current !== key) {
+      autoGenerateRef.current = key;
+      onGenerate(modal.product, modal.contentType);
+    }
+  }, [modal, entry, isGenerating, onGenerate]);
 
   return (
     <Dialog
@@ -182,72 +195,25 @@ export function ContentDialog({
                 </div>
               </div>
 
-              {/* ── Tabs ── */}
+              {/* ── Content Type Label (replaces tabs) ── */}
               <div
-                className="flex"
-                style={{ borderTop: "1px solid var(--border)" }}
+                className="flex items-center gap-1.5 px-5 py-2.5"
+                style={{
+                  borderTop: "1px solid var(--border)",
+                  backgroundColor: `${accentColor}08`,
+                  borderBottom: `2px solid ${accentColor}`,
+                }}
               >
-                <button
-                  onClick={() => {
-                    setActiveTab("deal_post");
-                  }}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors"
+                <TypeIcon className="w-3 h-3" style={{ color: accentColor }} />
+                <span
+                  className="text-[10px] font-bold uppercase tracking-[0.15em]"
                   style={{
                     fontFamily: "var(--font-mono)",
-                    backgroundColor:
-                      currentTab === "deal_post"
-                        ? "#22C55E08"
-                        : "transparent",
-                    color:
-                      currentTab === "deal_post"
-                        ? "#22C55E"
-                        : "var(--muted-foreground)",
-                    borderBottom:
-                      currentTab === "deal_post"
-                        ? "2px solid #22C55E"
-                        : "2px solid transparent",
+                    color: accentColor,
                   }}
                 >
-                  <Tags className="w-3 h-3" />
-                  {t("dealPost")}
-                  {entry?.hasDeal && (
-                    <div
-                      className="w-1.5 h-1.5"
-                      style={{ backgroundColor: "#22C55E", borderRadius: "50%" }}
-                    />
-                  )}
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveTab("social_post");
-                  }}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors"
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    backgroundColor:
-                      currentTab === "social_post"
-                        ? "#5AC8FA08"
-                        : "transparent",
-                    color:
-                      currentTab === "social_post"
-                        ? "#5AC8FA"
-                        : "var(--muted-foreground)",
-                    borderBottom:
-                      currentTab === "social_post"
-                        ? "2px solid #5AC8FA"
-                        : "2px solid transparent",
-                    borderLeft: "1px solid var(--border)",
-                  }}
-                >
-                  <PenSquare className="w-3 h-3" />
-                  {t("socialPost")}
-                  {entry?.hasPost && (
-                    <div
-                      className="w-1.5 h-1.5"
-                      style={{ backgroundColor: "#5AC8FA", borderRadius: "50%" }}
-                    />
-                  )}
-                </button>
+                  {typeLabel}
+                </span>
               </div>
             </DialogHeader>
 
@@ -257,7 +223,7 @@ export function ContentDialog({
                 <ContentView
                   content={currentContent}
                   product={modal.product}
-                  contentType={currentTab}
+                  contentType={contentType}
                   isGenerating={isGenerating}
                   editingContent={editingContent}
                   editText={editText}
@@ -270,12 +236,9 @@ export function ContentDialog({
                   onEditTextChange={onEditTextChange}
                 />
               ) : (
-                <GenerateView
-                  product={modal.product}
-                  contentType={currentTab}
-                  isGenerating={isGenerating}
+                <GeneratingView
+                  contentType={contentType}
                   t={t}
-                  onGenerate={onGenerate}
                 />
               )}
             </div>
@@ -522,97 +485,40 @@ function ContentView({
   );
 }
 
-// ─── Generate View (no content yet) ───
+// ─── Generating View (auto-generation in progress) ───
 
-function GenerateView({
-  product,
+function GeneratingView({
   contentType,
-  isGenerating,
   t,
-  onGenerate,
 }: {
-  product: Product;
   contentType: "deal_post" | "social_post";
-  isGenerating: boolean;
   t: (key: string, values?: Record<string, string | number>) => string;
-  onGenerate: (product: Product, contentType: "deal_post" | "social_post") => void;
 }) {
   const accentColor = contentType === "deal_post" ? "#22C55E" : "#5AC8FA";
 
   return (
     <div className="pt-4">
-      {isGenerating ? (
-        <div
-          className="flex flex-col items-center py-10 gap-3 border-2"
+      <div
+        className="flex flex-col items-center py-10 gap-3 border-2"
+        style={{
+          borderColor: "var(--border)",
+          borderStyle: "dashed",
+        }}
+      >
+        <Loader2
+          className="w-6 h-6 animate-spin"
+          style={{ color: accentColor }}
+        />
+        <p
+          className="text-[10px] font-bold uppercase tracking-[0.15em]"
           style={{
-            borderColor: "var(--border)",
-            borderStyle: "dashed",
+            fontFamily: "var(--font-mono)",
+            color: "var(--muted-foreground)",
           }}
         >
-          <Loader2
-            className="w-6 h-6 animate-spin"
-            style={{ color: accentColor }}
-          />
-          <p
-            className="text-[10px] font-bold uppercase tracking-[0.15em]"
-            style={{
-              fontFamily: "var(--font-mono)",
-              color: "var(--muted-foreground)",
-            }}
-          >
-            {t("generating")}
-          </p>
-        </div>
-      ) : (
-        <div
-          className="flex flex-col items-center py-10 gap-4 border-2"
-          style={{
-            borderColor: "var(--border)",
-            borderStyle: "dashed",
-          }}
-        >
-          <Sparkles
-            className="w-6 h-6"
-            style={{ color: accentColor, opacity: 0.5 }}
-          />
-          <div className="text-center">
-            <p
-              className="text-[11px] font-bold uppercase tracking-[0.15em] mb-1"
-              style={{
-                fontFamily: "var(--font-mono)",
-                color: "var(--muted-foreground)",
-              }}
-            >
-              {t("noContentYet")}
-            </p>
-            <p
-              className="text-[10px]"
-              style={{
-                fontFamily: "var(--font-mono)",
-                color: "var(--muted-foreground)",
-                opacity: 0.6,
-              }}
-            >
-              {t("noContentYetDescription")}
-            </p>
-          </div>
-          <button
-            onClick={() => onGenerate(product, contentType)}
-            className="flex items-center justify-center gap-2 px-6 py-2.5 text-xs font-bold uppercase tracking-wider border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
-            style={{
-              fontFamily: "var(--font-mono)",
-              backgroundColor: accentColor,
-              borderColor: accentColor,
-              color: "var(--primary-foreground)",
-              boxShadow: `3px 3px 0px ${accentColor}`,
-            }}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            {t("generate")}{" "}
-            {contentType === "deal_post" ? t("dealPost") : t("socialPost")}
-          </button>
-        </div>
-      )}
+          {t("generating")}
+        </p>
+      </div>
     </div>
   );
 }

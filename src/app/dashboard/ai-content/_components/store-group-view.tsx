@@ -10,17 +10,17 @@ import {
 import type { Product } from "@/types";
 import type { ContentEntry, StoreGroupData } from "./utils";
 import { MiniProductCard } from "./mini-product-card";
-import type { Store } from "@/types";
 
 interface StoreGroupViewProps {
   storeGroups: StoreGroupData[];
   expandedStores: Set<string>;
   contentMap: Map<string, ContentEntry>;
-  storeMap: Record<string, Store>;
   search: string;
   selectedProducts: Set<string>;
   googleSentProducts: Set<string>;
   googleSendingProducts: Set<string>;
+  allowSelection: boolean;
+  allowDeleteProduct: boolean;
   bulkGenerating: {
     storeId: string;
     type: "deal_post" | "social_post";
@@ -43,18 +43,19 @@ interface StoreGroupViewProps {
   onToggleSelect: (productId: string) => void;
   onToggleStoreProducts: (productIds: string[]) => void;
   onSendToGoogle: (product: Product) => void;
-  onDeleteProduct: (product: Product) => void;
+  onDeleteProduct?: (product: Product) => void;
 }
 
 export function StoreGroupView({
   storeGroups,
   expandedStores,
   contentMap,
-  storeMap,
   search,
   selectedProducts,
   googleSentProducts,
   googleSendingProducts,
+  allowSelection,
+  allowDeleteProduct,
   bulkGenerating,
   t,
   onToggleStore,
@@ -226,60 +227,64 @@ export function StoreGroupView({
                     {/* Action bar */}
                     <div className="flex flex-wrap items-center gap-2 px-4 py-2.5">
                       {/* Per-store Select All */}
-                      <label
-                        className="flex items-center gap-1.5 cursor-pointer"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={allStoreSelected}
-                          onChange={() =>
-                            onToggleStoreProducts(storeProductIds)
-                          }
-                          className="sr-only"
-                        />
-                        <div
-                          className="w-4 h-4 border-2 flex items-center justify-center transition-colors"
-                          style={{
-                            backgroundColor: allStoreSelected
-                              ? "var(--primary)"
-                              : "transparent",
-                            borderColor: allStoreSelected
-                              ? "var(--primary-text)"
-                              : "var(--border)",
-                          }}
-                        >
-                          {allStoreSelected && (
-                            <svg
-                              width="10"
-                              height="10"
-                              viewBox="0 0 10 10"
-                              fill="none"
-                              stroke="var(--primary-foreground)"
-                              strokeWidth="2"
-                              strokeLinecap="square"
+                      {allowSelection && (
+                        <>
+                          <label
+                            className="flex items-center gap-1.5 cursor-pointer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={allStoreSelected}
+                              onChange={() =>
+                                onToggleStoreProducts(storeProductIds)
+                              }
+                              className="sr-only"
+                            />
+                            <div
+                              className="w-4 h-4 border-2 flex items-center justify-center transition-colors"
+                              style={{
+                                backgroundColor: allStoreSelected
+                                  ? "var(--primary)"
+                                  : "transparent",
+                                borderColor: allStoreSelected
+                                  ? "var(--primary-text)"
+                                  : "var(--border)",
+                              }}
                             >
-                              <path d="M2 5l2.5 2.5L8 3" />
-                            </svg>
-                          )}
-                        </div>
-                        <span
-                          className="text-[10px] font-bold uppercase tracking-[0.15em]"
-                          style={{
-                            fontFamily: "var(--font-mono)",
-                            color: "var(--muted-foreground)",
-                          }}
-                        >
-                          {t("selectAll")}
-                        </span>
-                      </label>
+                              {allStoreSelected && (
+                                <svg
+                                  width="10"
+                                  height="10"
+                                  viewBox="0 0 10 10"
+                                  fill="none"
+                                  stroke="var(--primary-foreground)"
+                                  strokeWidth="2"
+                                  strokeLinecap="square"
+                                >
+                                  <path d="M2 5l2.5 2.5L8 3" />
+                                </svg>
+                              )}
+                            </div>
+                            <span
+                              className="text-[10px] font-bold uppercase tracking-[0.15em]"
+                              style={{
+                                fontFamily: "var(--font-mono)",
+                                color: "var(--muted-foreground)",
+                              }}
+                            >
+                              {t("selectAll")}
+                            </span>
+                          </label>
 
-                      <div
-                        className="w-px h-4 mx-1"
-                        style={{
-                          backgroundColor: "var(--border)",
-                        }}
-                      />
+                          <div
+                            className="w-px h-4 mx-1"
+                            style={{
+                              backgroundColor: "var(--border)",
+                            }}
+                          />
+                        </>
+                      )}
 
                       {/* Generate All Deals */}
                       <button
@@ -372,6 +377,8 @@ export function StoreGroupView({
                           isSelected={selectedProducts.has(product.id)}
                           googleStatus={getGoogleStatus(product.id)}
                           t={t}
+                          canSelect={allowSelection}
+                          canDeleteProduct={allowDeleteProduct}
                           onOpenModal={onOpenModal}
                           onToggleSelect={onToggleSelect}
                           onSendToGoogle={onSendToGoogle}

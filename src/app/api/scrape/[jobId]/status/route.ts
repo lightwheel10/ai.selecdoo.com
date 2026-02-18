@@ -1,29 +1,25 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getMapper } from "@/lib/product-mappers";
 import { detectAndLogChanges } from "@/lib/change-detection";
 import { completeMonitoringLog } from "@/lib/monitoring-helpers";
+import { canViewScrape } from "@/lib/auth/roles";
+import { getAuthContext } from "@/lib/auth/session";
 
 const APIFY_TOKEN = process.env.APIFY_API_KEY!;
 const APIFY_FALLBACK_ACTOR_ID = process.env.APIFY_FALLBACK_ACTOR_ID;
-
-async function authenticate() {
-  if (process.env.NODE_ENV === "development" && process.env.DEV_BYPASS === "true") {
-    return { id: "dev-bypass" } as { id: string };
-  }
-  const supabaseAuth = await createClient();
-  const { data: { user } } = await supabaseAuth.auth.getUser();
-  return user;
-}
 
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ jobId: string }> }
 ) {
   try {
-    if (!await authenticate()) {
+    const { user, role, permissions, isDevBypass } = await getAuthContext();
+    if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!canViewScrape({ role, permissions })) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { jobId } = await params;

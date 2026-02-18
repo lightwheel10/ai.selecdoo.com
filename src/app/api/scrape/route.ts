@@ -1,20 +1,12 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createMonitoringLog, updateMonitoringConfigTimestamps } from "@/lib/monitoring-helpers";
+import { canRunMonitoring, canStartScrape } from "@/lib/auth/roles";
+import { getAuthContext } from "@/lib/auth/session";
 
 const APIFY_TOKEN = process.env.APIFY_API_KEY!;
 const APIFY_ACTOR_ID = process.env.APIFY_ACTOR_ID!;
 const APIFY_WOO_ACTOR_ID = process.env.APIFY_WOO_ACTOR_ID;
-
-async function authenticate() {
-  if (process.env.NODE_ENV === "development" && process.env.DEV_BYPASS === "true") {
-    return { id: "dev-bypass" } as { id: string };
-  }
-  const supabaseAuth = await createClient();
-  const { data: { user } } = await supabaseAuth.auth.getUser();
-  return user;
-}
 
 type Platform = "shopify" | "woocommerce";
 
@@ -85,13 +77,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Request body too large" }, { status: 413 });
     }
 
-    if (!await authenticate()) {
+    const { user, role, permissions, isDevBypass } = await getAuthContext();
+    if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { store_id, update_monitoring } = await req.json();
     if (!store_id) {
       return NextResponse.json({ error: "store_id required" }, { status: 400 });
+    }
+
+    // Monitoring "Run now" is a separate permission from manual scraping.
+    if (update_monitoring) {
+      if (!canRunMonitoring({ role, permissions })) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    } else if (!canStartScrape({ role, permissions })) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const supabase = createAdminClient();

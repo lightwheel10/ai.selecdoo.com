@@ -1,19 +1,20 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-
-// ─── URL Validation ───
+import { canCreateStore } from "@/lib/auth/roles";
+import { getAuthContext } from "@/lib/auth/session";
 
 const PRIVATE_IP_RANGES = [
-  /^127\./,                         // 127.0.0.0/8 loopback
-  /^10\./,                          // 10.0.0.0/8 private
-  /^172\.(1[6-9]|2\d|3[01])\./,    // 172.16.0.0/12 private
-  /^192\.168\./,                    // 192.168.0.0/16 private
-  /^169\.254\./,                    // 169.254.0.0/16 link-local (AWS metadata)
-  /^0\./,                           // 0.0.0.0/8
+  /^127\./,
+  /^10\./,
+  /^172\.(1[6-9]|2\d|3[01])\./,
+  /^192\.168\./,
+  /^169\.254\./,
+  /^0\./,
 ];
 
-function validateStoreUrl(raw: string): { ok: true; url: string } | { ok: false; error: string } {
+function validateStoreUrl(
+  raw: string
+): { ok: true; url: string } | { ok: false; error: string } {
   let normalized = raw.trim();
   if (!normalized.startsWith("http")) {
     normalized = `https://${normalized}`;
@@ -27,28 +28,29 @@ function validateStoreUrl(raw: string): { ok: true; url: string } | { ok: false;
     return { ok: false, error: "Invalid URL format" };
   }
 
-  // Require https (allow http only in development)
-  if (parsed.protocol !== "https:" && !(process.env.NODE_ENV === "development" && parsed.protocol === "http:")) {
+  if (
+    parsed.protocol !== "https:" &&
+    !(process.env.NODE_ENV === "development" && parsed.protocol === "http:")
+  ) {
     return { ok: false, error: "Only HTTPS URLs are allowed" };
   }
 
-  // Block dangerous schemes that might have slipped through
   if (!["https:", "http:"].includes(parsed.protocol)) {
     return { ok: false, error: "Invalid URL scheme" };
   }
 
-  // Block IP addresses in hostname (prevents SSRF to private ranges)
   const hostname = parsed.hostname;
   if (PRIVATE_IP_RANGES.some((r) => r.test(hostname))) {
-    return { ok: false, error: "Private or reserved IP addresses are not allowed" };
+    return {
+      ok: false,
+      error: "Private or reserved IP addresses are not allowed",
+    };
   }
 
-  // Block localhost variants
   if (hostname === "localhost" || hostname === "[::1]") {
     return { ok: false, error: "Localhost URLs are not allowed" };
   }
 
-  // Must have a dot in hostname (no bare hostnames like "http://internal")
   if (!hostname.includes(".")) {
     return { ok: false, error: "Invalid hostname" };
   }
@@ -65,19 +67,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Request body too large" }, { status: 413 });
     }
 
-    // Authenticate
-    let userId: string | null = null;
-    if (process.env.NODE_ENV === "development" && process.env.DEV_BYPASS === "true") {
-      userId = null; // dev mode — no user required
-    } else {
-      const supabaseAuth = await createClient();
-      const {
-        data: { user },
-      } = await supabaseAuth.auth.getUser();
-      if (!user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-      userId = user.id;
+    const { user, role, permissions, isDevBypass } = await getAuthContext();
+    if (!user && !isDevBypass) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!canCreateStore({ role, permissions })) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { url } = await req.json();
@@ -85,14 +80,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
     }
 
-    // Validate and normalize URL
     const validation = validateStoreUrl(url);
     if (!validation.ok) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
     const normalized = validation.url;
 
-    // Extract store name from hostname
     const hostname = new URL(normalized).hostname;
     const storeName =
       hostname.replace(/^www\./, "").split(".")[0].charAt(0).toUpperCase() +
@@ -100,7 +93,6 @@ export async function POST(req: Request) {
 
     const supabase = createAdminClient();
 
-    // Check for duplicate URL
     const { data: existingStore } = await supabase
       .from("stores")
       .select("id")
@@ -112,7 +104,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Store already exists" }, { status: 409 });
     }
 
-    // Insert store
     const { data: newStore, error: insertErr } = await supabase
       .from("stores")
       .insert({
@@ -120,7 +111,7 @@ export async function POST(req: Request) {
         name: storeName,
         platform: "shopify",
         status: "active",
-        user_id: userId,
+        user_id: user?.id ?? null,
       })
       .select("id, url, name, platform, status")
       .single();
@@ -130,7 +121,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Failed to create store" }, { status: 500 });
     }
 
-    // Auto-create monitoring config
     const now = new Date();
     const nextCheck = new Date(now.getTime() + 72 * 60 * 60 * 1000);
     await supabase.from("monitoring_configs").insert({

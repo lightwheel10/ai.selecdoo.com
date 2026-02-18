@@ -14,13 +14,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { canCreateStore } from "@/lib/auth/roles";
+import { useAuthAccess } from "@/components/domain/role-provider";
 
 export function AddStoreDialog() {
   const t = useTranslations("Stores");
   const router = useRouter();
+  const access = useAuthAccess();
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
+
+  if (!canCreateStore(access)) {
+    return null;
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

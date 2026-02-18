@@ -14,6 +14,11 @@ import { Play, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import type { MonitoringConfig, MonitoringLog } from "@/types";
+import {
+  canRunMonitoring,
+  canUpdateStoreStatus,
+} from "@/lib/auth/roles";
+import { useAuthAccess } from "@/components/domain/role-provider";
 
 interface MonitoringTableProps {
   configs: MonitoringConfig[];
@@ -58,6 +63,9 @@ export function MonitoringTable({ configs, logs }: MonitoringTableProps) {
   const tt = useTranslations("Time");
   const st = useTranslations("Status");
   const router = useRouter();
+  const access = useAuthAccess();
+  const allowRunMonitoring = canRunMonitoring(access);
+  const allowUpdateStatus = canUpdateStoreStatus(access);
   const [runningStores, setRunningStores] = useState<Set<string>>(new Set());
 
   // Map store_id → latest log
@@ -70,6 +78,7 @@ export function MonitoringTable({ configs, logs }: MonitoringTableProps) {
   }
 
   async function handleRunNow(storeId: string, storeName: string) {
+    if (!allowRunMonitoring) return;
     setRunningStores((prev) => new Set(prev).add(storeId));
 
     try {
@@ -291,58 +300,60 @@ export function MonitoringTable({ configs, logs }: MonitoringTableProps) {
 
                 {/* Actions */}
                 <TableCell className="text-right">
-                  <div className="flex items-center gap-1.5 justify-end">
-                    {/* Run Now */}
-                    <button
-                      onClick={() =>
-                        handleRunNow(config.store_id, config.store_name)
-                      }
-                      disabled={isRunning || !config.enabled}
-                      className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        backgroundColor: "var(--primary-muted)",
-                        border: "1.5px solid var(--primary-muted)",
-                        color: "var(--primary-text)",
-                      }}
-                    >
-                      {isRunning ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        <Play className="w-3 h-3" />
+                    <div className="flex items-center gap-1.5 justify-end">
+                      {allowRunMonitoring && (
+                        <button
+                          onClick={() =>
+                            handleRunNow(config.store_id, config.store_name)
+                          }
+                          disabled={isRunning || !config.enabled}
+                          className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            backgroundColor: "var(--primary-muted)",
+                            border: "1.5px solid var(--primary-muted)",
+                            color: "var(--primary-text)",
+                          }}
+                        >
+                          {isRunning ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Play className="w-3 h-3" />
+                          )}
+                          {isRunning ? t("running") : t("runNow")}
+                        </button>
                       )}
-                      {isRunning ? t("running") : t("runNow")}
-                    </button>
 
-                    {/* Pause/Resume */}
-                    <button
-                      onClick={async () => {
-                        const newStatus = config.enabled ? "paused" : "active";
-                        const res = await fetch(`/api/stores/${config.store_id}`, {
-                          method: "PATCH",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ status: newStatus }),
-                        });
-                        if (res.ok) {
-                          toast(
-                            config.enabled
-                              ? t("monitoringPaused", { name: config.store_name })
-                              : t("monitoringResumed", { name: config.store_name })
-                          );
-                          router.refresh();
-                        }
-                      }}
-                      className="px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] border transition-colors hover:border-primary/50"
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        backgroundColor: "transparent",
-                        borderColor: "var(--border)",
-                        color: "var(--muted-foreground)",
-                      }}
-                    >
-                      {config.enabled ? t("pause") : t("resume")}
-                    </button>
-                  </div>
+                      {allowUpdateStatus && (
+                        <button
+                          onClick={async () => {
+                            const newStatus = config.enabled ? "paused" : "active";
+                            const res = await fetch(`/api/stores/${config.store_id}`, {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ status: newStatus }),
+                            });
+                            if (res.ok) {
+                              toast(
+                                config.enabled
+                                  ? t("monitoringPaused", { name: config.store_name })
+                                  : t("monitoringResumed", { name: config.store_name })
+                              );
+                              router.refresh();
+                            }
+                          }}
+                          className="px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] border transition-colors hover:border-primary/50"
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            backgroundColor: "transparent",
+                            borderColor: "var(--border)",
+                            color: "var(--muted-foreground)",
+                          }}
+                        >
+                          {config.enabled ? t("pause") : t("resume")}
+                        </button>
+                      )}
+                    </div>
                 </TableCell>
               </TableRow>
             );

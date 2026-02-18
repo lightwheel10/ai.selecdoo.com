@@ -32,6 +32,12 @@ import { AddStoreDialog } from "./add-store-dialog";
 import { useTranslations } from "next-intl";
 import type { Store } from "@/types";
 import { toast } from "sonner";
+import {
+  canDeleteStore,
+  canStartScrape,
+  canUpdateStoreStatus,
+} from "@/lib/auth/roles";
+import { useAuthAccess } from "@/components/domain/role-provider";
 
 // ─── Text Highlight ───
 
@@ -208,6 +214,10 @@ interface StoreTableProps {
 export function StoreTable({ stores }: StoreTableProps) {
   const t = useTranslations("Stores");
   const tt = useTranslations("Time");
+  const access = useAuthAccess();
+  const allowStartScrape = canStartScrape(access);
+  const allowUpdateStatus = canUpdateStoreStatus(access);
+  const allowDeleteStore = canDeleteStore(access);
 
   const [localStores, setLocalStores] = useState(stores);
   const [search, setSearch] = useState("");
@@ -775,7 +785,7 @@ export function StoreTable({ stores }: StoreTableProps) {
 
                   {/* Actions */}
                   <TableCell>
-                    {pendingDelete === store.id ? (
+                    {pendingDelete === store.id && allowDeleteStore ? (
                       <div className="flex items-center gap-1.5">
                         <IconButton
                           onClick={() => {
@@ -799,48 +809,53 @@ export function StoreTable({ stores }: StoreTableProps) {
                           icon={ExternalLink}
                           title={t("visitStore")}
                         />
-                        {scrapingIds.has(store.id) ? (
-                          <button
-                            disabled
-                            title={t("scraping")}
-                            className="w-7 h-7 flex items-center justify-center transition-all duration-150"
-                            style={{
-                              backgroundColor: "var(--primary-muted)",
-                              border: "1.5px solid var(--primary-muted)",
-                              color: "var(--primary-text)",
-                            }}
-                          >
-                            <ArrowDownToLine className="w-3 h-3 animate-bounce" />
-                          </button>
-                        ) : (
+                        {allowStartScrape &&
+                          (scrapingIds.has(store.id) ? (
+                            <button
+                              disabled
+                              title={t("scraping")}
+                              className="w-7 h-7 flex items-center justify-center transition-all duration-150"
+                              style={{
+                                backgroundColor: "var(--primary-muted)",
+                                border: "1.5px solid var(--primary-muted)",
+                                color: "var(--primary-text)",
+                              }}
+                            >
+                              <ArrowDownToLine className="w-3 h-3 animate-bounce" />
+                            </button>
+                          ) : (
+                            <IconButton
+                              onClick={() => startScrape(store)}
+                              icon={ArrowDownToLine}
+                              title={t("scrape")}
+                            />
+                          ))}
+                        {allowUpdateStatus && (
                           <IconButton
-                            onClick={() => startScrape(store)}
-                            icon={ArrowDownToLine}
-                            title={t("scrape")}
+                            onClick={() => {
+                              togglePause(store.id);
+                              toast(
+                                store.status === "paused"
+                                  ? t("resumed", { name: store.name })
+                                  : t("paused", { name: store.name })
+                              );
+                            }}
+                            icon={store.status === "paused" ? Play : Pause}
+                            title={
+                              store.status === "paused"
+                                ? t("resume")
+                                : t("pause")
+                            }
                           />
                         )}
-                        <IconButton
-                          onClick={() => {
-                            togglePause(store.id);
-                            toast(
-                              store.status === "paused"
-                                ? t("resumed", { name: store.name })
-                                : t("paused", { name: store.name })
-                            );
-                          }}
-                          icon={store.status === "paused" ? Play : Pause}
-                          title={
-                            store.status === "paused"
-                              ? t("resume")
-                              : t("pause")
-                          }
-                        />
-                        <IconButton
-                          onClick={() => setPendingDelete(store.id)}
-                          icon={Trash2}
-                          variant="danger"
-                          title={t("delete")}
-                        />
+                        {allowDeleteStore && (
+                          <IconButton
+                            onClick={() => setPendingDelete(store.id)}
+                            icon={Trash2}
+                            variant="danger"
+                            title={t("delete")}
+                          />
+                        )}
                       </div>
                     )}
                   </TableCell>

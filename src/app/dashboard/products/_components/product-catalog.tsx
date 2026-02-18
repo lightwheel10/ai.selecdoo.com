@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import {
   Eye,
@@ -33,7 +33,11 @@ import { ProductImage } from "@/components/domain/product-image";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useFilterNavigation } from "@/hooks/use-filter-navigation";
-import type { Product, Store } from "@/types";
+import { canDeleteProduct } from "@/lib/auth/roles";
+import { useAuthAccess } from "@/components/domain/role-provider";
+import type { Product, Store, AIGeneratedContent } from "@/types";
+import { ContentDialog } from "@/app/dashboard/ai-content/_components/content-dialog";
+import { buildContentMap } from "@/app/dashboard/ai-content/_components/utils";
 
 interface ProductCatalogProps {
   products: Product[];
@@ -41,6 +45,7 @@ interface ProductCatalogProps {
   totalPages: number;
   currentPage: number;
   stores: Store[];
+  aiContent: AIGeneratedContent[];
   filters: {
     search: string;
     storeId: string | null;
@@ -292,15 +297,36 @@ export function ProductCatalog({
   totalPages,
   currentPage,
   stores,
+  aiContent,
   filters,
 }: ProductCatalogProps) {
   const t = useTranslations("Products");
+  const tAI = useTranslations("AIContent");
   const ts = useTranslations("Status");
   const tt = useTranslations("Time");
+  const access = useAuthAccess();
+  // Product delete is admin-only; keep UI and API behavior aligned.
+  const allowDeleteProduct = canDeleteProduct(access);
 
   const { setFilter, clearAll, isPending } = useFilterNavigation();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+
+  // ── AI Content Dialog state ──
+  const [localContent, setLocalContent] = useState(aiContent);
+  const [modal, setModal] = useState<{
+    product: Product;
+    contentType: "deal_post" | "social_post";
+  } | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [editingContent, setEditingContent] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+
+  useEffect(() => {
+    setLocalContent(aiContent);
+  }, [aiContent]);
+
+  const contentMap = useMemo(() => buildContentMap(localContent), [localContent]);
 
   // Clear deleted IDs when server data changes (filter/page navigation)
   useEffect(() => {
@@ -313,7 +339,7 @@ export function ProductCatalog({
   );
 
   async function handleDelete(product: Product) {
-    if (deletingId) return;
+    if (!allowDeleteProduct || deletingId) return;
     setDeletingId(product.id);
     try {
       const res = await fetch(`/api/products/${product.id}`, { method: "DELETE" });
@@ -327,6 +353,95 @@ export function ProductCatalog({
     } finally {
       setDeletingId(null);
     }
+  }
+
+  // ── AI Content handlers ──
+
+  function openModal(product: Product, contentType: "deal_post" | "social_post") {
+    setModal({ product, contentType });
+  }
+
+  const handleGenerate = useCallback(
+    async (product: Product, contentType: "deal_post" | "social_post") => {
+      setIsGenerating(true);
+      try {
+        const res = await fetch("/api/ai-content/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId: product.id, contentType }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: "Unknown error" }));
+          throw new Error(err.error || `HTTP ${res.status}`);
+        }
+
+        const newContent: AIGeneratedContent = await res.json();
+        setLocalContent((prev) => [
+          ...prev.filter(
+            (c) => !(c.product_id === product.id && c.content_type === contentType)
+          ),
+          newContent,
+        ]);
+        setEditingContent(null);
+        const typeLabel =
+          contentType === "deal_post" ? tAI("dealPost") : tAI("socialPost");
+        toast(tAI("contentGenerated"), {
+          description: tAI("contentGeneratedDescription", {
+            type: typeLabel,
+            title: product.title,
+          }),
+        });
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : "Failed to generate content"
+        );
+      } finally {
+        setIsGenerating(false);
+      }
+    },
+    [tAI]
+  );
+
+  function handleRegenerate(
+    product: Product,
+    contentType: "deal_post" | "social_post"
+  ) {
+    handleGenerate(product, contentType);
+  }
+
+  async function handleSaveEdit(
+    productId: string,
+    contentType: "deal_post" | "social_post"
+  ) {
+    const entry = localContent.find(
+      (c) => c.product_id === productId && c.content_type === contentType
+    );
+    setLocalContent((prev) =>
+      prev.map((c) =>
+        c.product_id === productId && c.content_type === contentType
+          ? { ...c, content: editText }
+          : c
+      )
+    );
+    setEditingContent(null);
+    setEditText("");
+    if (entry) {
+      try {
+        const res = await fetch(`/api/ai-content/${entry.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: editText }),
+        });
+        if (!res.ok) toast.error("Failed to save edit to database");
+      } catch {
+        toast.error("Failed to save edit to database");
+      }
+    }
+  }
+
+  function handleSendToWebhook() {
+    toast(tAI("comingSoon"));
   }
 
   const storeMap = useMemo(
@@ -567,23 +682,27 @@ export function ProductCatalog({
                     borderColor: "var(--border)",
                   }}
                 >
-                  {/* Delete button (top-right, visible on hover) */}
-                  <button
-                    onClick={() => handleDelete(product)}
-                    disabled={deletingId === product.id}
-                    className="absolute top-2 right-2 z-10 w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
-                    style={{
-                      backgroundColor: "rgba(255,69,58,0.15)",
-                      border: "1.5px solid rgba(255,69,58,0.4)",
-                    }}
-                    title={t("deleteProduct")}
-                  >
-                    {deletingId === product.id ? (
-                      <Loader2 className="w-3 h-3 animate-spin" style={{ color: "#FF453A" }} />
-                    ) : (
-                      <Trash2 className="w-3 h-3" style={{ color: "#FF453A" }} />
-                    )}
-                  </button>
+                  {allowDeleteProduct && (
+                    <button
+                      onClick={() => handleDelete(product)}
+                      disabled={deletingId === product.id}
+                      className="absolute top-2 right-2 z-10 w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                      style={{
+                        backgroundColor: "rgba(255,69,58,0.15)",
+                        border: "1.5px solid rgba(255,69,58,0.4)",
+                      }}
+                      title={t("deleteProduct")}
+                    >
+                      {deletingId === product.id ? (
+                        <Loader2
+                          className="w-3 h-3 animate-spin"
+                          style={{ color: "#FF453A" }}
+                        />
+                      ) : (
+                        <Trash2 className="w-3 h-3" style={{ color: "#FF453A" }} />
+                      )}
+                    </button>
+                  )}
 
                   {/* Image */}
                   <div
@@ -683,33 +802,47 @@ export function ProductCatalog({
                         {t("view")}
                       </Link>
                       {/* Success semantic — Deals */}
-                      <button
-                        onClick={() => {/* TODO: deal workflow */}}
-                        className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          backgroundColor: "#22C55E12",
-                          border: "1.5px solid #22C55E40",
-                          color: "#22C55E",
-                        }}
-                      >
-                        <Tags className="w-3 h-3" />
-                        {t("deals")}
-                      </button>
+                      {(() => {
+                        const cEntry = contentMap.get(product.id);
+                        return (
+                          <button
+                            onClick={() => openModal(product, "deal_post")}
+                            className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
+                            style={{
+                              fontFamily: "var(--font-mono)",
+                              backgroundColor: cEntry?.hasDeal ? "#22C55E" : "#22C55E12",
+                              border: cEntry?.hasDeal
+                                ? "1.5px solid #22C55E"
+                                : "1.5px solid #22C55E40",
+                              color: cEntry?.hasDeal ? "var(--primary-foreground)" : "#22C55E",
+                            }}
+                          >
+                            <Tags className="w-3 h-3" />
+                            {cEntry?.hasDeal ? t("deals") : t("deals")}
+                          </button>
+                        );
+                      })()}
                       {/* Info semantic — Posts */}
-                      <button
-                        onClick={() => {/* TODO: post workflow */}}
-                        className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          backgroundColor: "#5AC8FA12",
-                          border: "1.5px solid #5AC8FA40",
-                          color: "#5AC8FA",
-                        }}
-                      >
-                        <PenSquare className="w-3 h-3" />
-                        {t("posts")}
-                      </button>
+                      {(() => {
+                        const cEntry = contentMap.get(product.id);
+                        return (
+                          <button
+                            onClick={() => openModal(product, "social_post")}
+                            className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
+                            style={{
+                              fontFamily: "var(--font-mono)",
+                              backgroundColor: cEntry?.hasPost ? "#5AC8FA" : "#5AC8FA12",
+                              border: cEntry?.hasPost
+                                ? "1.5px solid #5AC8FA"
+                                : "1.5px solid #5AC8FA40",
+                              color: cEntry?.hasPost ? "var(--primary-foreground)" : "#5AC8FA",
+                            }}
+                          >
+                            <PenSquare className="w-3 h-3" />
+                            {t("posts")}
+                          </button>
+                        );
+                      })()}
                     </div>
 
                     {/* Updated timestamp */}
@@ -737,6 +870,36 @@ export function ProductCatalog({
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={(p) => setFilter("page", String(p))}
+      />
+
+      {/* ── AI CONTENT DIALOG ── */}
+      <ContentDialog
+        modal={modal}
+        contentMap={contentMap}
+        isGenerating={isGenerating}
+        editingContent={editingContent}
+        editText={editText}
+        storeMap={storeMap}
+        t={tAI}
+        onClose={() => {
+          setModal(null);
+          setIsGenerating(false);
+          setEditingContent(null);
+          setEditText("");
+        }}
+        onGenerate={handleGenerate}
+        onRegenerate={handleRegenerate}
+        onSendToWebhook={handleSendToWebhook}
+        onStartEdit={(id, text) => {
+          setEditingContent(id);
+          setEditText(text);
+        }}
+        onCancelEdit={() => {
+          setEditingContent(null);
+          setEditText("");
+        }}
+        onSaveEdit={handleSaveEdit}
+        onEditTextChange={setEditText}
       />
     </div>
   );

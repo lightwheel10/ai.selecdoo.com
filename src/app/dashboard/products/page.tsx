@@ -1,5 +1,5 @@
 import { ProductCatalog } from "./_components/product-catalog";
-import { getFilteredProducts, getStores } from "@/lib/queries";
+import { getFilteredProducts, getStores, getAIContent } from "@/lib/queries";
 
 interface Props {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -23,7 +23,7 @@ export default async function ProductsPage({ searchParams }: Props) {
   const page =
     typeof sp.page === "string" ? Math.max(1, parseInt(sp.page, 10)) : 1;
 
-  const [result, stores] = await Promise.all([
+  const [result, stores, aiContent] = await Promise.all([
     getFilteredProducts({
       search,
       storeId,
@@ -35,6 +35,7 @@ export default async function ProductsPage({ searchParams }: Props) {
       pageSize: 24,
     }),
     getStores(),
+    getAIContent(),
   ]);
 
   return (
@@ -44,6 +45,7 @@ export default async function ProductsPage({ searchParams }: Props) {
       totalPages={result.totalPages}
       currentPage={result.page}
       stores={stores}
+      aiContent={aiContent}
       filters={{
         search: search ?? "",
         storeId: storeId ?? null,

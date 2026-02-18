@@ -1,28 +1,21 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { canDeleteProduct } from "@/lib/auth/roles";
+import { getAuthContext } from "@/lib/auth/session";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-async function authenticate() {
-  if (process.env.NODE_ENV === "development" && process.env.DEV_BYPASS === "true") {
-    return { id: "dev-bypass" } as { id: string };
-  }
-  const supabaseAuth = await createClient();
-  const {
-    data: { user },
-  } = await supabaseAuth.auth.getUser();
-  return user;
-}
 
 export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await authenticate();
-    if (!user) {
+    const { user, role, permissions, isDevBypass } = await getAuthContext();
+    if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!canDeleteProduct({ role, permissions })) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { id } = await params;
@@ -33,10 +26,9 @@ export async function DELETE(
 
     const supabase = createAdminClient();
 
-    // Look up product and verify ownership through its store
     const { data: product, error: lookupErr } = await supabase
       .from("products")
-      .select("id, store_id")
+      .select("id")
       .eq("id", id)
       .is("deleted_at", null)
       .single();
@@ -45,23 +37,6 @@ export async function DELETE(
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    // Verify the product's store belongs to the authenticated user
-    const { data: store, error: storeErr } = await supabase
-      .from("stores")
-      .select("id, user_id")
-      .eq("id", product.store_id)
-      .is("deleted_at", null)
-      .single();
-
-    if (storeErr || !store) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
-    }
-
-    if (user.id !== "dev-bypass" && store.user_id !== user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    // Soft-delete the product
     const now = new Date().toISOString();
     const { error: deleteErr } = await supabase
       .from("products")

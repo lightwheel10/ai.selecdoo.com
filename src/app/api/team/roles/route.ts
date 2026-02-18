@@ -1,60 +1,36 @@
 import type { User } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { isAppRole, normalizeAppRole } from "@/lib/auth/roles";
+import {
+  isAppRole,
+  normalizeAppRole,
+  normalizePermissionList,
+} from "@/lib/auth/roles";
 import { isBootstrapAdminEmail, resolveAppRole } from "@/lib/auth/roles-server";
+import {
+  applyRoleAndPermissionsToMetadata,
+  computeEffectivePermissions,
+  getPermissionOverridesFromMetadata,
+  hasPermissionOverrides,
+} from "@/lib/auth/team-access";
+import { authenticateTeamAdmin, listAllAuthUsers } from "@/lib/auth/team-admin";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_BODY_SIZE = 8_192; // 8 KB
-const PAGE_SIZE = 200;
-const MAX_PAGES = 20;
+const DEFAULT_APP_METADATA: Record<string, unknown> = {};
 
-async function authenticateAdmin() {
-  if (
-    process.env.NODE_ENV === "development" &&
-    process.env.DEV_BYPASS === "true"
-  ) {
-    return { id: "dev-bypass", email: null as string | null };
-  }
-
-  const supabaseAuth = await createClient();
-  const {
-    data: { user },
-  } = await supabaseAuth.auth.getUser();
-
-  if (!user) return null;
-  if (resolveAppRole(user) !== "admin") return null;
-
-  return { id: user.id, email: user.email ?? null };
+function hasExplicitPermissions(metadata: Record<string, unknown>): boolean {
+  return "permissions" in metadata;
 }
 
-async function listAllAuthUsers() {
-  const supabase = createAdminClient();
-  const users: User[] = [];
-
-  for (let page = 1; page <= MAX_PAGES; page += 1) {
-    const { data, error } = await supabase.auth.admin.listUsers({
-      page,
-      perPage: PAGE_SIZE,
-    });
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    const batch = data.users ?? [];
-    users.push(...batch);
-
-    if (batch.length < PAGE_SIZE) break;
-  }
-
-  return users;
+function listEquals(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((value, index) => value === b[index]);
 }
 
 export async function GET() {
   try {
-    const actor = await authenticateAdmin();
+    const actor = await authenticateTeamAdmin();
     if (!actor) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -64,15 +40,29 @@ export async function GET() {
     const mapped = users
       .filter((u) => !!u.email)
       .map((u) => {
+        const metadata =
+          (u.app_metadata as Record<string, unknown> | undefined) ??
+          DEFAULT_APP_METADATA;
         const role = resolveAppRole({
           email: u.email,
-          app_metadata:
-            (u.app_metadata as Record<string, unknown> | undefined) ?? null,
+          app_metadata: metadata,
         });
+        const overrides = getPermissionOverridesFromMetadata(metadata);
+        const permissions = hasExplicitPermissions(metadata)
+          ? normalizePermissionList(metadata.permissions)
+          : computeEffectivePermissions(role, actor.workspaceMatrix, overrides);
+        const roleDefaults =
+          role === "admin" ? actor.workspaceMatrix.admin : actor.workspaceMatrix[role];
+        const isCustomized =
+          role !== "admin" &&
+          (hasPermissionOverrides(overrides) || !listEquals(permissions, roleDefaults));
+
         return {
           id: u.id,
           email: u.email!,
           role,
+          permissions,
+          is_customized: isCustomized,
           created_at: u.created_at ?? null,
           last_sign_in_at: u.last_sign_in_at ?? null,
           is_bootstrap_admin: isBootstrapAdminEmail(u.email),
@@ -92,7 +82,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const actor = await authenticateAdmin();
+    const actor = await authenticateTeamAdmin();
     if (!actor) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -157,10 +147,11 @@ export async function POST(req: Request) {
     }
 
     const supabase = createAdminClient();
-    const nextMetadata = {
-      ...(target.app_metadata ?? {}),
-      role: roleInput,
-    };
+    const nextMetadata = applyRoleAndPermissionsToMetadata(
+      target.app_metadata,
+      roleInput,
+      actor.workspaceMatrix
+    );
     const { error: updateErr } = await supabase.auth.admin.updateUserById(
       target.id,
       { app_metadata: nextMetadata }
@@ -187,4 +178,3 @@ export async function POST(req: Request) {
     );
   }
 }
-

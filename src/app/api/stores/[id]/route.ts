@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  canDeleteStore,
+  canEditStoreDetails,
+  canUpdateStoreStatus,
+} from "@/lib/auth/roles";
+import { getAuthContext } from "@/lib/auth/session";
 
-// Allowed fields and their DB column mappings
 const FIELD_MAP: Record<string, string> = {
   name: "name",
   url: "url",
@@ -33,18 +37,6 @@ const VALID_STATUSES = ["active", "paused"];
 const MAX_BODY_SIZE = 16_384; // 16 KB
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-async function authenticate() {
-  if (process.env.NODE_ENV === "development" && process.env.DEV_BYPASS === "true") {
-    return { id: "dev-bypass" } as { id: string };
-  }
-  const supabaseAuth = await createClient();
-  const {
-    data: { user },
-  } = await supabaseAuth.auth.getUser();
-
-  return user;
-}
-
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -56,8 +48,9 @@ export async function PATCH(
     }
 
     const { id } = await params;
+    const { user, role, permissions, isDevBypass } = await getAuthContext();
 
-    if (!await authenticate()) {
+    if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -67,7 +60,21 @@ export async function PATCH(
 
     const body = await req.json();
 
-    // Build update object with only allowed fields, mapped to DB columns
+    const requestedFields = Object.keys(FIELD_MAP).filter((field) => field in body);
+    if (requestedFields.length === 0) {
+      return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
+    }
+
+    // Operators can only toggle store status. Any broader payload is admin-only.
+    const statusOnlyUpdate = requestedFields.every((field) => field === "status");
+    if (statusOnlyUpdate) {
+      if (!canUpdateStoreStatus({ role, permissions })) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    } else if (!canEditStoreDetails({ role, permissions })) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const dbUpdate: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
     };
@@ -76,7 +83,6 @@ export async function PATCH(
       if (field in body) {
         let value = body[field];
 
-        // Validate platform value
         if (field === "platform" && !VALID_PLATFORMS.includes(value)) {
           return NextResponse.json(
             { error: `Invalid platform: ${value}` },
@@ -84,7 +90,6 @@ export async function PATCH(
           );
         }
 
-        // Validate status value
         if (field === "status" && !VALID_STATUSES.includes(value)) {
           return NextResponse.json(
             { error: `Invalid status: ${value}` },
@@ -92,12 +97,10 @@ export async function PATCH(
           );
         }
 
-        // Validate boolean fields
         if (["is_published", "is_featured"].includes(field)) {
           value = Boolean(value);
         }
 
-        // Validate integer fields
         if (field.startsWith("shipping_min_") || field.startsWith("shipping_max_")) {
           if (value !== null && value !== undefined && value !== "") {
             const num = parseInt(value, 10);
@@ -113,7 +116,6 @@ export async function PATCH(
           }
         }
 
-        // Sanitize string fields — convert empty strings to null
         if (typeof value === "string" && value.trim() === "") {
           value = null;
         }
@@ -122,14 +124,8 @@ export async function PATCH(
       }
     }
 
-    // Must have at least one field to update (besides updated_at)
-    if (Object.keys(dbUpdate).length <= 1) {
-      return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
-    }
-
     const supabase = createAdminClient();
 
-    // Verify store exists
     const { data: existing, error: lookupErr } = await supabase
       .from("stores")
       .select("id")
@@ -141,7 +137,6 @@ export async function PATCH(
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
     }
 
-    // Perform update
     const { error: updateErr } = await supabase
       .from("stores")
       .update(dbUpdate)
@@ -149,13 +144,9 @@ export async function PATCH(
 
     if (updateErr) {
       console.error("Store update error:", updateErr);
-      return NextResponse.json(
-        { error: "Failed to update store" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to update store" }, { status: 500 });
     }
 
-    // Side-effect: sync monitoring_configs.enabled when status changes
     if ("status" in body) {
       const monitoringEnabled = body.status === "active";
       await supabase
@@ -167,10 +158,7 @@ export async function PATCH(
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("Store PATCH error:", err);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -180,9 +168,14 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+    const { user, role, permissions, isDevBypass } = await getAuthContext();
 
-    if (!await authenticate()) {
+    if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!canDeleteStore({ role, permissions })) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     if (!UUID_RE.test(id)) {
@@ -191,7 +184,6 @@ export async function DELETE(
 
     const supabase = createAdminClient();
 
-    // Verify store exists
     const { data: existing, error: lookupErr } = await supabase
       .from("stores")
       .select("id")
@@ -203,7 +195,6 @@ export async function DELETE(
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
     }
 
-    // Soft-delete the store
     const { error: deleteErr } = await supabase
       .from("stores")
       .update({
@@ -218,7 +209,6 @@ export async function DELETE(
       return NextResponse.json({ error: "Failed to delete store" }, { status: 500 });
     }
 
-    // Disable monitoring
     await supabase
       .from("monitoring_configs")
       .update({ enabled: false, updated_at: new Date().toISOString() })

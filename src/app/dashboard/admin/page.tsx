@@ -1,27 +1,18 @@
 import { getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { getStores, getProducts, getAIActivityLogs } from "@/lib/queries";
-import { createClient } from "@/lib/supabase/server";
 import { canAccessAdmin } from "@/lib/auth/roles";
-import { resolveAppRole } from "@/lib/auth/roles-server";
+import { getAuthContext } from "@/lib/auth/session";
 import { AdminDashboard } from "./_components/admin-dashboard";
 
 export default async function AdminPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const isDevBypass =
-    process.env.NODE_ENV === "development" &&
-    process.env.DEV_BYPASS === "true";
+  const { user, role, permissions, isDevBypass } = await getAuthContext();
 
   if (!user && !isDevBypass) {
     redirect("/login");
   }
 
-  const role = isDevBypass ? "admin" : resolveAppRole(user);
-  if (!canAccessAdmin(role)) {
+  if (!canAccessAdmin({ role, permissions })) {
     redirect("/dashboard");
   }
 
