@@ -1,11 +1,22 @@
+import { redirect } from "next/navigation";
 import { ProductCatalog } from "./_components/product-catalog";
 import { getFilteredProducts, getStores, getAIContent } from "@/lib/queries";
+import { canAccessProducts } from "@/lib/auth/roles";
+import { getAuthContext } from "@/lib/auth/session";
 
 interface Props {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 export default async function ProductsPage({ searchParams }: Props) {
+  const { user, role, permissions, isDevBypass } = await getAuthContext();
+  if (!user && !isDevBypass) {
+    redirect("/login");
+  }
+  if (!canAccessProducts({ role, permissions })) {
+    redirect("/dashboard");
+  }
+
   const sp = await searchParams;
 
   const search = typeof sp.search === "string" ? sp.search : undefined;

@@ -21,6 +21,7 @@ interface MiniProductCardProps {
   t: (key: string) => string;
   canSelect?: boolean;
   canDeleteProduct?: boolean;
+  canGenerateContent?: boolean;
   onOpenModal: (
     product: Product,
     contentType: "deal_post" | "social_post"
@@ -39,6 +40,7 @@ export function MiniProductCard({
   t,
   canSelect = true,
   canDeleteProduct = false,
+  canGenerateContent = true,
   onOpenModal,
   onToggleSelect,
   onSendToGoogle,
@@ -46,6 +48,9 @@ export function MiniProductCard({
 }: MiniProductCardProps) {
   const hasDiscount =
     product.discount_percentage && product.discount_percentage > 0;
+
+  const canOpenDeal = Boolean(entry?.hasDeal) || canGenerateContent;
+  const canOpenPost = Boolean(entry?.hasPost) || canGenerateContent;
 
   return (
     <div
@@ -149,6 +154,7 @@ export function MiniProductCard({
         {/* Deal */}
         <button
           onClick={() => onOpenModal(product, "deal_post")}
+          disabled={!canOpenDeal}
           className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"
           style={{
             backgroundColor: entry?.hasDeal ? "#22C55E" : "#22C55E12",
@@ -156,6 +162,7 @@ export function MiniProductCard({
               ? "1.5px solid #22C55E"
               : "1.5px solid #22C55E40",
             color: entry?.hasDeal ? "var(--primary-foreground)" : "#22C55E",
+            opacity: canOpenDeal ? 1 : 0.45,
           }}
           title={entry?.hasDeal ? t("viewDeal") : t("generateDeal")}
         >
@@ -165,6 +172,7 @@ export function MiniProductCard({
         {/* Post */}
         <button
           onClick={() => onOpenModal(product, "social_post")}
+          disabled={!canOpenPost}
           className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"
           style={{
             backgroundColor: entry?.hasPost ? "#5AC8FA" : "#5AC8FA12",
@@ -172,6 +180,7 @@ export function MiniProductCard({
               ? "1.5px solid #5AC8FA"
               : "1.5px solid #5AC8FA40",
             color: entry?.hasPost ? "var(--primary-foreground)" : "#5AC8FA",
+            opacity: canOpenPost ? 1 : 0.45,
           }}
           title={entry?.hasPost ? t("viewPost") : t("generatePost")}
         >

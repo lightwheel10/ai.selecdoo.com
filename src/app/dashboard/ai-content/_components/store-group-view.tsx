@@ -21,6 +21,7 @@ interface StoreGroupViewProps {
   googleSendingProducts: Set<string>;
   allowSelection: boolean;
   allowDeleteProduct: boolean;
+  allowGenerateContent: boolean;
   bulkGenerating: {
     storeId: string;
     type: "deal_post" | "social_post";
@@ -56,6 +57,7 @@ export function StoreGroupView({
   googleSendingProducts,
   allowSelection,
   allowDeleteProduct,
+  allowGenerateContent,
   bulkGenerating,
   t,
   onToggleStore,
@@ -286,77 +288,81 @@ export function StoreGroupView({
                         </>
                       )}
 
-                      {/* Generate All Deals */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onBulkGenerate(
-                            group.store.id,
-                            group.products,
-                            "deal_post"
-                          );
-                        }}
-                        disabled={!!bulkGenerating}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          backgroundColor: "#22C55E12",
-                          border: "1.5px solid #22C55E40",
-                          color: "#22C55E",
-                        }}
-                      >
-                        {isBulkGen &&
-                        bulkGenerating?.type === "deal_post" ? (
-                          <>
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                            {t("generatingAll", {
-                              current: bulkGenerating.current,
-                              total: bulkGenerating.total,
-                            })}
-                          </>
-                        ) : (
-                          <>
-                            <Tags className="w-3 h-3" />
-                            {t("generateAllDeals")}
-                          </>
-                        )}
-                      </button>
+                      {allowGenerateContent && (
+                        <>
+                          {/* Generate All Deals */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onBulkGenerate(
+                                group.store.id,
+                                group.products,
+                                "deal_post"
+                              );
+                            }}
+                            disabled={!!bulkGenerating}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
+                            style={{
+                              fontFamily: "var(--font-mono)",
+                              backgroundColor: "#22C55E12",
+                              border: "1.5px solid #22C55E40",
+                              color: "#22C55E",
+                            }}
+                          >
+                            {isBulkGen &&
+                            bulkGenerating?.type === "deal_post" ? (
+                              <>
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                {t("generatingAll", {
+                                  current: bulkGenerating.current,
+                                  total: bulkGenerating.total,
+                                })}
+                              </>
+                            ) : (
+                              <>
+                                <Tags className="w-3 h-3" />
+                                {t("generateAllDeals")}
+                              </>
+                            )}
+                          </button>
 
-                      {/* Generate All Posts */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onBulkGenerate(
-                            group.store.id,
-                            group.products,
-                            "social_post"
-                          );
-                        }}
-                        disabled={!!bulkGenerating}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          backgroundColor: "#5AC8FA12",
-                          border: "1.5px solid #5AC8FA40",
-                          color: "#5AC8FA",
-                        }}
-                      >
-                        {isBulkGen &&
-                        bulkGenerating?.type === "social_post" ? (
-                          <>
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                            {t("generatingAll", {
-                              current: bulkGenerating.current,
-                              total: bulkGenerating.total,
-                            })}
-                          </>
-                        ) : (
-                          <>
-                            <PenSquare className="w-3 h-3" />
-                            {t("generateAllPosts")}
-                          </>
-                        )}
-                      </button>
+                          {/* Generate All Posts */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onBulkGenerate(
+                                group.store.id,
+                                group.products,
+                                "social_post"
+                              );
+                            }}
+                            disabled={!!bulkGenerating}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
+                            style={{
+                              fontFamily: "var(--font-mono)",
+                              backgroundColor: "#5AC8FA12",
+                              border: "1.5px solid #5AC8FA40",
+                              color: "#5AC8FA",
+                            }}
+                          >
+                            {isBulkGen &&
+                            bulkGenerating?.type === "social_post" ? (
+                              <>
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                {t("generatingAll", {
+                                  current: bulkGenerating.current,
+                                  total: bulkGenerating.total,
+                                })}
+                              </>
+                            ) : (
+                              <>
+                                <PenSquare className="w-3 h-3" />
+                                {t("generateAllPosts")}
+                              </>
+                            )}
+                          </button>
+                        </>
+                      )}
 
                     </div>
 
@@ -379,6 +385,7 @@ export function StoreGroupView({
                           t={t}
                           canSelect={allowSelection}
                           canDeleteProduct={allowDeleteProduct}
+                          canGenerateContent={allowGenerateContent}
                           onOpenModal={onOpenModal}
                           onToggleSelect={onToggleSelect}
                           onSendToGoogle={onSendToGoogle}

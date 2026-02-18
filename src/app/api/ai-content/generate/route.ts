@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthContext } from "@/lib/auth/session";
+import { canGenerateAIContent } from "@/lib/auth/roles";
 
 const N8N_URLS = {
   deal_post: process.env.N8N_DEALS_WEBHOOK_URL!,
@@ -69,9 +70,12 @@ function flattenGermanFields(obj: Record<string, any>): string {
 
 export async function POST(req: Request) {
   try {
-    const { user, isDevBypass } = await getAuthContext();
+    const { user, role, permissions, isDevBypass } = await getAuthContext();
     if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!canGenerateAIContent({ role, permissions })) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const body = await req.json();
@@ -230,6 +234,8 @@ export async function POST(req: Request) {
       product_title: product.cleaned_title || product.title,
       content_type: inserted.content_type,
       content: inserted.content,
+      webhook_sent_at: inserted.webhook_sent_at ?? null,
+      webhook_status: inserted.webhook_status ?? null,
       created_at: inserted.created_at,
     };
 

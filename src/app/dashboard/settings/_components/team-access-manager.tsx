@@ -43,6 +43,16 @@ const PERMISSION_DEFINITIONS: PermissionDefinition[] = [
     descriptionKey: "permissionSettingsAccessDescription",
   },
   {
+    permission: "products:access",
+    labelKey: "permissionProductsAccessLabel",
+    descriptionKey: "permissionProductsAccessDescription",
+  },
+  {
+    permission: "ai_content:access",
+    labelKey: "permissionAiContentAccessLabel",
+    descriptionKey: "permissionAiContentAccessDescription",
+  },
+  {
     permission: "team:manage_roles",
     labelKey: "permissionTeamManageRolesLabel",
     descriptionKey: "permissionTeamManageRolesDescription",
@@ -86,6 +96,16 @@ const PERMISSION_DEFINITIONS: PermissionDefinition[] = [
     permission: "product:delete",
     labelKey: "permissionProductDeleteLabel",
     descriptionKey: "permissionProductDeleteDescription",
+  },
+  {
+    permission: "ai_content:generate",
+    labelKey: "permissionAiContentGenerateLabel",
+    descriptionKey: "permissionAiContentGenerateDescription",
+  },
+  {
+    permission: "ai_content:edit",
+    labelKey: "permissionAiContentEditLabel",
+    descriptionKey: "permissionAiContentEditDescription",
   },
 ];
 

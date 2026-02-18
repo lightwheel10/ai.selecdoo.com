@@ -31,7 +31,11 @@ import { ProductCard } from "./product-card";
 import { ContentDialog } from "./content-dialog";
 import { StoreGroupView } from "./store-group-view";
 import { useFilterNavigation } from "@/hooks/use-filter-navigation";
-import { canDeleteProduct } from "@/lib/auth/roles";
+import {
+  canDeleteProduct,
+  canEditAIContent,
+  canGenerateAIContent,
+} from "@/lib/auth/roles";
 import { useAuthAccess } from "@/components/domain/role-provider";
 
 // ═══════════════════════════════════
@@ -68,6 +72,8 @@ export function AIContentWorkstation({
   const access = useAuthAccess();
   // Delete controls are admin-only in this screen.
   const allowDeleteProduct = canDeleteProduct(access);
+  const allowGenerateContent = canGenerateAIContent(access);
+  const allowEditContent = canEditAIContent(access);
 
   const storeMap = useMemo(
     () => Object.fromEntries(stores.map((s) => [s.id, s])),
@@ -135,6 +141,9 @@ export function AIContentWorkstation({
   const [isGenerating, setIsGenerating] = useState(false);
   const [editingContent, setEditingContent] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+
+  // Webhook send
+  const [sendingWebhook, setSendingWebhook] = useState<string | null>(null);
 
   // Bulk generation
   const [bulkGenerating, setBulkGenerating] = useState<{
@@ -315,6 +324,10 @@ export function AIContentWorkstation({
 
   const handleGenerate = useCallback(
     async (product: Product, contentType: "deal_post" | "social_post") => {
+      if (!allowGenerateContent) {
+        toast.error(t("noGenerateAccess"));
+        return;
+      }
       setIsGenerating(true);
       try {
         const res = await fetch("/api/ai-content/generate", {
@@ -353,7 +366,7 @@ export function AIContentWorkstation({
         setIsGenerating(false);
       }
     },
-    [t]
+    [allowGenerateContent, t]
   );
 
   function handleRegenerate(
@@ -364,14 +377,77 @@ export function AIContentWorkstation({
     handleGenerate(product, contentType);
   }
 
-  function handleSendToWebhook() {
-    toast(t("comingSoon"));
+  async function handleSendToWebhook(
+    product: Product,
+    contentType: "deal_post" | "social_post"
+  ) {
+    const entry = localContent.find(
+      (c) => c.product_id === product.id && c.content_type === contentType
+    );
+    if (!entry) return;
+
+    setSendingWebhook(entry.id);
+    try {
+      const res = await fetch("/api/ai-content/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contentId: entry.id,
+          productId: product.id,
+          contentType,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+
+      const { webhook_sent_at, webhook_status } = await res.json();
+
+      // Update local state with webhook tracking
+      setLocalContent((prev) =>
+        prev.map((c) =>
+          c.id === entry.id
+            ? { ...c, webhook_sent_at, webhook_status }
+            : c
+        )
+      );
+
+      const typeLabel =
+        contentType === "deal_post" ? t("dealPost") : t("socialPost");
+      toast(t("webhookSentToast"), {
+        description: t("webhookSentDescription", {
+          type: typeLabel,
+          title: product.title,
+        }),
+      });
+    } catch (err) {
+      // Update local state to show failed status
+      setLocalContent((prev) =>
+        prev.map((c) =>
+          c.id === entry.id
+            ? { ...c, webhook_status: "failed" }
+            : c
+        )
+      );
+      toast.error(
+        err instanceof Error ? err.message : t("webhookFailed")
+      );
+    } finally {
+      setSendingWebhook(null);
+    }
   }
 
   async function handleSaveEdit(
     productId: string,
     contentType: "deal_post" | "social_post"
   ) {
+    if (!allowEditContent) {
+      toast.error(t("noEditAccess"));
+      return;
+    }
+
     // Find the content entry to get its ID
     const entry = localContent.find(
       (c) => c.product_id === productId && c.content_type === contentType
@@ -410,6 +486,11 @@ export function AIContentWorkstation({
     storeProducts: Product[],
     contentType: "deal_post" | "social_post"
   ) {
+    if (!allowGenerateContent) {
+      toast.error(t("noGenerateAccess"));
+      return;
+    }
+
     const needsContent = storeProducts.filter((p) => {
       const entry = contentMap.get(p.id);
       if (contentType === "deal_post") return !entry?.hasDeal;
@@ -906,6 +987,7 @@ export function AIContentWorkstation({
                     t={t}
                     canSelect={allowDeleteProduct}
                     canDeleteProduct={allowDeleteProduct}
+                    canGenerateContent={allowGenerateContent}
                     onOpenModal={openModal}
                     onToggleSelect={toggleSelect}
                     onSendToGoogle={handleSendToGoogle}
@@ -934,6 +1016,7 @@ export function AIContentWorkstation({
             googleSendingProducts={googleSendingProducts}
             allowSelection={allowDeleteProduct}
             allowDeleteProduct={allowDeleteProduct}
+            allowGenerateContent={allowGenerateContent}
             bulkGenerating={bulkGenerating}
             t={t}
             onToggleStore={toggleStore}
@@ -954,9 +1037,12 @@ export function AIContentWorkstation({
         modal={modal}
         contentMap={contentMap}
         isGenerating={isGenerating}
+        isSending={sendingWebhook !== null}
         editingContent={editingContent}
         editText={editText}
         storeMap={storeMap}
+        canGenerateContent={allowGenerateContent}
+        canEditContent={allowEditContent}
         t={t}
         onClose={() => {
           setModal(null);

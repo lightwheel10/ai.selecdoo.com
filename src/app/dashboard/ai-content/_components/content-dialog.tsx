@@ -27,9 +27,12 @@ interface ContentDialogProps {
   modal: { product: Product; contentType: "deal_post" | "social_post" } | null;
   contentMap: Map<string, ContentEntry>;
   isGenerating: boolean;
+  isSending: boolean;
   editingContent: string | null;
   editText: string;
   storeMap: Record<string, Store>;
+  canGenerateContent: boolean;
+  canEditContent: boolean;
   t: (key: string, values?: Record<string, string | number>) => string;
   onClose: () => void;
   onGenerate: (product: Product, contentType: "deal_post" | "social_post") => void;
@@ -45,9 +48,12 @@ export function ContentDialog({
   modal,
   contentMap,
   isGenerating,
+  isSending,
   editingContent,
   editText,
   storeMap,
+  canGenerateContent,
+  canEditContent,
   t,
   onClose,
   onGenerate,
@@ -81,11 +87,16 @@ export function ContentDialog({
     const key = `${modal.product.id}:${modal.contentType}`;
     const hasContent =
       modal.contentType === "deal_post" ? entry?.hasDeal : entry?.hasPost;
-    if (!hasContent && !isGenerating && autoGenerateRef.current !== key) {
+    if (
+      canGenerateContent &&
+      !hasContent &&
+      !isGenerating &&
+      autoGenerateRef.current !== key
+    ) {
       autoGenerateRef.current = key;
       onGenerate(modal.product, modal.contentType);
     }
-  }, [modal, entry, isGenerating, onGenerate]);
+  }, [modal, entry, isGenerating, onGenerate, canGenerateContent]);
 
   return (
     <Dialog
@@ -225,8 +236,11 @@ export function ContentDialog({
                   product={modal.product}
                   contentType={contentType}
                   isGenerating={isGenerating}
+                  isSending={isSending}
                   editingContent={editingContent}
                   editText={editText}
+                  canGenerateContent={canGenerateContent}
+                  canEditContent={canEditContent}
                   t={t}
                   onRegenerate={onRegenerate}
                   onSendToWebhook={onSendToWebhook}
@@ -235,11 +249,10 @@ export function ContentDialog({
                   onSaveEdit={onSaveEdit}
                   onEditTextChange={onEditTextChange}
                 />
+              ) : canGenerateContent ? (
+                <GeneratingView contentType={contentType} t={t} />
               ) : (
-                <GeneratingView
-                  contentType={contentType}
-                  t={t}
-                />
+                <NoGenerateAccessView t={t} />
               )}
             </div>
           </>
@@ -256,8 +269,11 @@ function ContentView({
   product,
   contentType,
   isGenerating,
+  isSending,
   editingContent,
   editText,
+  canGenerateContent,
+  canEditContent,
   t,
   onRegenerate,
   onSendToWebhook,
@@ -270,8 +286,11 @@ function ContentView({
   product: Product;
   contentType: "deal_post" | "social_post";
   isGenerating: boolean;
+  isSending: boolean;
   editingContent: string | null;
   editText: string;
+  canGenerateContent: boolean;
+  canEditContent: boolean;
   t: (key: string, values?: Record<string, string | number>) => string;
   onRegenerate: (product: Product, contentType: "deal_post" | "social_post") => void;
   onSendToWebhook: (product: Product, contentType: "deal_post" | "social_post") => void;
@@ -320,6 +339,7 @@ function ContentView({
           <div className="flex items-center gap-2">
             <button
               onClick={() => onSaveEdit(product.id, contentType)}
+              disabled={!canEditContent}
               className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none bg-primary text-primary-foreground border-primary shadow-[3px_3px_0px] shadow-primary"
               style={{ fontFamily: "var(--font-mono)" }}
             >
@@ -421,19 +441,21 @@ function ContentView({
           {/* Action buttons */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Edit */}
-            <button
-              onClick={() => onStartEdit(content.id, content.content)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
-              style={{
-                fontFamily: "var(--font-mono)",
-                backgroundColor: "transparent",
-                borderColor: "var(--border)",
-                color: "var(--muted-foreground)",
-              }}
-            >
-              <Pencil className="w-3 h-3" />
-              {t("edit")}
-            </button>
+            {canEditContent && (
+              <button
+                onClick={() => onStartEdit(content.id, content.content)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  backgroundColor: "transparent",
+                  borderColor: "var(--border)",
+                  color: "var(--muted-foreground)",
+                }}
+              >
+                <Pencil className="w-3 h-3" />
+                {t("edit")}
+              </button>
+            )}
 
             {/* Copy */}
             <CopyBtn
@@ -443,45 +465,137 @@ function ContentView({
             />
 
             {/* Regenerate */}
-            <button
-              onClick={() => {
-                if (!isGenerating) onRegenerate(product, contentType);
-              }}
-              disabled={isGenerating}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
-              style={{
-                fontFamily: "var(--font-mono)",
-                backgroundColor: "transparent",
-                borderColor: "var(--border)",
-                color: "var(--muted-foreground)",
-              }}
-            >
-              {isGenerating ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <RefreshCw className="w-3 h-3" />
-              )}
-              {isGenerating ? t("generating") : t("regenerate")}
-            </button>
+            {canGenerateContent && (
+              <button
+                onClick={() => {
+                  if (!isGenerating) onRegenerate(product, contentType);
+                }}
+                disabled={isGenerating}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  backgroundColor: "transparent",
+                  borderColor: "var(--border)",
+                  color: "var(--muted-foreground)",
+                }}
+              >
+                {isGenerating ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-3 h-3" />
+                )}
+                {isGenerating ? t("generating") : t("regenerate")}
+              </button>
+            )}
 
             {/* Send to webhook */}
-            <button
-              onClick={() => onSendToWebhook(product, contentType)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
-              style={{
-                fontFamily: "var(--font-mono)",
-                backgroundColor: "#FF9F0A12",
-                border: "1.5px solid #FF9F0A40",
-                color: "#FF9F0A",
-              }}
-            >
-              <Send className="w-3 h-3" />
-              {t("sendToWebhook")}
-            </button>
+            {canGenerateContent && (
+              <WebhookButton
+                content={content}
+                isSending={isSending}
+                t={t}
+                onSend={() => onSendToWebhook(product, contentType)}
+              />
+            )}
           </div>
         </>
       )}
     </div>
+  );
+}
+
+// ─── Webhook Button (with state feedback) ───
+
+function WebhookButton({
+  content,
+  isSending,
+  t,
+  onSend,
+}: {
+  content: AIGeneratedContent;
+  isSending: boolean;
+  t: (key: string, values?: Record<string, string | number>) => string;
+  onSend: () => void;
+}) {
+  const isSent = content.webhook_status === "sent";
+  const isFailed = content.webhook_status === "failed";
+
+  // Sent state
+  if (isSent && !isSending) {
+    const sentDate = content.webhook_sent_at
+      ? new Date(content.webhook_sent_at).toLocaleDateString()
+      : "";
+    return (
+      <button
+        onClick={onSend}
+        className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
+        style={{
+          fontFamily: "var(--font-mono)",
+          backgroundColor: "#22C55E12",
+          border: "1.5px solid #22C55E40",
+          color: "#22C55E",
+        }}
+        title={sentDate ? t("webhookSentAt", { date: sentDate }) : undefined}
+      >
+        <Check className="w-3 h-3" />
+        {t("webhookSent")}
+      </button>
+    );
+  }
+
+  // Sending state
+  if (isSending) {
+    return (
+      <button
+        disabled
+        className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] opacity-60 pointer-events-none"
+        style={{
+          fontFamily: "var(--font-mono)",
+          backgroundColor: "#FF9F0A12",
+          border: "1.5px solid #FF9F0A40",
+          color: "#FF9F0A",
+        }}
+      >
+        <Loader2 className="w-3 h-3 animate-spin" />
+        {t("webhookSending")}
+      </button>
+    );
+  }
+
+  // Failed state — show retry
+  if (isFailed) {
+    return (
+      <button
+        onClick={onSend}
+        className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
+        style={{
+          fontFamily: "var(--font-mono)",
+          backgroundColor: "#FF453A12",
+          border: "1.5px solid #FF453A40",
+          color: "#FF453A",
+        }}
+      >
+        <Send className="w-3 h-3" />
+        {t("webhookRetry")}
+      </button>
+    );
+  }
+
+  // Default state
+  return (
+    <button
+      onClick={onSend}
+      className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
+      style={{
+        fontFamily: "var(--font-mono)",
+        backgroundColor: "#FF9F0A12",
+        border: "1.5px solid #FF9F0A40",
+        color: "#FF9F0A",
+      }}
+    >
+      <Send className="w-3 h-3" />
+      {t("sendToWebhook")}
+    </button>
   );
 }
 
@@ -517,6 +631,34 @@ function GeneratingView({
           }}
         >
           {t("generating")}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function NoGenerateAccessView({
+  t,
+}: {
+  t: (key: string, values?: Record<string, string | number>) => string;
+}) {
+  return (
+    <div className="pt-4">
+      <div
+        className="flex flex-col items-center py-10 gap-3 border-2"
+        style={{
+          borderColor: "var(--border)",
+          borderStyle: "dashed",
+        }}
+      >
+        <p
+          className="text-[10px] font-bold uppercase tracking-[0.15em]"
+          style={{
+            fontFamily: "var(--font-mono)",
+            color: "var(--muted-foreground)",
+          }}
+        >
+          {t("noGenerateAccess")}
         </p>
       </div>
     </div>

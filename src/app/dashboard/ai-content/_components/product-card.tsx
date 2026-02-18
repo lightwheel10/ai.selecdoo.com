@@ -18,6 +18,7 @@ interface ProductCardProps {
   t: (key: string) => string;
   canSelect?: boolean;
   canDeleteProduct?: boolean;
+  canGenerateContent?: boolean;
   onOpenModal: (product: Product, contentType: "deal_post" | "social_post") => void;
   onToggleSelect: (productId: string) => void;
   onSendToGoogle: (product: Product) => void;
@@ -34,6 +35,7 @@ export function ProductCard({
   t,
   canSelect = true,
   canDeleteProduct = false,
+  canGenerateContent = true,
   onOpenModal,
   onToggleSelect,
   onSendToGoogle,
@@ -41,6 +43,9 @@ export function ProductCard({
 }: ProductCardProps) {
   const hasDiscount =
     product.discount_percentage && product.discount_percentage > 0;
+
+  const canOpenDeal = Boolean(entry?.hasDeal) || canGenerateContent;
+  const canOpenPost = Boolean(entry?.hasPost) || canGenerateContent;
 
   return (
     <div
@@ -189,6 +194,7 @@ export function ProductCard({
           <div className="flex gap-1.5">
             <button
               onClick={() => onOpenModal(product, "deal_post")}
+              disabled={!canOpenDeal}
               className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
               style={{
                 fontFamily: "var(--font-mono)",
@@ -197,6 +203,7 @@ export function ProductCard({
                   ? "1.5px solid #22C55E"
                   : "1.5px solid #22C55E40",
                 color: entry?.hasDeal ? "var(--primary-foreground)" : "#22C55E",
+                opacity: canOpenDeal ? 1 : 0.45,
               }}
             >
               <Tags className="w-3 h-3" />
@@ -205,6 +212,7 @@ export function ProductCard({
 
             <button
               onClick={() => onOpenModal(product, "social_post")}
+              disabled={!canOpenPost}
               className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
               style={{
                 fontFamily: "var(--font-mono)",
@@ -213,6 +221,7 @@ export function ProductCard({
                   ? "1.5px solid #5AC8FA"
                   : "1.5px solid #5AC8FA40",
                 color: entry?.hasPost ? "var(--primary-foreground)" : "#5AC8FA",
+                opacity: canOpenPost ? 1 : 0.45,
               }}
             >
               <PenSquare className="w-3 h-3" />

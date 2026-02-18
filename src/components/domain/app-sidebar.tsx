@@ -11,7 +11,9 @@ import { NAV_BOTTOM, NAV_ITEMS } from "@/lib/constants";
 import { ThemeToggle } from "@/components/domain/theme-toggle";
 import {
   type AppPermission,
+  canAccessAIContent,
   canAccessAdmin,
+  canAccessProducts,
   canAccessSettings,
   type AppRole,
 } from "@/lib/auth/roles";
@@ -42,10 +44,18 @@ export function AppSidebar({ user, role, permissions }: AppSidebarProps) {
   const locale = useLocale();
   const [signOutOpen, setSignOutOpen] = useState(false);
 
-  const visibleMainItems = NAV_ITEMS.filter(
-    (item) =>
-      item.href !== "/dashboard/admin" || canAccessAdmin({ role, permissions })
-  );
+  const visibleMainItems = NAV_ITEMS.filter((item) => {
+    if (item.href === "/dashboard/admin") {
+      return canAccessAdmin({ role, permissions });
+    }
+    if (item.href === "/dashboard/products") {
+      return canAccessProducts({ role, permissions });
+    }
+    if (item.href === "/dashboard/ai-content") {
+      return canAccessAIContent({ role, permissions });
+    }
+    return true;
+  });
   const visibleBottomItems = NAV_BOTTOM.filter(
     (item) =>
       item.href !== "/dashboard/settings" ||

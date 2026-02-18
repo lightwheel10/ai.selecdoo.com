@@ -1,14 +1,25 @@
 import { Package } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import { redirect } from "next/navigation";
 import { EmptyState } from "@/components/domain/empty-state";
 import { AIContentWorkstation } from "./_components/ai-content-workstation";
 import { getFilteredProducts, getStores, getAIContent } from "@/lib/queries";
+import { canAccessAIContent } from "@/lib/auth/roles";
+import { getAuthContext } from "@/lib/auth/session";
 
 interface Props {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 export default async function AIContentPage({ searchParams }: Props) {
+  const { user, role, permissions, isDevBypass } = await getAuthContext();
+  if (!user && !isDevBypass) {
+    redirect("/login");
+  }
+  if (!canAccessAIContent({ role, permissions })) {
+    redirect("/dashboard");
+  }
+
   const t = await getTranslations("AIContent");
   const sp = await searchParams;
 

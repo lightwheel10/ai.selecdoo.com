@@ -41,14 +41,18 @@ export async function getAuthContext(): Promise<AuthContext> {
 
   const role = resolveAppRole(user);
   const metadata = (user?.app_metadata as Record<string, unknown> | null) ?? null;
+  const matrix = getWorkspaceMatrixFromMetadata(metadata);
   const hasExplicitPermissions = metadata && "permissions" in metadata;
-  const permissions = hasExplicitPermissions
-    ? normalizePermissionList(metadata.permissions)
-    : computeEffectivePermissions(
-        role,
-        getWorkspaceMatrixFromMetadata(metadata),
-        getPermissionOverridesFromMetadata(metadata)
-      );
+  const permissions =
+    role === "admin"
+      ? matrix.admin
+      : hasExplicitPermissions
+      ? normalizePermissionList(metadata.permissions)
+      : computeEffectivePermissions(
+          role,
+          matrix,
+          getPermissionOverridesFromMetadata(metadata)
+        );
 
   return {
     user,

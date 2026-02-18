@@ -5,6 +5,8 @@ export type AppRole = (typeof APP_ROLES)[number];
 export const APP_PERMISSIONS = [
   "admin:access",
   "settings:access",
+  "products:access",
+  "ai_content:access",
   "team:manage_roles",
   "store:create",
   "store:update_status",
@@ -14,6 +16,8 @@ export const APP_PERMISSIONS = [
   "scrape:view",
   "monitoring:run",
   "product:delete",
+  "ai_content:generate",
+  "ai_content:edit",
 ] as const;
 
 export type AppPermission = (typeof APP_PERMISSIONS)[number];
@@ -49,13 +53,17 @@ const DEFAULT_ROLE_PERMISSIONS: Record<AppRole, readonly AppPermission[]> = {
   admin: APP_PERMISSIONS,
   operator: [
     "settings:access",
+    "products:access",
+    "ai_content:access",
     "store:create",
     "store:update_status",
     "scrape:start",
     "scrape:view",
     "monitoring:run",
+    "ai_content:generate",
+    "ai_content:edit",
   ],
-  viewer: ["scrape:view"],
+  viewer: ["scrape:view", "products:access", "ai_content:access"],
 };
 
 export type RolePermissionMatrix = Record<AppRole, AppPermission[]>;
@@ -112,6 +120,14 @@ export function canAccessSettings(subject: PermissionSubject): boolean {
   return hasPermission(subject, "settings:access");
 }
 
+export function canAccessProducts(subject: PermissionSubject): boolean {
+  return hasPermission(subject, "products:access");
+}
+
+export function canAccessAIContent(subject: PermissionSubject): boolean {
+  return hasPermission(subject, "ai_content:access");
+}
+
 export function canAccessAdmin(subject: PermissionSubject): boolean {
   return hasPermission(subject, "admin:access");
 }
@@ -150,4 +166,12 @@ export function canRunMonitoring(subject: PermissionSubject): boolean {
 
 export function canDeleteProduct(subject: PermissionSubject): boolean {
   return hasPermission(subject, "product:delete");
+}
+
+export function canGenerateAIContent(subject: PermissionSubject): boolean {
+  return hasPermission(subject, "ai_content:generate");
+}
+
+export function canEditAIContent(subject: PermissionSubject): boolean {
+  return hasPermission(subject, "ai_content:edit");
 }

@@ -33,7 +33,11 @@ import { ProductImage } from "@/components/domain/product-image";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useFilterNavigation } from "@/hooks/use-filter-navigation";
-import { canDeleteProduct } from "@/lib/auth/roles";
+import {
+  canDeleteProduct,
+  canEditAIContent,
+  canGenerateAIContent,
+} from "@/lib/auth/roles";
 import { useAuthAccess } from "@/components/domain/role-provider";
 import type { Product, Store, AIGeneratedContent } from "@/types";
 import { ContentDialog } from "@/app/dashboard/ai-content/_components/content-dialog";
@@ -307,6 +311,8 @@ export function ProductCatalog({
   const access = useAuthAccess();
   // Product delete is admin-only; keep UI and API behavior aligned.
   const allowDeleteProduct = canDeleteProduct(access);
+  const allowGenerateContent = canGenerateAIContent(access);
+  const allowEditContent = canEditAIContent(access);
 
   const { setFilter, clearAll, isPending } = useFilterNavigation();
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -319,6 +325,7 @@ export function ProductCatalog({
     contentType: "deal_post" | "social_post";
   } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [sendingWebhook, setSendingWebhook] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
 
@@ -363,6 +370,10 @@ export function ProductCatalog({
 
   const handleGenerate = useCallback(
     async (product: Product, contentType: "deal_post" | "social_post") => {
+      if (!allowGenerateContent) {
+        toast.error(tAI("noGenerateAccess"));
+        return;
+      }
       setIsGenerating(true);
       try {
         const res = await fetch("/api/ai-content/generate", {
@@ -400,7 +411,7 @@ export function ProductCatalog({
         setIsGenerating(false);
       }
     },
-    [tAI]
+    [allowGenerateContent, tAI]
   );
 
   function handleRegenerate(
@@ -414,6 +425,11 @@ export function ProductCatalog({
     productId: string,
     contentType: "deal_post" | "social_post"
   ) {
+    if (!allowEditContent) {
+      toast.error(tAI("noEditAccess"));
+      return;
+    }
+
     const entry = localContent.find(
       (c) => c.product_id === productId && c.content_type === contentType
     );
@@ -440,8 +456,64 @@ export function ProductCatalog({
     }
   }
 
-  function handleSendToWebhook() {
-    toast(tAI("comingSoon"));
+  async function handleSendToWebhook(
+    product: Product,
+    contentType: "deal_post" | "social_post"
+  ) {
+    const entry = localContent.find(
+      (c) => c.product_id === product.id && c.content_type === contentType
+    );
+    if (!entry) return;
+
+    setSendingWebhook(entry.id);
+    try {
+      const res = await fetch("/api/ai-content/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contentId: entry.id,
+          productId: product.id,
+          contentType,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+
+      const { webhook_sent_at, webhook_status } = await res.json();
+
+      setLocalContent((prev) =>
+        prev.map((c) =>
+          c.id === entry.id
+            ? { ...c, webhook_sent_at, webhook_status }
+            : c
+        )
+      );
+
+      const typeLabel =
+        contentType === "deal_post" ? tAI("dealPost") : tAI("socialPost");
+      toast(tAI("webhookSentToast"), {
+        description: tAI("webhookSentDescription", {
+          type: typeLabel,
+          title: product.title,
+        }),
+      });
+    } catch (err) {
+      setLocalContent((prev) =>
+        prev.map((c) =>
+          c.id === entry.id
+            ? { ...c, webhook_status: "failed" }
+            : c
+        )
+      );
+      toast.error(
+        err instanceof Error ? err.message : tAI("webhookFailed")
+      );
+    } finally {
+      setSendingWebhook(null);
+    }
   }
 
   const storeMap = useMemo(
@@ -804,9 +876,12 @@ export function ProductCatalog({
                       {/* Success semantic — Deals */}
                       {(() => {
                         const cEntry = contentMap.get(product.id);
+                        const canOpenDeal =
+                          Boolean(cEntry?.hasDeal) || allowGenerateContent;
                         return (
                           <button
                             onClick={() => openModal(product, "deal_post")}
+                            disabled={!canOpenDeal}
                             className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
                             style={{
                               fontFamily: "var(--font-mono)",
@@ -815,6 +890,7 @@ export function ProductCatalog({
                                 ? "1.5px solid #22C55E"
                                 : "1.5px solid #22C55E40",
                               color: cEntry?.hasDeal ? "var(--primary-foreground)" : "#22C55E",
+                              opacity: canOpenDeal ? 1 : 0.45,
                             }}
                           >
                             <Tags className="w-3 h-3" />
@@ -825,9 +901,12 @@ export function ProductCatalog({
                       {/* Info semantic — Posts */}
                       {(() => {
                         const cEntry = contentMap.get(product.id);
+                        const canOpenPost =
+                          Boolean(cEntry?.hasPost) || allowGenerateContent;
                         return (
                           <button
                             onClick={() => openModal(product, "social_post")}
+                            disabled={!canOpenPost}
                             className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
                             style={{
                               fontFamily: "var(--font-mono)",
@@ -836,6 +915,7 @@ export function ProductCatalog({
                                 ? "1.5px solid #5AC8FA"
                                 : "1.5px solid #5AC8FA40",
                               color: cEntry?.hasPost ? "var(--primary-foreground)" : "#5AC8FA",
+                              opacity: canOpenPost ? 1 : 0.45,
                             }}
                           >
                             <PenSquare className="w-3 h-3" />
@@ -877,9 +957,12 @@ export function ProductCatalog({
         modal={modal}
         contentMap={contentMap}
         isGenerating={isGenerating}
+        isSending={sendingWebhook !== null}
         editingContent={editingContent}
         editText={editText}
         storeMap={storeMap}
+        canGenerateContent={allowGenerateContent}
+        canEditContent={allowEditContent}
         t={tAI}
         onClose={() => {
           setModal(null);
