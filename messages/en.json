@@ -326,6 +326,8 @@
     "chars": "{count} chars",
     "generatedAt": "Generated {date}",
     "generatedByAi": "AI Generated",
+    "generateFailed": "Generation failed — check the error above",
+    "retryGenerate": "Try Again",
     "comingSoon": "Coming soon"
   },
   "Monitoring": {

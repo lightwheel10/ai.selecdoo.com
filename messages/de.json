@@ -326,6 +326,8 @@
     "chars": "{count} Zeichen",
     "generatedAt": "Generiert {date}",
     "generatedByAi": "KI-Generiert",
+    "generateFailed": "Generierung fehlgeschlagen — siehe Fehler oben",
+    "retryGenerate": "Erneut versuchen",
     "comingSoon": "Kommt bald"
   },
   "Monitoring": {

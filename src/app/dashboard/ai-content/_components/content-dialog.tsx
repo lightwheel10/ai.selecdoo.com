@@ -249,10 +249,17 @@ export function ContentDialog({
                   onSaveEdit={onSaveEdit}
                   onEditTextChange={onEditTextChange}
                 />
-              ) : canGenerateContent ? (
+              ) : !canGenerateContent ? (
+                <NoGenerateAccessView t={t} />
+              ) : isGenerating ? (
                 <GeneratingView contentType={contentType} t={t} />
               ) : (
-                <NoGenerateAccessView t={t} />
+                <GenerateFailedView
+                  contentType={contentType}
+                  product={modal.product}
+                  t={t}
+                  onRetry={onGenerate}
+                />
               )}
             </div>
           </>
@@ -632,6 +639,58 @@ function GeneratingView({
         >
           {t("generating")}
         </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Generate Failed View (error / retry) ───
+
+function GenerateFailedView({
+  contentType,
+  product,
+  t,
+  onRetry,
+}: {
+  contentType: "deal_post" | "social_post";
+  product: Product;
+  t: (key: string, values?: Record<string, string | number>) => string;
+  onRetry: (product: Product, contentType: "deal_post" | "social_post") => void;
+}) {
+  const accentColor = contentType === "deal_post" ? "#22C55E" : "#5AC8FA";
+
+  return (
+    <div className="pt-4">
+      <div
+        className="flex flex-col items-center py-10 gap-3 border-2"
+        style={{
+          borderColor: "var(--border)",
+          borderStyle: "dashed",
+        }}
+      >
+        <p
+          className="text-[10px] font-bold uppercase tracking-[0.15em]"
+          style={{
+            fontFamily: "var(--font-mono)",
+            color: "var(--muted-foreground)",
+          }}
+        >
+          {t("generateFailed")}
+        </p>
+        <button
+          onClick={() => onRetry(product, contentType)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none shadow-[3px_3px_0px] hover:opacity-80"
+          style={{
+            fontFamily: "var(--font-mono)",
+            backgroundColor: accentColor,
+            borderColor: accentColor,
+            color: "#fff",
+            boxShadow: `3px 3px 0px ${accentColor}`,
+          }}
+        >
+          <RefreshCw className="w-3 h-3" />
+          {t("retryGenerate")}
+        </button>
       </div>
     </div>
   );
