@@ -433,6 +433,7 @@ export default async function LandingPage() {
             >
               {t.rich("footerMadeWith", {
                 heart: (chunks) => <span style={{ color: "#FF453A", opacity: 1 }}>{chunks}</span>,
+                link: (chunks) => <a href="https://www.spectrumailabs.com" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-100" style={{ opacity: 1 }}>{chunks}</a>,
               })}
             </p>
           </div>
