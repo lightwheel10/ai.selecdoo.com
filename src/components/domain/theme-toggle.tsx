@@ -1,7 +1,6 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { Sun, Moon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export function ThemeToggle() {
@@ -13,7 +12,7 @@ export function ThemeToggle() {
   }, []);
 
   if (!mounted) {
-    return <div className="h-8 w-full" />;
+    return <div className="w-8 h-8" />;
   }
 
   const isDark = theme === "dark";
@@ -21,25 +20,45 @@ export function ThemeToggle() {
   return (
     <button
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="flex items-center gap-2 w-full h-8 px-2 transition-all duration-150 border-2 hover:opacity-80"
-      style={{
-        borderColor: "var(--border)",
-      }}
+      className="flex items-center justify-center w-8 h-8 border-2 transition-colors hover:opacity-80"
+      style={{ borderColor: "var(--border)" }}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
     >
       {isDark ? (
-        <Sun className="w-4 h-4" style={{ color: "var(--muted-foreground)" }} />
+        <svg
+          className="w-4 h-4"
+          style={{ color: "var(--muted-foreground)" }}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2" />
+          <path d="M12 20v2" />
+          <path d="m4.93 4.93 1.41 1.41" />
+          <path d="m17.66 17.66 1.41 1.41" />
+          <path d="M2 12h2" />
+          <path d="M20 12h2" />
+          <path d="m6.34 17.66-1.41 1.41" />
+          <path d="m19.07 4.93-1.41 1.41" />
+        </svg>
       ) : (
-        <Moon className="w-4 h-4" style={{ color: "var(--muted-foreground)" }} />
+        <svg
+          className="w-4 h-4"
+          style={{ color: "var(--muted-foreground)" }}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+        </svg>
       )}
-      <span
-        className="text-[10px] font-bold uppercase tracking-[0.15em]"
-        style={{
-          fontFamily: "var(--font-mono)",
-          color: "var(--muted-foreground)",
-        }}
-      >
-        {isDark ? "Light Mode" : "Dark Mode"}
-      </span>
     </button>
   );
 }

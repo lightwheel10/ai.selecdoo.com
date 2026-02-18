@@ -168,42 +168,40 @@ export function AppSidebar({ user, role }: AppSidebarProps) {
                 </div>
               )}
 
-              {/* Language Toggle */}
-              <div className="flex gap-0 mb-3">
-                <button
-                  onClick={() => switchLocale("en")}
-                  className="flex-1 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors"
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    backgroundColor: locale === "en" ? "var(--primary)" : "transparent",
-                    color: locale === "en" ? "var(--primary-foreground)" : "var(--muted-foreground)",
-                    borderTop: `2px solid ${locale === "en" ? "var(--primary)" : "var(--border)"}`,
-                    borderBottom: `2px solid ${locale === "en" ? "var(--primary)" : "var(--border)"}`,
-                    borderLeft: `2px solid ${locale === "en" ? "var(--primary)" : "var(--border)"}`,
-                    borderRight: `1px solid var(--border)`,
-                  }}
-                >
-                  EN
-                </button>
-                <button
-                  onClick={() => switchLocale("de")}
-                  className="flex-1 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors"
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    backgroundColor: locale === "de" ? "var(--primary)" : "transparent",
-                    color: locale === "de" ? "var(--primary-foreground)" : "var(--muted-foreground)",
-                    borderTop: `2px solid ${locale === "de" ? "var(--primary)" : "var(--border)"}`,
-                    borderBottom: `2px solid ${locale === "de" ? "var(--primary)" : "var(--border)"}`,
-                    borderRight: `2px solid ${locale === "de" ? "var(--primary)" : "var(--border)"}`,
-                    borderLeft: `1px solid var(--border)`,
-                  }}
-                >
-                  DE
-                </button>
-              </div>
-
-              {/* Theme Toggle */}
-              <div className="mb-3">
+              {/* Language + Theme Toggle */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex gap-0">
+                  <button
+                    onClick={() => switchLocale("en")}
+                    className="px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      backgroundColor: locale === "en" ? "var(--primary)" : "transparent",
+                      color: locale === "en" ? "var(--primary-foreground)" : "var(--muted-foreground)",
+                      borderTop: `2px solid ${locale === "en" ? "var(--primary)" : "var(--border)"}`,
+                      borderBottom: `2px solid ${locale === "en" ? "var(--primary)" : "var(--border)"}`,
+                      borderLeft: `2px solid ${locale === "en" ? "var(--primary)" : "var(--border)"}`,
+                      borderRight: `1px solid var(--border)`,
+                    }}
+                  >
+                    EN
+                  </button>
+                  <button
+                    onClick={() => switchLocale("de")}
+                    className="px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      backgroundColor: locale === "de" ? "var(--primary)" : "transparent",
+                      color: locale === "de" ? "var(--primary-foreground)" : "var(--muted-foreground)",
+                      borderTop: `2px solid ${locale === "de" ? "var(--primary)" : "var(--border)"}`,
+                      borderBottom: `2px solid ${locale === "de" ? "var(--primary)" : "var(--border)"}`,
+                      borderRight: `2px solid ${locale === "de" ? "var(--primary)" : "var(--border)"}`,
+                      borderLeft: `1px solid var(--border)`,
+                    }}
+                  >
+                    DE
+                  </button>
+                </div>
                 <ThemeToggle />
               </div>
 
