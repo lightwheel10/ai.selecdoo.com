@@ -335,7 +335,27 @@ export async function getProductById(id: string): Promise<ProductDetail | null> 
     return null;
   }
 
-  return mapProductDetail(data, storeNames);
+  // Fetch images for recommended products from existing DB records
+  // (Apify returns empty medias[] for recommended products, but the
+  //  products themselves are already in our DB with images)
+  const rawRecs = parseJsonb(data.recommend_products, []);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recHashIds = rawRecs.map((r: any) => String(r.source?.id)).filter(Boolean);
+  let recImageMap: Record<string, string> = {};
+  if (recHashIds.length > 0) {
+    const { data: recProducts } = await supabase
+      .from("products")
+      .select("hash_id, image_url")
+      .in("hash_id", recHashIds);
+    if (recProducts) {
+      recImageMap = Object.fromEntries(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        recProducts.filter((p: any) => p.image_url).map((p: any) => [p.hash_id, p.image_url])
+      );
+    }
+  }
+
+  return mapProductDetail(data, storeNames, recImageMap);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -349,7 +369,7 @@ function parseJsonb<T>(value: any, fallback: T): T {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapProductDetail(row: any, storeNames: Record<string, string>): ProductDetail {
+function mapProductDetail(row: any, storeNames: Record<string, string>, recImageMap: Record<string, string> = {}): ProductDetail {
   const medias: ProductMedia[] = parseJsonb(row.medias, []).map(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (m: any, i: number) => ({
@@ -419,7 +439,7 @@ function mapProductDetail(row: any, storeNames: Record<string, string>): Product
       return {
         title: r.title ?? "Untitled",
         price,
-        image_url: r.medias?.[0]?.url ?? r.medias?.[0]?.src ?? null,
+        image_url: recImageMap[String(r.source?.id)] ?? r.medias?.[0]?.url ?? r.medias?.[0]?.src ?? null,
         product_url: r.source?.canonicalUrl ?? null,
         in_stock: inStock,
         brand: r.brand ?? null,
