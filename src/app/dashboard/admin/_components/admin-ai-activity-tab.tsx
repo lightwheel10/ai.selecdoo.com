@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { Highlight } from "@/app/dashboard/ai-content/_components/highlight";
 import type { AIActivityLog, AICleanStatus, Store, Product } from "@/types";
 
 // ─── Status config ───
@@ -918,7 +919,7 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
                                 borderBottom: "1px solid var(--border)",
                               }}
                             >
-                              {item.label}
+                              <Highlight text={item.label} query={searchQuery} />
                             </button>
                           ))
                         )}
