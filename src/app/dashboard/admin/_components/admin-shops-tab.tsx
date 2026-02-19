@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
-import { Search, X, Check, ChevronDown, Pencil, Package } from "lucide-react";
+import { Search, X, Check, ChevronDown, Pencil, Package, Loader2, Sparkles } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -345,6 +345,7 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
   const [featuredFilter, setFeaturedFilter] = useState<string | null>(null);
   const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [descriptionTab, setDescriptionTab] = useState<"raw" | "formatted">("raw");
+  const [formattingDescriptions, setFormattingDescriptions] = useState(false);
 
   useEffect(() => {
     setDescriptionTab("raw");
@@ -517,6 +518,42 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
       toast.error("Network error");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function formatDescriptions() {
+    if (!editingStore) return;
+    setFormattingDescriptions(true);
+    try {
+      const res = await fetch(`/api/stores/${editingStore.id}/format-description`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description_en: editingStore.description_en || "",
+          description_de: editingStore.description_de || "",
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error ?? t("formatFailed"));
+        return;
+      }
+      const data = await res.json();
+      // Only overwrite formatted fields that the API actually returned
+      const updates: Partial<Store> = {};
+      if (data.description_en_formatted !== undefined) {
+        updates.description_en_formatted = data.description_en_formatted;
+      }
+      if (data.description_de_formatted !== undefined) {
+        updates.description_de_formatted = data.description_de_formatted;
+      }
+      setEditingStore({ ...editingStore, ...updates });
+      setDescriptionTab("formatted");
+      toast(t("formatSuccess"));
+    } catch {
+      toast.error(t("formatFailed"));
+    } finally {
+      setFormattingDescriptions(false);
     }
   }
 
@@ -957,6 +994,26 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
                     active={descriptionTab === "formatted"}
                     onClick={() => setDescriptionTab("formatted")}
                   />
+                  {(editingStore.description_en || editingStore.description_de) && (
+                    <button
+                      onClick={formatDescriptions}
+                      disabled={formattingDescriptions}
+                      className="ml-auto flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        backgroundColor: "var(--primary-muted)",
+                        color: "var(--primary-text)",
+                        border: "1.5px solid var(--primary-muted)",
+                      }}
+                    >
+                      {formattingDescriptions ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-3 h-3" />
+                      )}
+                      {formattingDescriptions ? t("formattingDescriptions") : t("formatDescriptions")}
+                    </button>
+                  )}
                 </div>
 
                 {descriptionTab === "raw" ? (
