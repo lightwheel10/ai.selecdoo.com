@@ -13,3 +13,4 @@ export {
   type StoreCleanResult,
 } from "./prompts";
 export { generateAffiliateLink } from "./affiliate";
+export { scrapeShippingPolicy } from "./firecrawl";

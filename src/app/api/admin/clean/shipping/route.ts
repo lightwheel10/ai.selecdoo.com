@@ -6,6 +6,7 @@ import {
   callClaudeJSON,
   SYSTEM_PROMPT_STORE,
   buildStoreUserPrompt,
+  scrapeShippingPolicy,
   type StoreCleanResult,
 } from "@/lib/ai-clean";
 
@@ -44,30 +45,44 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
     }
 
-    // Fetch ~10 product descriptions to build a shipping corpus
-    const { data: products } = await supabase
-      .from("products")
-      .select("description")
-      .eq("store_id", storeId)
-      .is("deleted_at", null)
-      .not("description", "is", null)
-      .limit(10);
+    // 1. Try Firecrawl to scrape the store's shipping page
+    let shippingCorpus: string | null = null;
+    let source: "firecrawl" | "products" = "products";
 
-    const descriptions = (products ?? [])
-      .map((p) => p.description)
-      .filter(Boolean) as string[];
+    const policyText = await scrapeShippingPolicy(store.url);
+    if (policyText) {
+      shippingCorpus = policyText;
+      source = "firecrawl";
+    }
 
-    if (descriptions.length === 0) {
+    // 2. Fall back to product descriptions
+    if (!shippingCorpus) {
+      const { data: products } = await supabase
+        .from("products")
+        .select("description")
+        .eq("store_id", storeId)
+        .is("deleted_at", null)
+        .not("description", "is", null)
+        .limit(10);
+
+      const descriptions = (products ?? [])
+        .map((p) => p.description)
+        .filter(Boolean) as string[];
+
+      if (descriptions.length > 0) {
+        shippingCorpus = descriptions
+          .map((d) => d.slice(0, 500))
+          .join("\n---\n");
+      }
+    }
+
+    // 3. Nothing found
+    if (!shippingCorpus) {
       return NextResponse.json(
-        { error: "No product descriptions available for shipping extraction" },
+        { error: "No shipping data available" },
         { status: 400 }
       );
     }
-
-    // Build shipping corpus from product descriptions
-    const shippingCorpus = descriptions
-      .map((d) => d.slice(0, 500))
-      .join("\n---\n");
 
     const result = await callClaudeJSON<StoreCleanResult>(
       SYSTEM_PROMPT_STORE,
@@ -93,7 +108,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Failed to update store" }, { status: 500 });
     }
 
-    return NextResponse.json({ shipping: result.shipping, cleaned_name: result.cleaned_name });
+    return NextResponse.json({ shipping: result.shipping, cleaned_name: result.cleaned_name, source });
   } catch (err) {
     console.error("Shipping API error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

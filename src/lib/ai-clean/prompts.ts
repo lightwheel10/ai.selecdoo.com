@@ -289,7 +289,11 @@ Rules:
   - Title Case the final name; only the core brand/store name
 - For shipping: Analyze the policy and list ALL countries where shipping is available in "available_countries".
 - Mention all destinations.
-- Extract only what is explicitly present in the policy text for shipping.
+- Extract what is explicitly present in the policy text for shipping.
+- If handling time is not mentioned, default to min_handling_time: 0, max_handling_time: 1.
+- If transit time is not mentioned, default to min_transit_time: 2, max_transit_time: 5.
+- If shipping price is not mentioned, default to "0" (free).
+- If service/carrier is not mentioned, default to "Standard".
 - Price is numeric string without currency.
 
 Store Raw Name: ${name}
