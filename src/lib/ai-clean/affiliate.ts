@@ -1,7 +1,7 @@
 import type { Store } from "@/types";
 
 const DEFAULT_PARAMS = {
-  utm_source: "selecdoo",
+  utm_source: "marketforceone",
   utm_medium: "affiliate",
   a_aid: "4063096d",
 };

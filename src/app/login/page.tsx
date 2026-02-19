@@ -130,25 +130,23 @@ export default function LoginPage() {
 
         {/* Branding */}
         <div className="mb-8">
-          <div className="flex items-center mb-3">
-            <div className="flex items-center gap-3">
-              <div
-                className="w-8 h-8 flex items-center justify-center text-[11px] font-bold"
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  backgroundColor: "var(--primary)",
+          <div className="flex items-center gap-3 mb-3">
+            <div
+              className="w-8 h-8 flex items-center justify-center text-[10px] font-bold"
+              style={{
+                fontFamily: "var(--font-mono)",
+                backgroundColor: "var(--primary)",
                 color: "var(--primary-foreground)",
               }}
             >
-              S
+              MF
             </div>
             <span
               className="text-lg font-bold tracking-tight"
               style={{ fontFamily: "var(--font-display)" }}
             >
-              Selecdoo
+              MarketForce One
             </span>
-            </div>
           </div>
           <p
             className="text-[10px] font-bold uppercase tracking-[0.15em]"
@@ -390,7 +388,7 @@ export default function LoginPage() {
             opacity: 0.4,
           }}
         >
-          Selecdoo &middot; Product Intelligence
+          MarketForce One &middot; Product Intelligence
         </p>
       </div>
     </div>

@@ -86,20 +86,20 @@ export default async function LandingPage() {
         >
           <div className="flex items-center gap-2.5">
             <div
-              className="w-7 h-7 flex items-center justify-center text-[10px] font-bold"
+              className="w-7 h-7 flex items-center justify-center text-[9px] font-bold"
               style={{
                 fontFamily: "var(--font-mono)",
                 backgroundColor: "var(--primary)",
                 color: "var(--primary-foreground)",
               }}
             >
-              S
+              MF
             </div>
             <span
               className="text-sm font-bold tracking-tight"
               style={{ fontFamily: "var(--font-display)" }}
             >
-              Selecdoo
+              MarketForce One
             </span>
           </div>
 

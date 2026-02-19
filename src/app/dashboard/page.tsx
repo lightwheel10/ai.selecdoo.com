@@ -476,7 +476,7 @@ export default async function DashboardPage() {
               opacity: 0.5,
             }}
           >
-            &copy; 2023-2024 Selecdoo. All rights reserved.
+            &copy; 2023-2024 MarketForce One. All rights reserved.
           </p>
           <p
             className="text-[10px] tracking-wider"
@@ -488,7 +488,7 @@ export default async function DashboardPage() {
           >
             Made with{" "}
             <span style={{ color: "#FF453A", opacity: 1 }}>&hearts;</span>
-            {" "}by the Selecdoo Team
+            {" "}by the MarketForce One Team
           </p>
         </div>
       </div>

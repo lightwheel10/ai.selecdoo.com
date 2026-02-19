@@ -25,8 +25,12 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Selecdoo",
+  title: "MarketForce One",
   description: "Shopify product intelligence, monitoring & AI content",
+  icons: {
+    icon: "/favicon.jpeg",
+    apple: "/favicon.jpeg",
+  },
 };
 
 export default async function RootLayout({

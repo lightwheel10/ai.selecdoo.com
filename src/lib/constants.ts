@@ -30,4 +30,4 @@ export const NAV_BOTTOM: NavItem[] = [
   { labelKey: "settings", icon: Settings, href: "/dashboard/settings" },
 ];
 
-export const APP_NAME = "Selecdoo";
+export const APP_NAME = "MarketForce One";
