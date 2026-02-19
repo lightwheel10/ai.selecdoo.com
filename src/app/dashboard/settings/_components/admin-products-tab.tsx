@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Search,
   X,
@@ -9,7 +9,9 @@ import {
   Pencil,
   ExternalLink,
   Eye,
+  RotateCcw,
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ProductImage } from "@/components/domain/product-image";
 import Link from "next/link";
 import {
@@ -343,17 +345,41 @@ function ToggleRow({ label, checked, onChange }: { label: string; checked: boole
 
 // ─── Products Tab ───
 
-interface AdminProductsTabProps {
-  products: Product[];
-  stores: Store[];
-}
-
-export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
+export function AdminProductsTab() {
   const t = useTranslations("Admin");
 
-  const storeMap = Object.fromEntries(stores.map((s) => [s.id, s]));
+  const [localProducts, setLocalProducts] = useState<Product[]>([]);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [localProducts, setLocalProducts] = useState(products);
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [productsRes, storesRes] = await Promise.all([
+        fetch("/api/admin/products"),
+        fetch("/api/admin/stores"),
+      ]);
+      if (!productsRes.ok || !storesRes.ok) throw new Error("Failed to load data");
+      const [productsData, storesData] = await Promise.all([
+        productsRes.json(),
+        storesRes.json(),
+      ]);
+      setLocalProducts(productsData.products ?? []);
+      setStores(storesData.stores ?? []);
+    } catch {
+      setError(t("loadError"));
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const storeMap = Object.fromEntries(stores.map((s) => [s.id, s]));
   const [search, setSearch] = useState("");
   const [publishFilter, setPublishFilter] = useState<string | null>(null);
   const [brandFilter, setBrandFilter] = useState<string | null>(null);
@@ -466,6 +492,98 @@ export function AdminProductsTab({ products, stores }: AdminProductsTabProps) {
     toast(t("productSaved"), {
       description: t("productSavedDescription", { title: updated.title }),
     });
+  }
+
+  if (loading) {
+    return (
+      <div>
+        {/* Toolbar skeleton */}
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <Skeleton className="h-9 w-[280px]" />
+          <Skeleton className="h-7 w-[78px]" />
+          <Skeleton className="h-7 w-[70px]" />
+          <Skeleton className="h-7 w-[108px]" />
+          <Skeleton className="h-7 w-[82px]" />
+          <Skeleton className="h-7 w-[82px]" />
+          <Skeleton className="h-3 w-24 ml-auto" />
+        </div>
+        {/* Table skeleton */}
+        <div
+          className="border-2"
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+        >
+          {/* Header */}
+          <div
+            className="flex items-center px-4 h-10 border-b-2"
+            style={{ borderColor: "var(--border)", backgroundColor: "var(--table-header-bg)" }}
+          >
+            <Skeleton className="h-2.5 w-10" style={{ flex: "0 0 5%" }} />
+            <Skeleton className="h-2.5 w-10" style={{ flex: "0 0 24%" }} />
+            <Skeleton className="h-2.5 w-10 mx-auto" style={{ flex: "0 0 12%" }} />
+            <Skeleton className="h-2.5 w-8 mx-auto" style={{ flex: "0 0 10%" }} />
+            <Skeleton className="h-2.5 w-10 mx-auto" style={{ flex: "0 0 10%" }} />
+            <Skeleton className="h-2.5 w-16 mx-auto" style={{ flex: "0 0 10%" }} />
+            <Skeleton className="h-2.5 w-12 mx-auto" style={{ flex: "0 0 12%" }} />
+          </div>
+          {/* Rows */}
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex items-center px-4 py-2"
+              style={{ borderBottom: i < 9 ? "1px solid var(--border)" : "none" }}
+            >
+              <div style={{ flex: "0 0 5%" }}>
+                <Skeleton className="h-8 w-8" />
+              </div>
+              <div style={{ flex: "0 0 24%" }}>
+                <Skeleton className="h-3.5 w-36" />
+              </div>
+              <div className="flex justify-center" style={{ flex: "0 0 12%" }}>
+                <Skeleton className="h-3 w-16" />
+              </div>
+              <div className="flex justify-center" style={{ flex: "0 0 10%" }}>
+                <Skeleton className="h-3 w-14" />
+              </div>
+              <div className="flex justify-center" style={{ flex: "0 0 10%" }}>
+                <Skeleton className="h-5 w-14" />
+              </div>
+              <div className="flex justify-center" style={{ flex: "0 0 10%" }}>
+                <Skeleton className="h-7 w-7" />
+              </div>
+              <div className="flex justify-center gap-1.5" style={{ flex: "0 0 12%" }}>
+                <Skeleton className="h-7 w-7" />
+                <Skeleton className="h-7 w-7" />
+                <Skeleton className="h-7 w-7" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div
+        className="border-2 py-16 flex flex-col items-center justify-center gap-3"
+        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+      >
+        <p
+          className="text-[10px] font-bold uppercase tracking-[0.15em]"
+          style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+        >
+          {error}
+        </p>
+        <button
+          onClick={loadData}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
+          style={{ fontFamily: "var(--font-mono)", borderColor: "var(--border)", color: "var(--muted-foreground)" }}
+        >
+          <RotateCcw className="w-3 h-3" />
+          {t("retry")}
+        </button>
+      </div>
+    );
   }
 
   return (

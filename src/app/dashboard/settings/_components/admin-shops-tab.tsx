@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { Search, X, Check, ChevronDown, Pencil, Package, Loader2, Sparkles } from "lucide-react";
+import { Search, X, Check, ChevronDown, Pencil, Package, Loader2, Sparkles, RotateCcw } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -328,14 +329,31 @@ function DescriptionTabButton({
 
 // ─── Shops Tab ───
 
-interface AdminShopsTabProps {
-  stores: Store[];
-}
-
-export function AdminShopsTab({ stores }: AdminShopsTabProps) {
+export function AdminShopsTab() {
   const t = useTranslations("Admin");
 
-  const [localStores, setLocalStores] = useState(stores);
+  const [localStores, setLocalStores] = useState<Store[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadStores = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/stores");
+      if (!res.ok) throw new Error("Failed to load stores");
+      const data = await res.json();
+      setLocalStores(data.stores ?? []);
+    } catch {
+      setError(t("loadError"));
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    loadStores();
+  }, [loadStores]);
   const [search, setSearch] = useState("");
   const [platformFilter, setPlatformFilter] = useState<string | null>(null);
   const [publishFilter, setPublishFilter] = useState<string | null>(null);
@@ -555,6 +573,94 @@ export function AdminShopsTab({ stores }: AdminShopsTabProps) {
     } finally {
       setFormattingDescriptions(false);
     }
+  }
+
+  if (loading) {
+    return (
+      <div>
+        {/* Toolbar skeleton */}
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <Skeleton className="h-9 w-[280px]" />
+          <Skeleton className="h-7 w-[88px]" />
+          <Skeleton className="h-7 w-[78px]" />
+          <Skeleton className="h-7 w-[78px]" />
+          <Skeleton className="h-7 w-[100px]" />
+          <Skeleton className="h-7 w-[60px]" />
+          <Skeleton className="h-7 w-[82px]" />
+          <Skeleton className="h-3 w-20 ml-auto" />
+        </div>
+        {/* Table skeleton */}
+        <div
+          className="border-2"
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+        >
+          {/* Header */}
+          <div
+            className="flex items-center px-4 h-10 border-b-2"
+            style={{ borderColor: "var(--border)", backgroundColor: "var(--table-header-bg)" }}
+          >
+            <Skeleton className="h-2.5 w-12" style={{ flex: "0 0 20%" }} />
+            <Skeleton className="h-2.5 w-8 mx-auto" style={{ flex: "0 0 18%" }} />
+            <Skeleton className="h-2.5 w-14 mx-auto" style={{ flex: "0 0 16%" }} />
+            <Skeleton className="h-2.5 w-16 mx-auto" style={{ flex: "0 0 10%" }} />
+            <Skeleton className="h-2.5 w-16 mx-auto" style={{ flex: "0 0 10%" }} />
+            <Skeleton className="h-2.5 w-12 mx-auto" style={{ flex: "0 0 10%" }} />
+          </div>
+          {/* Rows */}
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex items-center px-4 py-3"
+              style={{ borderBottom: i < 7 ? "1px solid var(--border)" : "none" }}
+            >
+              <div className="flex items-center gap-2.5" style={{ flex: "0 0 20%" }}>
+                <Skeleton className="h-7 w-7 flex-shrink-0" />
+                <Skeleton className="h-3.5 w-24" />
+              </div>
+              <div className="flex justify-center" style={{ flex: "0 0 18%" }}>
+                <Skeleton className="h-3 w-28" />
+              </div>
+              <div className="flex justify-center" style={{ flex: "0 0 16%" }}>
+                <Skeleton className="h-3 w-24" />
+              </div>
+              <div className="flex justify-center" style={{ flex: "0 0 10%" }}>
+                <Skeleton className="h-3 w-12" />
+              </div>
+              <div className="flex justify-center" style={{ flex: "0 0 10%" }}>
+                <Skeleton className="h-7 w-7" />
+              </div>
+              <div className="flex justify-center" style={{ flex: "0 0 10%" }}>
+                <Skeleton className="h-7 w-7" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div
+        className="border-2 py-16 flex flex-col items-center justify-center gap-3"
+        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+      >
+        <p
+          className="text-[10px] font-bold uppercase tracking-[0.15em]"
+          style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+        >
+          {error}
+        </p>
+        <button
+          onClick={loadStores}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
+          style={{ fontFamily: "var(--font-mono)", borderColor: "var(--border)", color: "var(--muted-foreground)" }}
+        >
+          <RotateCcw className="w-3 h-3" />
+          {t("retry")}
+        </button>
+      </div>
+    );
   }
 
   return (

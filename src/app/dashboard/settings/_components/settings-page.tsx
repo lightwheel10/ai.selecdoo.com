@@ -5,7 +5,6 @@ import { useTranslations } from "next-intl";
 import { Users, Store as StoreIcon, Package, Bot } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TeamAccessManager } from "./team-access-manager";
-import type { Store, Product, AIActivityLog } from "@/types";
 
 const AdminShopsTab = dynamic(
   () => import("./admin-shops-tab").then((m) => m.AdminShopsTab),
@@ -23,12 +22,9 @@ const AdminAIActivityTab = dynamic(
 interface SettingsPageProps {
   isAdmin: boolean;
   canManageTeam: boolean;
-  stores: Store[];
-  products: Product[];
-  activityLogs: AIActivityLog[];
 }
 
-export function SettingsPage({ isAdmin, canManageTeam, stores, products, activityLogs }: SettingsPageProps) {
+export function SettingsPage({ isAdmin, canManageTeam }: SettingsPageProps) {
   const t = useTranslations("Settings");
   const ta = useTranslations("Admin");
 
@@ -89,13 +85,13 @@ export function SettingsPage({ isAdmin, canManageTeam, stores, products, activit
         <TeamAccessManager />
       </TabsContent>
       <TabsContent value="shops">
-        <AdminShopsTab stores={stores} />
+        <AdminShopsTab />
       </TabsContent>
       <TabsContent value="products">
-        <AdminProductsTab products={products} stores={stores} />
+        <AdminProductsTab />
       </TabsContent>
       <TabsContent value="ai-activity">
-        <AdminAIActivityTab activityLogs={activityLogs} stores={stores} products={products} />
+        <AdminAIActivityTab />
       </TabsContent>
     </Tabs>
   );

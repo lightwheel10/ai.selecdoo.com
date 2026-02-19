@@ -690,7 +690,12 @@
     "estimatedRemaining": "~{time} verbleibend",
     "showErrors": "{count} Fehler anzeigen",
     "hideErrors": "Fehler ausblenden",
-    "retryFailed": "{count} Fehlgeschlagene wiederholen"
+    "retryFailed": "{count} Fehlgeschlagene wiederholen",
+    "loadingShops": "Shops werden geladen...",
+    "loadingProducts": "Produkte werden geladen...",
+    "loadingActivity": "Aktivität wird geladen...",
+    "loadError": "Daten konnten nicht geladen werden",
+    "retry": "Erneut versuchen"
   },
   "Landing": {
     "signIn": "Anmelden",

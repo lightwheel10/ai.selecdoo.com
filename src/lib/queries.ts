@@ -135,6 +135,43 @@ export async function getProducts(): Promise<Product[]> {
   return allRows.map(mapProduct);
 }
 
+// ─── Products (light — for AI Activity tab) ───
+
+const PRODUCT_LIGHT_COLUMNS = "id, store_id, title, cleaned_title, brand, ai_category";
+
+export async function getProductsLight(): Promise<Pick<Product, "id" | "store_id" | "title" | "brand" | "ai_category">[]> {
+  const supabase = createAdminClient();
+  const PAGE_SIZE = 1000;
+  const allRows: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
+
+  for (let offset = 0; ; offset += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("products")
+      .select(PRODUCT_LIGHT_COLUMNS)
+      .is("deleted_at", null)
+      .order("updated_at", { ascending: false })
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    if (error) {
+      console.error("getProductsLight error:", error.message);
+      break;
+    }
+
+    if (!data || data.length === 0) break;
+    allRows.push(...data);
+
+    if (data.length < PAGE_SIZE) break;
+  }
+
+  return allRows.map((row) => ({
+    id: row.id,
+    store_id: row.store_id,
+    title: row.cleaned_title || row.title,
+    brand: row.brand,
+    ai_category: row.ai_category,
+  }));
+}
+
 // ─── Filtered + Paginated Products ───
 
 const DEFAULT_PAGE_SIZE = 24;

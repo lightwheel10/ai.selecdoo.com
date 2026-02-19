@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import {
   CheckCircle,
   XCircle,
@@ -30,7 +29,10 @@ import {
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Highlight } from "@/app/dashboard/ai-content/_components/highlight";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { AIActivityLog, AICleanStatus, Store, Product } from "@/types";
+
+type LightProduct = Pick<Product, "id" | "store_id" | "title" | "brand" | "ai_category">;
 
 // ─── Status config ───
 
@@ -104,12 +106,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 // ─── AI Activity Tab ───
 
-interface AdminAIActivityTabProps {
-  activityLogs: AIActivityLog[];
-  stores: Store[];
-  products: Product[];
-}
-
 const PAGE_SIZE = 10;
 const BATCH_SIZE = 3;
 const MAX_STORES_SELECT = 5;
@@ -117,10 +113,44 @@ const MAX_PRODUCTS_SELECT = 10;
 const MAX_DROPDOWN_RESULTS = 50;
 const BULK_CONFIRM_THRESHOLD = 10;
 
-export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIActivityTabProps) {
+export function AdminAIActivityTab() {
   const t = useTranslations("Admin");
-  const router = useRouter();
 
+  // ─── Data state ───
+  const [activityLogs, setActivityLogs] = useState<AIActivityLog[]>([]);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [products, setProducts] = useState<LightProduct[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [dataError, setDataError] = useState<string | null>(null);
+
+  const loadData = useCallback(async () => {
+    setDataLoading(true);
+    setDataError(null);
+    try {
+      const [logsRes, storesRes, productsRes] = await Promise.all([
+        fetch("/api/admin/activity-logs"),
+        fetch("/api/admin/stores"),
+        fetch("/api/admin/products?columns=light"),
+      ]);
+      if (!logsRes.ok || !storesRes.ok || !productsRes.ok) throw new Error("Failed to load data");
+      const [logsData, storesData, productsData] = await Promise.all([
+        logsRes.json(),
+        storesRes.json(),
+        productsRes.json(),
+      ]);
+      setActivityLogs(logsData.activityLogs ?? []);
+      setStores(storesData.stores ?? []);
+      setProducts(productsData.products ?? []);
+    } catch {
+      setDataError(t("loadError"));
+    } finally {
+      setDataLoading(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // ─── Dialog state ───
   const [showCleanDialog, setShowCleanDialog] = useState(false);
@@ -324,7 +354,7 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
 
   // ─── Get items to process ───
 
-  function getProductsToProcess(): Product[] {
+  function getProductsToProcess(): LightProduct[] {
     if (cleanScope === "selected") {
       const ids = new Set(selectedItems.map((i) => i.value));
       return products.filter((p) => ids.has(p.id));
@@ -332,13 +362,13 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
     // All products, optionally with per-store limit
     const limit = parseInt(perStoreLimit || "0", 10);
     if (limit > 0) {
-      const byStore = new Map<string, Product[]>();
+      const byStore = new Map<string, LightProduct[]>();
       for (const p of products) {
         const arr = byStore.get(p.store_id) || [];
         arr.push(p);
         byStore.set(p.store_id, arr);
       }
-      const limited: Product[] = [];
+      const limited: LightProduct[] = [];
       for (const arr of byStore.values()) {
         limited.push(...arr.slice(0, limit));
       }
@@ -465,7 +495,7 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
 
         stopTimer();
         setPhase("complete");
-        router.refresh();
+        loadData();
       } catch (err) {
         stopTimer();
         if (err instanceof DOMException && err.name === "AbortError") {
@@ -551,7 +581,7 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
 
         stopTimer();
         setPhase("complete");
-        router.refresh();
+        loadData();
       } catch (err) {
         stopTimer();
         if (err instanceof DOMException && err.name === "AbortError") {
@@ -564,7 +594,7 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cleanMode, cleanScope, selectedItems, perStoreLimit, products, stores, router, t]);
+  }, [cleanMode, cleanScope, selectedItems, perStoreLimit, products, stores, loadData, t]);
 
   // ─── Start handler (with bulk confirm) ───
 
@@ -589,6 +619,66 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
 
   // ─── Active color ───
   const activeColor = cleanMode === "shops" ? "#A78BFA" : "#5AC8FA";
+
+  if (dataLoading) {
+    return (
+      <div>
+        {/* Header skeleton */}
+        <div className="flex items-center justify-between mb-4">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-9 w-[120px]" />
+        </div>
+        {/* Timeline skeleton */}
+        <div
+          className="border-2"
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+        >
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex items-start gap-3 px-4 py-3"
+              style={{ borderBottom: i < 4 ? "1px solid var(--border)" : "none" }}
+            >
+              <Skeleton className="w-7 h-7 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0 space-y-1.5">
+                <Skeleton className="h-3.5 w-48" />
+                <Skeleton className="h-3 w-64" />
+                <Skeleton className="h-2.5 w-36" />
+              </div>
+              <div className="flex-shrink-0 space-y-1.5 flex flex-col items-end">
+                <Skeleton className="h-2.5 w-14" />
+                <Skeleton className="h-2.5 w-12" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (dataError) {
+    return (
+      <div
+        className="border-2 py-16 flex flex-col items-center justify-center gap-3"
+        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+      >
+        <p
+          className="text-[10px] font-bold uppercase tracking-[0.15em]"
+          style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+        >
+          {dataError}
+        </p>
+        <button
+          onClick={loadData}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
+          style={{ fontFamily: "var(--font-mono)", borderColor: "var(--border)", color: "var(--muted-foreground)" }}
+        >
+          <RotateCcw className="w-3 h-3" />
+          {t("retry")}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div>

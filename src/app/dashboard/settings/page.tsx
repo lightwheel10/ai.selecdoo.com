@@ -2,7 +2,6 @@ import { getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { canAccessSettings, canAccessAdmin, canManageTeamRoles } from "@/lib/auth/roles";
 import { getAuthContext } from "@/lib/auth/session";
-import { getStores, getProducts, getAIActivityLogs } from "@/lib/queries";
 import { SettingsPage } from "./_components/settings-page";
 
 export default async function SettingsRoute() {
@@ -18,16 +17,6 @@ export default async function SettingsRoute() {
 
   const isAdmin = canAccessAdmin({ role, permissions });
   const canManageTeam = canManageTeamRoles({ role, permissions });
-
-  // Only fetch heavy admin data if user is admin
-  let stores, products, activityLogs;
-  if (isAdmin) {
-    [stores, products, activityLogs] = await Promise.all([
-      getStores(),
-      getProducts(),
-      getAIActivityLogs(),
-    ]);
-  }
 
   const t = await getTranslations("Sidebar");
 
@@ -46,9 +35,6 @@ export default async function SettingsRoute() {
       <SettingsPage
         isAdmin={isAdmin}
         canManageTeam={canManageTeam}
-        stores={stores ?? []}
-        products={products ?? []}
-        activityLogs={activityLogs ?? []}
       />
     </div>
   );

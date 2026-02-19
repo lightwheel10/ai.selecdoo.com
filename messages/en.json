@@ -690,7 +690,12 @@
     "estimatedRemaining": "~{time} remaining",
     "showErrors": "Show {count} errors",
     "hideErrors": "Hide errors",
-    "retryFailed": "Retry {count} Failed"
+    "retryFailed": "Retry {count} Failed",
+    "loadingShops": "Loading stores...",
+    "loadingProducts": "Loading products...",
+    "loadingActivity": "Loading activity...",
+    "loadError": "Failed to load data",
+    "retry": "Retry"
   },
   "Landing": {
     "signIn": "Sign In",
