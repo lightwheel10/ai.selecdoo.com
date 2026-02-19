@@ -42,6 +42,8 @@ export interface CategorizeResult {
 export interface StoreCleanResult {
   cleaned_name: string;
   shipping: CleanProductShipping;
+  description_en: string | null;
+  description_de: string | null;
 }
 
 // ─── Categories ───
@@ -262,9 +264,33 @@ export function buildStoreUserPrompt(
   name: string,
   url: string,
   platform: string,
-  shippingCorpus: string
+  shippingCorpus: string,
+  descriptionCorpus: string | null,
+  needsDescription: boolean
 ): string {
-  return `You are an e-commerce data cleaner for an admin panel. Derive store-level default shipping and clean the store name.
+  const descriptionBlock = needsDescription && descriptionCorpus
+    ? `
+
+## STORE DESCRIPTION GENERATION
+
+Using the about/homepage content below, generate two short store descriptions:
+- "description_en": 2-4 sentences in English
+- "description_de": 2-4 sentences in German
+
+Rules:
+- Plain text only (no HTML)
+- Factual store identity: what they sell, their story/origin, unique selling points
+- No marketing fluff, no affiliate language, no superlatives
+- If the content is insufficient to write a meaningful description, return null for both
+
+About / Homepage Content:
+${descriptionCorpus}`
+    : `
+
+## STORE DESCRIPTIONS
+Return "description_en": null and "description_de": null (no descriptions needed).`;
+
+  return `You are an e-commerce data cleaner for an admin panel. Derive store-level default shipping, clean the store name, and optionally generate store descriptions.
 
 Return ONLY valid JSON with this structure:
 {
@@ -278,7 +304,9 @@ Return ONLY valid JSON with this structure:
     "max_handling_time": 3,
     "min_transit_time": 2,
     "max_transit_time": 5
-  }
+  },
+  "description_en": "Short English store description or null",
+  "description_de": "Short German store description or null"
 }
 
 Rules:
@@ -295,6 +323,7 @@ Rules:
 - If shipping price is not mentioned, default to "0" (free).
 - If service/carrier is not mentioned, default to "Standard".
 - Price is numeric string without currency.
+${descriptionBlock}
 
 Store Raw Name: ${name}
 Store URL: ${url}
