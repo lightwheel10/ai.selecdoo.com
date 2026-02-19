@@ -12,7 +12,6 @@ import { ThemeToggle } from "@/components/domain/theme-toggle";
 import {
   type AppPermission,
   canAccessAIContent,
-  canAccessAdmin,
   canAccessProducts,
   canAccessSettings,
   type AppRole,
@@ -45,9 +44,6 @@ export function AppSidebar({ user, role, permissions }: AppSidebarProps) {
   const [signOutOpen, setSignOutOpen] = useState(false);
 
   const visibleMainItems = NAV_ITEMS.filter((item) => {
-    if (item.href === "/dashboard/admin") {
-      return canAccessAdmin({ role, permissions });
-    }
     if (item.href === "/dashboard/products") {
       return canAccessProducts({ role, permissions });
     }

@@ -3,6 +3,16 @@ import { getAuthContext } from "@/lib/auth/session";
 import { canAccessAdmin } from "@/lib/auth/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+interface LogResultItem {
+  id: string;
+  label: string;
+  status: "success" | "error" | "skipped";
+  error?: string;
+  store_name?: string;
+  source?: string;
+  descriptions_generated?: boolean;
+}
+
 interface LogRequest {
   storeId: string | null;
   scope: string;
@@ -10,6 +20,8 @@ interface LogRequest {
   items_updated: number;
   items_skipped: number;
   message: string;
+  results?: LogResultItem[];
+  elapsed_ms?: number;
 }
 
 export async function POST(req: Request) {
@@ -23,13 +35,16 @@ export async function POST(req: Request) {
     }
 
     const body: LogRequest = await req.json();
-    const { storeId, scope, items_processed, items_updated, items_skipped, message } = body;
+    const { storeId, scope, items_processed, items_updated, items_skipped, message, results, elapsed_ms } = body;
 
     const status = items_skipped > 0 && items_updated === 0
       ? "error"
       : items_skipped > 0
         ? "skipped"
         : "success";
+
+    // Cap results at 50 items to avoid bloated metadata
+    const cappedResults = results?.slice(0, 50);
 
     const supabase = createAdminClient();
     const { error } = await supabase.from("ai_activity_logs").insert({
@@ -38,7 +53,13 @@ export async function POST(req: Request) {
       scope,
       status,
       message,
-      metadata: { items_processed, items_updated, items_skipped },
+      metadata: {
+        items_processed,
+        items_updated,
+        items_skipped,
+        ...(cappedResults && { results: cappedResults, truncated: results!.length > 50 }),
+        ...(elapsed_ms != null && { elapsed_ms }),
+      },
     });
 
     if (error) {

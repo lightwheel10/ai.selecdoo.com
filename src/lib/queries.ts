@@ -660,6 +660,8 @@ function mapAIActivityLog(row: any, storeNames: Record<string, string>): AIActiv
     items_processed: meta.items_processed ?? 0,
     items_updated: meta.items_updated ?? 0,
     items_skipped: meta.items_skipped ?? 0,
+    details: meta.results ?? [],
+    elapsed_ms: meta.elapsed_ms ?? null,
     created_at: row.created_at,
   };
 }

@@ -1,10 +1,11 @@
 import { getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
-import { canAccessSettings, canManageTeamRoles } from "@/lib/auth/roles";
+import { canAccessSettings, canAccessAdmin, canManageTeamRoles } from "@/lib/auth/roles";
 import { getAuthContext } from "@/lib/auth/session";
-import { TeamAccessManager } from "./_components/team-access-manager";
+import { getStores, getProducts, getAIActivityLogs } from "@/lib/queries";
+import { SettingsPage } from "./_components/settings-page";
 
-export default async function SettingsPage() {
+export default async function SettingsRoute() {
   const { user, role, permissions, isDevBypass } = await getAuthContext();
 
   if (!user && !isDevBypass) {
@@ -15,12 +16,20 @@ export default async function SettingsPage() {
     redirect("/dashboard");
   }
 
+  const isAdmin = canAccessAdmin({ role, permissions });
   const canManageTeam = canManageTeamRoles({ role, permissions });
 
-  const [t, ts] = await Promise.all([
-    getTranslations("Sidebar"),
-    getTranslations("Settings"),
-  ]);
+  // Only fetch heavy admin data if user is admin
+  let stores, products, activityLogs;
+  if (isAdmin) {
+    [stores, products, activityLogs] = await Promise.all([
+      getStores(),
+      getProducts(),
+      getAIActivityLogs(),
+    ]);
+  }
+
+  const t = await getTranslations("Sidebar");
 
   return (
     <div className="space-y-4">
@@ -34,30 +43,13 @@ export default async function SettingsPage() {
         {t("settings")}
       </h1>
 
-      {canManageTeam ? (
-        <TeamAccessManager />
-      ) : (
-        <div
-          className="border-2 p-6"
-          style={{
-            backgroundColor: "var(--card)",
-            borderColor: "var(--border)",
-          }}
-        >
-          <p
-            className="text-[10px] font-bold uppercase tracking-[0.15em] mb-2"
-            style={{
-              fontFamily: "var(--font-mono)",
-              color: "var(--primary-text)",
-            }}
-          >
-            {ts("limitedTitle")}
-          </p>
-          <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-            {ts("limitedDescription")}
-          </p>
-        </div>
-      )}
+      <SettingsPage
+        isAdmin={isAdmin}
+        canManageTeam={canManageTeam}
+        stores={stores ?? []}
+        products={products ?? []}
+        activityLogs={activityLogs ?? []}
+      />
     </div>
   );
 }

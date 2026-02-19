@@ -269,6 +269,16 @@ export interface PaginatedProducts {
 
 export type AICleanStatus = "success" | "error" | "skipped";
 
+export interface AIActivityLogItem {
+  id: string;
+  label: string;
+  status: "success" | "error" | "skipped";
+  error?: string;
+  store_name?: string;
+  source?: string;
+  descriptions_generated?: boolean;
+}
+
 export interface AIActivityLog {
   id: string;
   store_id: string;
@@ -281,5 +291,7 @@ export interface AIActivityLog {
   items_processed: number;
   items_updated: number;
   items_skipped: number;
+  details: AIActivityLogItem[];
+  elapsed_ms: number | null;
   created_at: string;
 }

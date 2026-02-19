@@ -18,6 +18,7 @@ import {
   List,
   CheckCheck,
   ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import {
   Dialog,
@@ -165,6 +166,16 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
 
   // ─── Timeline state ───
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [expandedLogIds, setExpandedLogIds] = useState<Set<string>>(new Set());
+
+  const toggleLogExpand = useCallback((logId: string) => {
+    setExpandedLogIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(logId)) next.delete(logId);
+      else next.add(logId);
+      return next;
+    });
+  }, []);
 
   const visibleLogs = activityLogs.slice(0, visibleCount);
   const remaining = activityLogs.length - visibleCount;
@@ -368,6 +379,7 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
       let totalUpdated = 0;
       let totalErrors = 0;
       const failed: FailedItem[] = [];
+      const logResults: Array<{id: string; label: string; status: string; error?: string; store_name?: string}> = [];
 
       try {
         for (let i = 0; i < toProcess.length; i += BATCH_SIZE) {
@@ -387,23 +399,33 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
             const data = await res.json();
 
             for (const r of (data.results ?? []) as { productId: string; status: string; error?: string }[]) {
+              const prod = toProcess.find((p) => p.id === r.productId);
+              const store = stores.find((s) => s.id === prod?.store_id);
               if (r.status === "success") {
                 totalUpdated++;
               } else {
                 totalErrors++;
-                const prod = toProcess.find((p) => p.id === r.productId);
                 failed.push({
                   id: r.productId,
                   label: prod?.title ?? r.productId,
                   error: r.error ?? "Unknown error",
                 });
               }
+              logResults.push({
+                id: r.productId,
+                label: prod?.title ?? r.productId,
+                status: r.status,
+                error: r.error,
+                store_name: store?.name,
+              });
             }
           } catch (err) {
             if (err instanceof DOMException && err.name === "AbortError") break;
             totalErrors += batch.length;
             for (const p of batch) {
+              const store = stores.find((s) => s.id === p.store_id);
               failed.push({ id: p.id, label: p.title, error: "Request failed" });
+              logResults.push({ id: p.id, label: p.title, status: "error", error: "Request failed", store_name: store?.name });
             }
           }
 
@@ -436,6 +458,8 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
             items_updated: totalUpdated,
             items_skipped: totalErrors,
             message: `Product cleaning: ${totalUpdated} updated, ${totalErrors} errors`,
+            results: logResults,
+            elapsed_ms: elapsed * 1000,
           }),
         });
 
@@ -462,6 +486,7 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
       let totalUpdated = 0;
       let totalErrors = 0;
       const failed: FailedItem[] = [];
+      const logResults: Array<{id: string; label: string; status: string; error?: string; source?: string; descriptions_generated?: boolean}> = [];
 
       try {
         for (let i = 0; i < toProcess.length; i++) {
@@ -476,11 +501,20 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
               signal: controller.signal,
             });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
             totalUpdated++;
+            logResults.push({
+              id: store.id,
+              label: store.name,
+              status: "success",
+              source: data.source,
+              descriptions_generated: data.descriptions_generated,
+            });
           } catch (err) {
             if (err instanceof DOMException && err.name === "AbortError") break;
             totalErrors++;
             failed.push({ id: store.id, label: store.name, error: "Request failed" });
+            logResults.push({ id: store.id, label: store.name, status: "error", error: "Request failed" });
           }
 
           setProgress({
@@ -510,6 +544,8 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
             items_updated: totalUpdated,
             items_skipped: totalErrors,
             message: `Shop cleaning: ${totalUpdated} updated, ${totalErrors} errors`,
+            results: logResults,
+            elapsed_ms: elapsed * 1000,
           }),
         });
 
@@ -600,63 +636,159 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
           {visibleLogs.map((log, i) => {
             const config = statusConfig[log.status];
             const Icon = config.icon;
+            const hasDetails = log.details.length > 0;
+            const isExpanded = expandedLogIds.has(log.id);
+
+            // Build smart summary from details
+            let summary = log.store_name || "";
+            if (hasDetails) {
+              if (log.scope === "shipping") {
+                const names = log.details.map((d) => d.label).slice(0, 3);
+                const extra = log.details.length - 3;
+                summary = `${t("logStores", { count: log.details.length })} \u00b7 ${names.join(", ")}${extra > 0 ? ` +${extra}` : ""}`;
+              } else {
+                const storeNames = [...new Set(log.details.map((d) => d.store_name).filter(Boolean))];
+                const names = storeNames.slice(0, 3);
+                const extra = storeNames.length - 3;
+                summary = `${t("logProducts", { count: log.details.length })} \u00b7 ${names.join(", ")}${extra > 0 ? ` +${extra}` : ""}`;
+              }
+            }
+
+            // Format elapsed
+            const elapsedLabel = log.elapsed_ms != null
+              ? log.elapsed_ms >= 60000
+                ? `${Math.floor(log.elapsed_ms / 60000)}m ${Math.round((log.elapsed_ms % 60000) / 1000)}s`
+                : `${Math.round(log.elapsed_ms / 1000)}s`
+              : null;
 
             return (
               <div
                 key={log.id}
-                className="flex items-start gap-3 px-4 py-3"
                 style={{
                   borderBottom: i < visibleLogs.length - 1 ? "1px solid var(--border)" : "none",
                 }}
               >
-                <div
-                  className="w-7 h-7 flex-shrink-0 flex items-center justify-center mt-0.5"
-                  style={{
-                    backgroundColor: `${config.color}12`,
-                    border: `1.5px solid ${config.color}40`,
-                  }}
-                >
-                  <Icon className="w-3.5 h-3.5" style={{ color: config.color }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-[11px] font-semibold">{log.store_name}</span>
-                    {log.product_title && (
-                      <>
-                        <span className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>&rarr;</span>
-                        <span
-                          className="text-[10px] font-bold tracking-wider truncate"
+                <div className="flex items-start gap-3 px-4 py-3">
+                  <div
+                    className="w-7 h-7 flex-shrink-0 flex items-center justify-center mt-0.5"
+                    style={{
+                      backgroundColor: `${config.color}12`,
+                      border: `1.5px solid ${config.color}40`,
+                    }}
+                  >
+                    <Icon className="w-3.5 h-3.5" style={{ color: config.color }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-semibold mb-0.5 truncate">{summary}</p>
+                    <p className="text-[11px] mb-1" style={{ color: "var(--muted-foreground)" }}>
+                      {log.message}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <p
+                        className="text-[9px] font-bold tracking-wider"
+                        style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)", opacity: 0.7 }}
+                      >
+                        {log.items_processed} {t("processed")} &middot; {log.items_updated} {t("updated")} &middot; {log.items_skipped} {t("skipped")}
+                      </p>
+                      {hasDetails && (
+                        <button
+                          onClick={() => toggleLogExpand(log.id)}
+                          className="text-[9px] font-bold tracking-wider flex items-center gap-0.5 hover:opacity-70 transition-opacity"
                           style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
                         >
-                          {log.product_title}
-                        </span>
-                      </>
-                    )}
+                          {isExpanded ? <ChevronDown className="w-2.5 h-2.5" /> : <ChevronRight className="w-2.5 h-2.5" />}
+                          {isExpanded ? t("hideDetails") : t("showDetails", { count: log.details.length })}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-[11px] mb-1" style={{ color: "var(--muted-foreground)" }}>
-                    {log.message}
-                  </p>
-                  <p
-                    className="text-[9px] font-bold tracking-wider"
-                    style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)", opacity: 0.7 }}
-                  >
-                    {log.items_processed} {t("processed")} &middot; {log.items_updated} {t("updated")} &middot; {log.items_skipped} {t("skipped")}
-                  </p>
+                  <div className="flex-shrink-0 text-right">
+                    <p
+                      className="text-[9px] font-bold tracking-wider"
+                      style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+                    >
+                      {formatRelativeTime(log.created_at)}
+                      {elapsedLabel && (
+                        <span style={{ opacity: 0.6 }}> &middot; {elapsedLabel}</span>
+                      )}
+                    </p>
+                    <p
+                      className="text-[9px] font-bold uppercase tracking-[0.15em] mt-0.5"
+                      style={{ fontFamily: "var(--font-mono)", color: statusConfig[log.status].color, opacity: 0.8 }}
+                    >
+                      {log.scope}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-shrink-0 text-right">
-                  <p
-                    className="text-[9px] font-bold tracking-wider"
-                    style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+
+                {/* Expandable per-item details */}
+                {isExpanded && hasDetails && (
+                  <div
+                    className="px-4 pb-3 ml-10"
+                    style={{ borderTop: "1px dashed var(--border)" }}
                   >
-                    {formatRelativeTime(log.created_at)}
-                  </p>
-                  <p
-                    className="text-[9px] font-bold uppercase tracking-[0.15em] mt-0.5"
-                    style={{ fontFamily: "var(--font-mono)", color: statusConfig[log.status].color, opacity: 0.8 }}
-                  >
-                    {log.scope}
-                  </p>
-                </div>
+                    {log.details.map((item) => (
+                      <div key={item.id} className="py-1.5" style={{ borderBottom: "1px solid var(--border)" }}>
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className="inline-block w-1.5 h-1.5 shrink-0 rounded-full"
+                            style={{
+                              backgroundColor: item.status === "success" ? "#22C55E" : item.status === "error" ? "#FF453A" : "#FF9F0A",
+                            }}
+                          />
+                          <span
+                            className="text-[10px] font-semibold truncate flex-1"
+                            style={{ fontFamily: "var(--font-mono)" }}
+                          >
+                            {item.label}
+                          </span>
+                          {item.store_name && (
+                            <span
+                              className="text-[9px] tracking-wider shrink-0"
+                              style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+                            >
+                              {item.store_name}
+                            </span>
+                          )}
+                          {item.source && (
+                            <span
+                              className="text-[8px] font-bold uppercase tracking-[0.15em] px-1.5 py-0.5 shrink-0"
+                              style={{
+                                fontFamily: "var(--font-mono)",
+                                backgroundColor: item.source === "firecrawl" ? "#CAFF0420" : "var(--muted-foreground)12",
+                                color: item.source === "firecrawl" ? "var(--primary-text)" : "var(--muted-foreground)",
+                                border: `1px solid ${item.source === "firecrawl" ? "var(--primary)" : "var(--border)"}`,
+                              }}
+                            >
+                              {item.source === "firecrawl" ? t("firecrawlSource") : t("productsFallback")}
+                            </span>
+                          )}
+                          {item.descriptions_generated && (
+                            <span
+                              className="text-[8px] font-bold uppercase tracking-[0.15em] px-1.5 py-0.5 shrink-0"
+                              style={{
+                                fontFamily: "var(--font-mono)",
+                                backgroundColor: "#22C55E12",
+                                color: "#22C55E",
+                                border: "1px solid #22C55E40",
+                              }}
+                            >
+                              {t("descriptionsGenerated")}
+                            </span>
+                          )}
+                        </div>
+                        {item.error && (
+                          <p
+                            className="text-[9px] mt-0.5 ml-3"
+                            style={{ fontFamily: "var(--font-mono)", color: "#FF453A" }}
+                          >
+                            {item.error}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}

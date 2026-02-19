@@ -5,7 +5,6 @@ import {
   Package,
   Store,
   Sparkles,
-  ShieldCheck,
   Activity,
   Settings,
   type LucideIcon,
@@ -24,7 +23,6 @@ export const NAV_ITEMS: NavItem[] = [
   { labelKey: "products", icon: Package, href: "/dashboard/products" },
   { labelKey: "stores", icon: Store, href: "/dashboard/stores" },
   { labelKey: "aiContent", icon: Sparkles, href: "/dashboard/ai-content" },
-  { labelKey: "admin", icon: ShieldCheck, href: "/dashboard/admin" },
   { labelKey: "monitoring", icon: Activity, href: "/dashboard/monitoring" },
 ];
 
