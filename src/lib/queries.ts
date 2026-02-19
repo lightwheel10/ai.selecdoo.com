@@ -108,19 +108,31 @@ const PRODUCT_LIST_COLUMNS = "id, store_id, cleaned_title, title, handle, sku, b
 
 export async function getProducts(): Promise<Product[]> {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
-    .from("products")
-    .select(PRODUCT_LIST_COLUMNS)
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: false })
-    .limit(10000);
+  const PAGE_SIZE = 1000;
+  const allRows: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-  if (error) {
-    console.error("getProducts error:", error.message);
-    return [];
+  // Supabase caps each request at ~1000 rows. Paginate to fetch all.
+  for (let offset = 0; ; offset += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("products")
+      .select(PRODUCT_LIST_COLUMNS)
+      .is("deleted_at", null)
+      .order("updated_at", { ascending: false })
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    if (error) {
+      console.error("getProducts error:", error.message);
+      break;
+    }
+
+    if (!data || data.length === 0) break;
+    allRows.push(...data);
+
+    // If we got fewer rows than PAGE_SIZE, we've reached the end
+    if (data.length < PAGE_SIZE) break;
   }
 
-  return (data ?? []).map(mapProduct);
+  return allRows.map(mapProduct);
 }
 
 // ─── Filtered + Paginated Products ───

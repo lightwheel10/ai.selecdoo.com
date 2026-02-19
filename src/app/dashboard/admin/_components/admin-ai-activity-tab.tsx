@@ -119,6 +119,7 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
   const t = useTranslations("Admin");
   const router = useRouter();
 
+
   // ─── Dialog state ───
   const [showCleanDialog, setShowCleanDialog] = useState(false);
   const [cleanMode, setCleanMode] = useState<CleanMode>("shops");
@@ -154,6 +155,12 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
   // ─── Error tracking ───
   const [failedItems, setFailedItems] = useState<FailedItem[]>([]);
   const [showErrors, setShowErrors] = useState(false);
+
+  // ─── Stores that actually have products (for filter dropdown) ───
+  const storesWithProducts = useMemo(() => {
+    const storeIdsInProducts = new Set(products.map((p) => p.store_id));
+    return stores.filter((s) => storeIdsInProducts.has(s.id));
+  }, [stores, products]);
 
   // ─── Timeline state ───
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -762,7 +769,7 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
                       className="border-2 p-3 space-y-2"
                       style={{ borderColor: "var(--border)", backgroundColor: "var(--input)" }}
                     >
-                      {/* Brand filter (products mode only) */}
+                      {/* Store filter (products mode only) */}
                       {cleanMode === "products" && (
                         <div className="flex items-center gap-2 mb-2">
                           <div className="relative" ref={storeFilterRef}>
@@ -778,8 +785,8 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
                             >
                               <span className="truncate" style={{ maxWidth: 160 }}>
                                 {storeFilter
-                                  ? stores.find((s) => s.id === storeFilter)?.name ?? t("allBrands")
-                                  : `${t("allBrands")} (${stores.length})`}
+                                  ? storesWithProducts.find((s) => s.id === storeFilter)?.name ?? t("allStores")
+                                  : `${t("allStores")} (${storesWithProducts.length})`}
                               </span>
                               <ChevronDown className="w-3 h-3 flex-shrink-0" />
                             </button>
@@ -799,11 +806,11 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
                                     style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
                                   >
                                     <X className="w-3 h-3 flex-shrink-0 opacity-50" />
-                                    <span className="truncate">{t("allBrands")} ({stores.length})</span>
+                                    <span className="truncate">{t("allStores")} ({storesWithProducts.length})</span>
                                   </button>
                                 )}
                                 <div className="overflow-y-auto" style={{ maxHeight: 200 }}>
-                                  {stores.map((s) => (
+                                  {storesWithProducts.map((s) => (
                                     <button
                                       key={s.id}
                                       onClick={() => {
