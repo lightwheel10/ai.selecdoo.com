@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getStores, getProducts, getAIActivityLogs } from "@/lib/queries";
 import { canAccessAdmin } from "@/lib/auth/roles";
 import { getAuthContext } from "@/lib/auth/session";
-import { AdminDashboard } from "./_components/admin-dashboard";
+import { AdminDashboardLoader } from "./_components/admin-dashboard-loader";
 
 export default async function AdminPage() {
   const { user, role, permissions, isDevBypass } = await getAuthContext();
@@ -36,7 +36,7 @@ export default async function AdminPage() {
           {t("pageTitle")}
         </h1>
       </div>
-      <AdminDashboard
+      <AdminDashboardLoader
         stores={stores}
         products={products}
         activityLogs={activityLogs}

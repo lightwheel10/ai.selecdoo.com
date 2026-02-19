@@ -41,7 +41,7 @@ export function AdminDashboard({ stores, products, activityLogs }: AdminDashboar
         <AdminProductsTab products={products} stores={stores} />
       </TabsContent>
       <TabsContent value="ai-activity">
-        <AdminAIActivityTab activityLogs={activityLogs} stores={stores} />
+        <AdminAIActivityTab activityLogs={activityLogs} stores={stores} products={products} />
       </TabsContent>
     </Tabs>
   );

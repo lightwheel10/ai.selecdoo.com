@@ -38,7 +38,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' https: data:",
               "font-src 'self' data:",
-              "connect-src 'self' https://*.supabase.co https://api.apify.com https://api.openai.com",
+              "connect-src 'self' https://*.supabase.co https://api.apify.com https://api.anthropic.com",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
