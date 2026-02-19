@@ -68,6 +68,7 @@ type CleanScope = "all" | "selected";
 interface SelectedItem {
   value: string;
   label: string;
+  cleaned?: boolean;
 }
 
 interface CleanProgress {
@@ -178,7 +179,7 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
         .filter((s) => !selectedValues.has(s.id))
         .filter((s) => !query || s.name.toLowerCase().includes(query) || s.url.toLowerCase().includes(query))
         .slice(0, MAX_DROPDOWN_RESULTS)
-        .map((s) => ({ value: s.id, label: s.name }));
+        .map((s) => ({ value: s.id, label: s.name, cleaned: !!s.shipping_country }));
     } else {
       let filtered = products.filter((p) => !selectedValues.has(p.id));
       if (storeFilter) {
@@ -192,6 +193,7 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
       return filtered.slice(0, MAX_DROPDOWN_RESULTS).map((p) => ({
         value: p.id,
         label: p.brand ? `${p.title} — ${p.brand}` : p.title,
+        cleaned: !!p.ai_category,
       }));
     }
   }, [cleanMode, stores, products, selectedItems, searchQuery, storeFilter]);
@@ -885,6 +887,10 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
                                 color: "#000",
                               }}
                             >
+                              <span
+                                className="inline-block w-1.5 h-1.5 shrink-0 rounded-full"
+                                style={{ backgroundColor: item.cleaned ? "#22C55E" : "var(--muted-foreground)", opacity: item.cleaned ? 1 : 0.3 }}
+                              />
                               {item.label.length > 30 ? item.label.slice(0, 30) + "..." : item.label}
                               <button onClick={() => removeItem(item.value)} className="ml-0.5 hover:opacity-60">
                                 <X className="w-2.5 h-2.5" />
@@ -920,12 +926,16 @@ export function AdminAIActivityTab({ activityLogs, stores, products }: AdminAIAc
                             <button
                               key={item.value}
                               onClick={() => selectItem(item)}
-                              className="w-full text-left px-3 py-1.5 text-[10px] transition-colors hover:bg-[var(--subtle-overlay)]"
+                              className="w-full text-left px-3 py-1.5 text-[10px] transition-colors hover:bg-[var(--subtle-overlay)] flex items-center gap-1.5"
                               style={{
                                 fontFamily: "var(--font-mono)",
                                 borderBottom: "1px solid var(--border)",
                               }}
                             >
+                              <span
+                                className="inline-block w-1.5 h-1.5 shrink-0 rounded-full"
+                                style={{ backgroundColor: item.cleaned ? "#22C55E" : "var(--muted-foreground)", opacity: item.cleaned ? 1 : 0.3 }}
+                              />
                               <Highlight text={item.label} query={searchQuery} />
                             </button>
                           ))
