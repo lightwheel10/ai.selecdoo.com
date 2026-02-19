@@ -115,7 +115,7 @@ function PriceChangeRow({
           className="text-[10px] font-bold tracking-wider line-through"
           style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
         >
-          €{change.old_value}
+          {new Intl.NumberFormat(undefined, { style: "currency", currency: "EUR" }).format(oldPrice)}
         </span>
         <span
           className="text-[10px] font-bold tracking-wider"
@@ -124,7 +124,7 @@ function PriceChangeRow({
             color: isDropped ? "#22C55E" : "#FF453A",
           }}
         >
-          €{change.new_value}
+          {new Intl.NumberFormat(undefined, { style: "currency", currency: "EUR" }).format(newPrice)}
         </span>
       </div>
 

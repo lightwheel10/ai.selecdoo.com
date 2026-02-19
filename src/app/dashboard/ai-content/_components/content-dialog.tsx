@@ -179,14 +179,14 @@ export function ContentDialog({
                       className="text-base font-bold"
                       style={{ fontFamily: "var(--font-display)" }}
                     >
-                      ${modal.product.price.toFixed(2)}
+                      {new Intl.NumberFormat(undefined, { style: "currency", currency: modal.product.currency || "EUR" }).format(modal.product.price)}
                     </span>
                     {hasDiscount && modal.product.original_price && (
                       <span
                         className="text-[10px] line-through"
                         style={{ color: "var(--muted-foreground)" }}
                       >
-                        ${modal.product.original_price.toFixed(2)}
+                        {new Intl.NumberFormat(undefined, { style: "currency", currency: modal.product.currency || "EUR" }).format(modal.product.original_price)}
                       </span>
                     )}
                     {modal.product.brand && (

@@ -360,14 +360,14 @@ export default async function DashboardPage() {
                         className="text-sm font-bold"
                         style={{ fontFamily: "var(--font-display)" }}
                       >
-                        ${product.price.toFixed(2)}
+                        {new Intl.NumberFormat(undefined, { style: "currency", currency: product.currency || "EUR" }).format(product.price)}
                       </span>
                       {hasDiscount && product.original_price && (
                         <span
                           className="text-[10px] line-through"
                           style={{ color: "var(--muted-foreground)" }}
                         >
-                          ${product.original_price.toFixed(2)}
+                          {new Intl.NumberFormat(undefined, { style: "currency", currency: product.currency || "EUR" }).format(product.original_price)}
                         </span>
                       )}
                     </div>
