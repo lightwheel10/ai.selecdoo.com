@@ -157,13 +157,15 @@ function formatTime(ms: number): string {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 }
 
-/* ─── Images ─── */
+/* ─── Images (real product images from Supabase v2 DB) ─── */
 const IMG = {
-  wildschwein: "https://images.unsplash.com/photo-1646483420147-6b940b15436e?w=400&h=400&fit=crop&q=80",
-  lamm: "https://images.unsplash.com/photo-1602470521006-aaea8b2fcc36?w=400&h=400&fit=crop&q=80",
-  lachs: "https://images.unsplash.com/photo-1559058789-672da06263d8?w=400&h=400&fit=crop&q=80",
-  rind: "https://images.unsplash.com/photo-1596491123074-fd69f1b7c12d?w=400&h=400&fit=crop&q=80",
-  huhn: "https://images.unsplash.com/photo-1596491119044-93adcb618444?w=400&h=400&fit=crop&q=80",
+  snackBox: "https://cdn.shopify.com/s/files/1/0149/5462/7120/files/BestsellerSparsetHundehappen.png?v=1765271632",
+  magenDarmSet: "https://cdn.shopify.com/s/files/1/0149/5462/7120/files/Sparsets_1_160082c4-75e8-4e1a-91f6-44906d46b02a.png?v=1748602187",
+  zahnMaul: "https://cdn.shopify.com/s/files/1/0149/5462/7120/files/59.png?v=1734442773",
+  hautFell: "https://cdn.shopify.com/s/files/1/0149/5462/7120/files/Sparsets_2_a69e7342-bf18-4196-8668-eececec8dd9c.png?v=1741168448",
+  vitalSet: "https://cdn.shopify.com/s/files/1/0149/5462/7120/files/Sparsets_0380ff08-46df-4151-8e85-4b299eb5d576.png?v=1748864071",
+  spicyBox: "https://cdn.shopify.com/s/files/1/0598/8781/2786/files/Spicy_Big_Box.png?v=1762520624",
+  wheyProtein: "https://cdn.shopify.com/s/files/1/0508/5803/3301/files/Whey_zutaten_standard4-min.jpg?v=1717175542",
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -369,7 +371,7 @@ export function ProductDemoVideo({ texts }: { texts: VideoTexts }) {
             @keyframes dv-fill{from{width:0}to{width:100%}}
             @keyframes dv-pop{0%{opacity:0;transform:scale(.85)}60%{opacity:1;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}
             @keyframes dv-blink{0%,100%{opacity:1}50%{opacity:0}}
-            @keyframes dv-type{from{width:0}to{width:14ch}}
+            @keyframes dv-type{from{width:0}to{width:15ch}}
           `}</style>
           <AnimatePresence mode="wait">
             <motion.div
@@ -577,9 +579,9 @@ function ALeft({ d, children, className = "", style = {} }: { d: number; childre
 
 const STORES = [
   { name: "Hunderunde", letter: "H", color: "#FF9F0A" },
-  { name: "Fressnapf", letter: "F", color: "#22C55E" },
-  { name: "Zooplus", letter: "Z", color: "#5AC8FA" },
-  { name: "PetsDeli", letter: "P", color: "#AF52DE" },
+  { name: "Escapure", letter: "E", color: "#22C55E" },
+  { name: "Fairnatural", letter: "F", color: "#5AC8FA" },
+  { name: "SCOOPER", letter: "S", color: "#AF52DE" },
 ];
 
 function SceneScrape({ paused, step }: { paused: boolean; step: number }) {
@@ -608,11 +610,11 @@ function SceneScrape({ paused, step }: { paused: boolean; step: number }) {
                 ...mono,
                 color: "var(--foreground)",
                 width: 0,
-                animation: `dv-type 1.5s steps(14, end) 1.5s both`,
+                animation: `dv-type 1.5s steps(15, end) 1.5s both`,
                 animationPlayState: ps,
               }}
             >
-              hunderunde.de
+              hunderunde.shop
             </span>
             <span
               className="w-[2px] h-3.5 inline-block shrink-0"
@@ -670,11 +672,11 @@ function SceneScrape({ paused, step }: { paused: boolean; step: number }) {
       {/* Results grid */}
       <div className="grid grid-cols-5 gap-1.5 flex-1 min-h-0">
         {[
-          { img: IMG.wildschwein, name: "Wildschwein", price: "54,99 €", grad: "linear-gradient(135deg, #8B6F47, #A0845C)" },
-          { img: IMG.lamm, name: "Lamm Sensitiv", price: "47,99 €", grad: "linear-gradient(135deg, #9B8B6F, #BFA98A)" },
-          { img: IMG.lachs, name: "Lachs Premium", price: "52,99 €", grad: "linear-gradient(135deg, #6B8E9B, #8BAAB5)" },
-          { img: IMG.rind, name: "Rind Junior", price: "44,99 €", grad: "linear-gradient(135deg, #8B5E3C, #A67B5B)" },
-          { img: IMG.huhn, name: "Bio Hühnchen", price: "37,49 €", grad: "linear-gradient(135deg, #9B8B6F, #C4A97D)" },
+          { img: IMG.snackBox, name: "Snack Probierbox", price: "9,99 €", grad: "linear-gradient(135deg, #8B6F47, #A0845C)" },
+          { img: IMG.magenDarmSet, name: "Magen & Darm", price: "59,90 €", grad: "linear-gradient(135deg, #9B8B6F, #BFA98A)" },
+          { img: IMG.zahnMaul, name: "Zahn & Maul", price: "29,90 €", grad: "linear-gradient(135deg, #6B8E9B, #8BAAB5)" },
+          { img: IMG.hautFell, name: "Haut & Fell-Set", price: "54,90 €", grad: "linear-gradient(135deg, #8B5E3C, #A67B5B)" },
+          { img: IMG.vitalSet, name: "Vitalitäts-Set", price: "89,90 €", grad: "linear-gradient(135deg, #9B8B6F, #C4A97D)" },
         ].map((p, i) => (
           <A key={i} d={4.8 + i * 0.1} className="border-2 overflow-hidden flex flex-col" style={{ borderColor: "var(--border)", backgroundColor: "var(--card)" }}>
             <ProductThumb src={p.img} fallback={p.grad} className="h-10 sm:h-14 w-full" />
@@ -711,11 +713,11 @@ function SceneScrape({ paused, step }: { paused: boolean; step: number }) {
    ═══════════════════════════════════════════════════════════ */
 
 const PRODUCTS = [
-  { name: "Wildschwein Menü Adult", brand: "Hunderunde", price: "54,99 €", oldPrice: "64,99 €", discount: "-15%", inStock: true, gradient: "linear-gradient(135deg, #8B6F47, #A0845C)", image: IMG.wildschwein, storeColor: "#FF9F0A" },
-  { name: "Lamm Sensitiv Getreidefrei", brand: "Hunderunde", price: "47,99 €", oldPrice: "59,99 €", discount: "-20%", inStock: true, gradient: "linear-gradient(135deg, #9B8B6F, #BFA98A)", image: IMG.lamm, storeColor: "#FF9F0A" },
-  { name: "Lachs & Forelle Premium", brand: "Hunderunde", price: "52,99 €", oldPrice: null, discount: null, inStock: true, gradient: "linear-gradient(135deg, #6B8E9B, #8BAAB5)", image: IMG.lachs, storeColor: "#FF9F0A" },
-  { name: "Rind Junior Welpen", brand: "Hunderunde", price: "44,99 €", oldPrice: "49,99 €", discount: "-10%", inStock: false, gradient: "linear-gradient(135deg, #8B5E3C, #A67B5B)", image: IMG.rind, storeColor: "#FF9F0A" },
-  { name: "Bio Hühnchen Komplett", brand: "Hunderunde", price: "37,49 €", oldPrice: "42,99 €", discount: "-13%", inStock: true, gradient: "linear-gradient(135deg, #9B8B6F, #C4A97D)", image: IMG.huhn, storeColor: "#FF9F0A" },
+  { name: "Snack Probierbox", brand: "Hunderunde", price: "9,99 €", oldPrice: "13,99 €", discount: "-29%", inStock: true, gradient: "linear-gradient(135deg, #8B6F47, #A0845C)", image: IMG.snackBox, storeColor: "#FF9F0A" },
+  { name: "Magen & Darm-Set", brand: "Hunderunde", price: "59,90 €", oldPrice: "92,90 €", discount: "-36%", inStock: true, gradient: "linear-gradient(135deg, #9B8B6F, #BFA98A)", image: IMG.magenDarmSet, storeColor: "#FF9F0A" },
+  { name: "Futtertopping Zahn & Maul", brand: "Hunderunde", price: "29,90 €", oldPrice: null, discount: null, inStock: true, gradient: "linear-gradient(135deg, #6B8E9B, #8BAAB5)", image: IMG.zahnMaul, storeColor: "#FF9F0A" },
+  { name: "Haut & Fell-Pflegeset", brand: "Hunderunde", price: "54,90 €", oldPrice: "72,90 €", discount: "-25%", inStock: true, gradient: "linear-gradient(135deg, #8B5E3C, #A67B5B)", image: IMG.hautFell, storeColor: "#FF9F0A" },
+  { name: "Vitalitäts-Set Haut & Gelenke", brand: "Hunderunde", price: "89,90 €", oldPrice: "134,90 €", discount: "-33%", inStock: true, gradient: "linear-gradient(135deg, #9B8B6F, #C4A97D)", image: IMG.vitalSet, storeColor: "#FF9F0A" },
 ];
 
 function SceneCatalog({ paused, step }: { paused: boolean; step: number }) {
@@ -819,15 +821,15 @@ const METRICS = [
 ];
 
 const CHANGES = [
-  { name: "Wildschwein Menü Adult", store: "Hunderunde", oldPrice: "64,99 €", newPrice: "54,99 €", pct: "-15%", color: "#22c55e", time: "2h", image: IMG.wildschwein, gradient: "linear-gradient(135deg, #8B6F47, #A0845C)" },
-  { name: "Bio Hühnchen Komplett", store: "Hunderunde", oldPrice: "42,99 €", newPrice: "37,49 €", pct: "-13%", color: "#22c55e", time: "5h", image: IMG.huhn, gradient: "linear-gradient(135deg, #9B8B6F, #C4A97D)" },
-  { name: "Lachs & Forelle Premium", store: "Hunderunde", oldPrice: "48,99 €", newPrice: "52,99 €", pct: "+8%", color: "#ef4444", time: "8h", image: IMG.lachs, gradient: "linear-gradient(135deg, #6B8E9B, #8BAAB5)" },
-  { name: "Rind Premium Dose", store: "Hunderunde", oldPrice: "28,99 €", newPrice: "31,89 €", pct: "+10%", color: "#ef4444", time: "1d", image: IMG.rind, gradient: "linear-gradient(135deg, #8B5E3C, #A67B5B)" },
+  { name: "Snack Probierbox", store: "hunderunde.shop", oldPrice: "13,99 €", newPrice: "9,99 €", pct: "-29%", color: "#22c55e", time: "2h", image: IMG.snackBox, gradient: "linear-gradient(135deg, #8B6F47, #A0845C)" },
+  { name: "Magen & Darm-Set", store: "hunderunde.shop", oldPrice: "92,90 €", newPrice: "59,90 €", pct: "-36%", color: "#22c55e", time: "5h", image: IMG.magenDarmSet, gradient: "linear-gradient(135deg, #9B8B6F, #BFA98A)" },
+  { name: "Spicy Big Box (12 Dosen)", store: "scooper.energy", oldPrice: "84,99 €", newPrice: "34,90 €", pct: "-59%", color: "#22c55e", time: "8h", image: IMG.spicyBox, gradient: "linear-gradient(135deg, #AF52DE, #C87DFF)" },
+  { name: "Bio Whey Protein Mango", store: "fairnatural.de", oldPrice: "24,99 €", newPrice: "29,99 €", pct: "+20%", color: "#ef4444", time: "1d", image: IMG.wheyProtein, gradient: "linear-gradient(135deg, #6B8E9B, #8BAAB5)" },
 ];
 
 const STOCK_CHANGES = [
-  { name: "Lamm Sensitiv", from: "In Stock", to: "Out of Stock", time: "3h" },
-  { name: "Rind Junior", from: "Out of Stock", to: "In Stock", time: "6h" },
+  { name: "Senior Wild Trockenfutter", from: "In Stock", to: "Out of Stock", time: "3h" },
+  { name: "OatBreak 12er Box", from: "Out of Stock", to: "In Stock", time: "6h" },
 ];
 
 function SceneMonitor({ paused, step }: { paused: boolean; step: number }) {
@@ -919,26 +921,26 @@ function SceneMonitor({ paused, step }: { paused: boolean; step: number }) {
    ═══════════════════════════════════════════════════════════ */
 
 const DEAL_LINES = [
-  "\u{1F525} DEAL: Wildschwein Men\u00FC Adult",
-  "von Hunderunde jetzt nur 54,99 \u20AC",
-  "statt 64,99 \u20AC!",
+  "\u{1F525} DEAL: Magen & Darm-Set",
+  "von Hunderunde jetzt nur 59,90 \u20AC",
+  "statt 92,90 \u20AC!",
   "",
-  "\u2705 15% Rabatt auf Premium-Hundefutter",
-  "\u2705 Getreidefreie Rezeptur",
-  "\u2705 F\u00FCr ausgewachsene Hunde",
+  "\u2705 36% Rabatt auf das Komplett-Set",
+  "\u2705 Spezial-Futtertopping f\u00FCr sensible Hunde",
+  "\u2705 Alles f\u00FCr eine gesunde Verdauung",
   "",
   "\u{1F449} Jetzt zuschlagen!",
 ];
 
 const SOCIAL_LINES = [
-  "\u{1F436} Neues Premium-Hundefutter entdeckt!",
+  "\u{1F436} Top-Angebot f\u00FCr empfindliche Hunde!",
   "",
-  "Wildschwein Men\u00FC Adult von Hunderunde",
-  "\u2192 Getreidefreie Rezeptur mit Wild",
-  "\u2192 F\u00FCr ausgewachsene Hunde",
-  "\u2192 Jetzt zum Aktionspreis: 54,99 \u20AC",
+  "Magen & Darm-Set von Hunderunde",
+  "\u2192 Spezial-Futtertopping f\u00FCr sensible M\u00E4gen",
+  "\u2192 Komplettes Pflege-Paket",
+  "\u2192 Jetzt zum Aktionspreis: 59,90 \u20AC",
   "",
-  "#Hundefutter #Premium #Hunderunde",
+  "#Hundefutter #Hunderunde #DarmGesundheit",
 ];
 
 function SceneAI({ paused, step }: { paused: boolean; step: number }) {
@@ -950,17 +952,17 @@ function SceneAI({ paused, step }: { paused: boolean; step: number }) {
     <div className="flex flex-col gap-2 h-full">
       {/* Product header */}
       <A d={0.3} className="flex items-center gap-3 border-2 p-2" style={{ borderColor: "var(--border)", backgroundColor: "var(--background)" }}>
-        <ProductThumb src={IMG.wildschwein} fallback="linear-gradient(135deg, #8B6F47, #A0845C)" className="w-11 h-11 sm:w-13 sm:h-13 shrink-0 border-2" />
+        <ProductThumb src={IMG.magenDarmSet} fallback="linear-gradient(135deg, #9B8B6F, #BFA98A)" className="w-11 h-11 sm:w-13 sm:h-13 shrink-0 border-2" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1 mb-0.5">
             <div className="w-3 h-3 flex items-center justify-center text-[6px] font-bold" style={{ backgroundColor: "#FF9F0A", color: "#fff", ...mono }}>H</div>
             <span className="text-[7px]" style={{ ...mono, color: "var(--muted-foreground)" }}>Hunderunde</span>
           </div>
-          <p className="text-[9px] sm:text-[10px] font-bold leading-tight truncate" style={{ ...mono, color: "var(--foreground)" }}>Wildschwein Men&uuml; Adult</p>
+          <p className="text-[9px] sm:text-[10px] font-bold leading-tight truncate" style={{ ...mono, color: "var(--foreground)" }}>Magen &amp; Darm-Set</p>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="text-[10px] font-bold" style={{ ...mono, color: "var(--foreground)" }}>54,99 &euro;</span>
-            <span className="text-[8px] line-through" style={{ ...mono, color: "var(--muted-foreground)" }}>64,99 &euro;</span>
-            <span className="text-[7px] font-bold px-1 py-0.5" style={{ ...mono, backgroundColor: "var(--primary)", color: "var(--primary-foreground)" }}>-15%</span>
+            <span className="text-[10px] font-bold" style={{ ...mono, color: "var(--foreground)" }}>59,90 &euro;</span>
+            <span className="text-[8px] line-through" style={{ ...mono, color: "var(--muted-foreground)" }}>92,90 &euro;</span>
+            <span className="text-[7px] font-bold px-1 py-0.5" style={{ ...mono, backgroundColor: "var(--primary)", color: "var(--primary-foreground)" }}>-36%</span>
             <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#22c55e" }} />
           </div>
         </div>
