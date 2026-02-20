@@ -15,6 +15,7 @@ import {
 import { getTranslations } from "next-intl/server";
 import { ThemeIconToggle } from "@/components/domain/theme-icon-toggle";
 import { LocaleToggle } from "@/components/domain/locale-toggle";
+import { ProductDemoVideo, type VideoTexts } from "./_components/product-demo-video";
 
 export default async function LandingPage() {
   const t = await getTranslations("Landing");
@@ -219,6 +220,33 @@ export default async function LandingPage() {
               </div>
             ))}
           </div>
+        </section>
+
+        {/* ─── Product Demo Video ─── */}
+        <section className="max-w-5xl mx-auto px-6 pb-24">
+          <p
+            className="text-[10px] font-bold uppercase tracking-[0.15em] mb-3"
+            style={{
+              fontFamily: "var(--font-mono)",
+              color: "var(--primary-text)",
+            }}
+          >
+            {t("videoLabel")}
+          </p>
+          <h2
+            className="text-2xl sm:text-3xl font-bold tracking-tight mb-6"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            {t("videoTitle")}
+          </h2>
+          <ProductDemoVideo
+            texts={{
+              sceneScrape: t("videoSceneScrape"),
+              sceneCatalog: t("videoSceneCatalog"),
+              sceneMonitor: t("videoSceneMonitor"),
+              sceneAI: t("videoSceneAI"),
+            } satisfies VideoTexts}
+          />
         </section>
 
         {/* ─── Features ─── */}
