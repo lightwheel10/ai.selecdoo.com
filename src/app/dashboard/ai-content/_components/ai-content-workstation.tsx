@@ -129,9 +129,38 @@ export function AIContentWorkstation({
   // Selection
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
 
-  // Google Merchant
-  const [googleSentProducts, setGoogleSentProducts] = useState<Set<string>>(new Set());
+  // Google Merchant — single Map tracks all statuses
+  const [merchantStatus, setMerchantStatus] = useState<
+    Map<string, { status: string; errorMessage?: string; googleProductId?: string }>
+  >(new Map());
   const [googleSendingProducts, setGoogleSendingProducts] = useState<Set<string>>(new Set());
+
+  // Load merchant statuses on mount
+  useEffect(() => {
+    const ids = products.map((p) => p.id);
+    if (ids.length === 0) return;
+    fetch("/api/merchant/status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productIds: ids }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.statuses) {
+          const map = new Map<string, { status: string; errorMessage?: string; googleProductId?: string }>();
+          for (const [pid, s] of Object.entries(data.statuses)) {
+            const sub = s as { status: string; errorMessage?: string | null; googleProductId?: string | null };
+            map.set(pid, {
+              status: sub.status,
+              errorMessage: sub.errorMessage ?? undefined,
+              googleProductId: sub.googleProductId ?? undefined,
+            });
+          }
+          setMerchantStatus(map);
+        }
+      })
+      .catch((err) => console.error("Failed to load merchant statuses:", err));
+  }, [products]);
 
   // Modal
   const [modal, setModal] = useState<{
@@ -187,7 +216,8 @@ export function AIContentWorkstation({
 
     if (googleFilter) {
       result = result.filter((p) => {
-        const isSent = googleSentProducts.has(p.id);
+        const entry = merchantStatus.get(p.id);
+        const isSent = entry != null && entry.status !== "error";
         if (googleFilter === "added") return isSent;
         if (googleFilter === "not_added") return !isSent;
         return true;
@@ -195,7 +225,7 @@ export function AIContentWorkstation({
     }
 
     return result;
-  }, [localProducts, contentStatusFilters, googleFilter, contentMap, googleSentProducts]);
+  }, [localProducts, contentStatusFilters, googleFilter, contentMap, merchantStatus]);
 
   // Content status counts (for filter badges)
   const contentCounts = useMemo(() => {
@@ -548,25 +578,74 @@ export function AIContentWorkstation({
   }
 
   // Google Merchant
-  function handleSendToGoogle(product: Product) {
+  async function handleSendToGoogle(product: Product) {
+    // Already submitted? Toast and skip
+    const existing = merchantStatus.get(product.id);
+    if (existing && existing.status === "submitted") {
+      toast(t("sentToGoogle"));
+      return;
+    }
+
     setGoogleSendingProducts((prev) => new Set(prev).add(product.id));
-    setTimeout(() => {
+
+    try {
+      const res = await fetch("/api/merchant/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productIds: [product.id] }),
+      });
+
+      const data = await res.json();
+      const result = data.results?.[0];
+
+      if (result?.success) {
+        setMerchantStatus((prev) => {
+          const next = new Map(prev);
+          next.set(product.id, {
+            status: "submitted",
+            googleProductId: result.googleProductId,
+          });
+          return next;
+        });
+        toast(t("googleSent"), {
+          description: t("googleSentDescription", { title: product.title }),
+        });
+      } else {
+        setMerchantStatus((prev) => {
+          const next = new Map(prev);
+          next.set(product.id, {
+            status: "error",
+            errorMessage: result?.error || "Unknown error",
+          });
+          return next;
+        });
+        toast.error(t("googleSendError"));
+      }
+    } catch {
+      setMerchantStatus((prev) => {
+        const next = new Map(prev);
+        next.set(product.id, {
+          status: "error",
+          errorMessage: "Network error",
+        });
+        return next;
+      });
+      toast.error(t("googleSendError"));
+    } finally {
       setGoogleSendingProducts((prev) => {
         const next = new Set(prev);
         next.delete(product.id);
         return next;
       });
-      setGoogleSentProducts((prev) => new Set(prev).add(product.id));
-      toast(t("googleSent"), {
-        description: t("googleSentDescription", { title: product.title }),
-      });
-    }, 1500);
+    }
   }
 
-  function getGoogleStatus(productId: string): "none" | "sending" | "sent" {
+  function getGoogleStatus(productId: string): "none" | "sending" | "submitted" | "error" {
     if (googleSendingProducts.has(productId)) return "sending";
-    if (googleSentProducts.has(productId)) return "sent";
-    return "none";
+    const entry = merchantStatus.get(productId);
+    if (!entry) return "none";
+    if (entry.status === "error") return "error";
+    return "submitted";
   }
 
   // Selection
@@ -1012,7 +1091,7 @@ export function AIContentWorkstation({
             contentMap={contentMap}
             search={filters.search}
             selectedProducts={selectedProducts}
-            googleSentProducts={googleSentProducts}
+            merchantStatus={merchantStatus}
             googleSendingProducts={googleSendingProducts}
             allowSelection={allowDeleteProduct}
             allowDeleteProduct={allowDeleteProduct}

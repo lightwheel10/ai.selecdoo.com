@@ -17,7 +17,7 @@ interface StoreGroupViewProps {
   contentMap: Map<string, ContentEntry>;
   search: string;
   selectedProducts: Set<string>;
-  googleSentProducts: Set<string>;
+  merchantStatus: Map<string, { status: string; errorMessage?: string; googleProductId?: string }>;
   googleSendingProducts: Set<string>;
   allowSelection: boolean;
   allowDeleteProduct: boolean;
@@ -53,7 +53,7 @@ export function StoreGroupView({
   contentMap,
   search,
   selectedProducts,
-  googleSentProducts,
+  merchantStatus,
   googleSendingProducts,
   allowSelection,
   allowDeleteProduct,
@@ -70,10 +70,12 @@ export function StoreGroupView({
   onSendToGoogle,
   onDeleteProduct,
 }: StoreGroupViewProps) {
-  function getGoogleStatus(productId: string): "none" | "sending" | "sent" {
+  function getGoogleStatus(productId: string): "none" | "sending" | "submitted" | "error" {
     if (googleSendingProducts.has(productId)) return "sending";
-    if (googleSentProducts.has(productId)) return "sent";
-    return "none";
+    const entry = merchantStatus.get(productId);
+    if (!entry) return "none";
+    if (entry.status === "error") return "error";
+    return "submitted";
   }
 
   return (
@@ -133,7 +135,8 @@ export function StoreGroupView({
             // Compute per-store google count
             let googleCount = 0;
             for (const p of group.products) {
-              if (googleSentProducts.has(p.id)) googleCount++;
+              const ms = merchantStatus.get(p.id);
+              if (ms && ms.status !== "error") googleCount++;
             }
 
             // Per-store selection

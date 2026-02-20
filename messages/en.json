@@ -328,7 +328,10 @@
     "generatedByAi": "AI Generated",
     "generateFailed": "Generation failed — check the error above",
     "retryGenerate": "Try Again",
-    "comingSoon": "Coming soon"
+    "comingSoon": "Coming soon",
+    "googleError": "Error",
+    "googleSendError": "Google Merchant submission failed",
+    "googleRetry": "Retry"
   },
   "Monitoring": {
     "storeSchedules": "Store Schedules",

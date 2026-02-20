@@ -328,7 +328,10 @@
     "generatedByAi": "KI-Generiert",
     "generateFailed": "Generierung fehlgeschlagen — siehe Fehler oben",
     "retryGenerate": "Erneut versuchen",
-    "comingSoon": "Kommt bald"
+    "comingSoon": "Kommt bald",
+    "googleError": "Fehler",
+    "googleSendError": "Google Merchant Übermittlung fehlgeschlagen",
+    "googleRetry": "Erneut versuchen"
   },
   "Monitoring": {
     "storeSchedules": "Shop-Zeitpläne",

@@ -6,6 +6,7 @@ import {
   ShoppingBag,
   Trash2,
   Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import type { Product } from "@/types";
 import type { ContentEntry } from "./utils";
@@ -17,7 +18,7 @@ interface MiniProductCardProps {
   entry: ContentEntry | undefined;
   search: string;
   isSelected: boolean;
-  googleStatus: "none" | "sending" | "sent";
+  googleStatus: "none" | "sending" | "submitted" | "error";
   t: (key: string) => string;
   canSelect?: boolean;
   canDeleteProduct?: boolean;
@@ -197,23 +198,38 @@ export function MiniProductCard({
           className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80 disabled:pointer-events-none"
           style={{
             backgroundColor:
-              googleStatus === "sent" ? "#FF9F0A" : "#FF9F0A12",
+              googleStatus === "error"
+                ? "#FF453A12"
+                : googleStatus === "submitted"
+                ? "#FF9F0A"
+                : "#FF9F0A12",
             border:
-              googleStatus === "sent"
+              googleStatus === "error"
+                ? "1.5px solid #FF453A"
+                : googleStatus === "submitted"
                 ? "1.5px solid #FF9F0A"
                 : "1.5px solid #FF9F0A40",
-            color: googleStatus === "sent" ? "var(--primary-foreground)" : "#FF9F0A",
+            color:
+              googleStatus === "error"
+                ? "#FF453A"
+                : googleStatus === "submitted"
+                ? "var(--primary-foreground)"
+                : "#FF9F0A",
           }}
           title={
-            googleStatus === "sent"
+            googleStatus === "submitted"
               ? t("sentToGoogle")
               : googleStatus === "sending"
               ? t("sendingToGoogle")
+              : googleStatus === "error"
+              ? t("googleRetry")
               : t("sendToGoogle")
           }
         >
           {googleStatus === "sending" ? (
             <Loader2 className="w-3 h-3 animate-spin" />
+          ) : googleStatus === "error" ? (
+            <AlertTriangle className="w-3 h-3" />
           ) : (
             <ShoppingBag className="w-3 h-3" />
           )}

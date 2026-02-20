@@ -295,3 +295,40 @@ export interface AIActivityLog {
   elapsed_ms: number | null;
   created_at: string;
 }
+
+// ─── Google Merchant ───
+
+export type MerchantStatus = "pending" | "submitted" | "approved" | "disapproved" | "error";
+
+export interface MerchantSubmission {
+  id: string;
+  product_id: string;
+  store_id: string;
+  google_product_id: string | null;
+  merchant_id: string | null;
+  status: MerchantStatus;
+  error_message: string | null;
+  google_response: Record<string, unknown> | null;
+  approval_details: Record<string, unknown> | null;
+  submitted_at: string;
+  last_synced_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MerchantEnhancementResult {
+  shipping: {
+    country: string;
+    price: string;
+    service: string;
+    min_handling_time: number;
+    max_handling_time: number;
+    min_transit_time: number;
+    max_transit_time: number;
+  };
+  category: string | null;
+  unit_pricing?: {
+    unit_pricing_measure: { value: number; unit: string };
+    unit_pricing_base_measure: { value: number; unit: string };
+  };
+}

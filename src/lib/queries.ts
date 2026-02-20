@@ -20,6 +20,7 @@ import type {
   AIContentType,
   ProductFilterParams,
   PaginatedProducts,
+  MerchantSubmission,
 } from "@/types";
 
 // ─── Store name lookup (shared by queries needing store_name) ───
@@ -890,4 +891,145 @@ export async function getRecentActivity(): Promise<Activity[]> {
   );
 
   return activities.slice(0, 10);
+}
+
+// ─── Merchant Submissions ───
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapMerchantSubmission(row: any): MerchantSubmission {
+  return {
+    id: row.id,
+    product_id: row.product_id,
+    store_id: row.store_id,
+    google_product_id: row.google_product_id ?? null,
+    merchant_id: row.merchant_id ?? null,
+    status: row.status,
+    error_message: row.error_message ?? null,
+    google_response: row.google_response ?? null,
+    approval_details: row.approval_details ?? null,
+    submitted_at: row.submitted_at ?? row.created_at,
+    last_synced_at: row.last_synced_at ?? null,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+export async function getMerchantSubmissionByProductId(
+  productId: string
+): Promise<MerchantSubmission | null> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("merchant_submissions")
+    .select("*")
+    .eq("product_id", productId)
+    .single();
+
+  if (error || !data) return null;
+  return mapMerchantSubmission(data);
+}
+
+export async function getMerchantBatchStatus(
+  productIds: string[]
+): Promise<Record<string, MerchantSubmission>> {
+  if (productIds.length === 0) return {};
+
+  const supabase = createAdminClient();
+  const result: Record<string, MerchantSubmission> = {};
+
+  // Supabase `in` filter supports up to ~1000 items; paginate if needed
+  const PAGE_SIZE = 500;
+  for (let i = 0; i < productIds.length; i += PAGE_SIZE) {
+    const chunk = productIds.slice(i, i + PAGE_SIZE);
+    const { data, error } = await supabase
+      .from("merchant_submissions")
+      .select("*")
+      .in("product_id", chunk);
+
+    if (error) {
+      console.error("getMerchantBatchStatus error:", error.message);
+      continue;
+    }
+
+    for (const row of data ?? []) {
+      result[row.product_id] = mapMerchantSubmission(row);
+    }
+  }
+
+  return result;
+}
+
+export async function saveMerchantSubmission(
+  data: Omit<MerchantSubmission, "id" | "created_at" | "updated_at">
+): Promise<MerchantSubmission | null> {
+  const supabase = createAdminClient();
+  const { data: row, error } = await supabase
+    .from("merchant_submissions")
+    .upsert(
+      {
+        product_id: data.product_id,
+        store_id: data.store_id,
+        google_product_id: data.google_product_id,
+        merchant_id: data.merchant_id,
+        status: data.status,
+        error_message: data.error_message,
+        google_response: data.google_response,
+        approval_details: data.approval_details,
+        submitted_at: data.submitted_at,
+        last_synced_at: data.last_synced_at,
+      },
+      { onConflict: "product_id" }
+    )
+    .select("*")
+    .single();
+
+  if (error || !row) {
+    console.error("saveMerchantSubmission error:", error?.message);
+    return null;
+  }
+  return mapMerchantSubmission(row);
+}
+
+export async function updateMerchantSubmission(
+  productId: string,
+  updates: Partial<
+    Pick<
+      MerchantSubmission,
+      | "status"
+      | "error_message"
+      | "google_product_id"
+      | "google_response"
+      | "approval_details"
+      | "last_synced_at"
+    >
+  >
+): Promise<MerchantSubmission | null> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("merchant_submissions")
+    .update(updates)
+    .eq("product_id", productId)
+    .select("*")
+    .single();
+
+  if (error || !data) {
+    console.error("updateMerchantSubmission error:", error?.message);
+    return null;
+  }
+  return mapMerchantSubmission(data);
+}
+
+export async function deleteMerchantSubmission(
+  productId: string
+): Promise<boolean> {
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("merchant_submissions")
+    .delete()
+    .eq("product_id", productId);
+
+  if (error) {
+    console.error("deleteMerchantSubmission error:", error.message);
+    return false;
+  }
+  return true;
 }
