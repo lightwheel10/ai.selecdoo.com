@@ -1,6 +1,6 @@
 "use client";
 
-import { Tags, PenSquare, ShoppingBag, Trash2, Loader2, AlertTriangle } from "lucide-react";
+import { Tags, PenSquare, ShoppingBag, Trash2, AlertTriangle } from "lucide-react";
 import type { Product, Store } from "@/types";
 import type { ContentEntry } from "./utils";
 import { Highlight } from "./highlight";
@@ -14,7 +14,7 @@ interface ProductCardProps {
   entry: ContentEntry | undefined;
   search: string;
   isSelected: boolean;
-  googleStatus: "none" | "sending" | "submitted" | "error";
+  googleStatus: "none" | "submitted" | "error";
   t: (key: string) => string;
   canSelect?: boolean;
   canDeleteProduct?: boolean;
@@ -233,10 +233,9 @@ export function ProductCard({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              if (googleStatus !== "sending") onSendToGoogle(product);
+              onSendToGoogle(product);
             }}
-            disabled={googleStatus === "sending"}
-            className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80 disabled:pointer-events-none"
+            className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
             style={{
               fontFamily: "var(--font-mono)",
               backgroundColor:
@@ -259,17 +258,13 @@ export function ProductCard({
                   : "#FF9F0A",
             }}
           >
-            {googleStatus === "sending" ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : googleStatus === "error" ? (
+            {googleStatus === "error" ? (
               <AlertTriangle className="w-3 h-3" />
             ) : (
               <ShoppingBag className="w-3 h-3" />
             )}
             {googleStatus === "submitted"
               ? t("sentToGoogle")
-              : googleStatus === "sending"
-              ? t("sendingToGoogle")
               : googleStatus === "error"
               ? t("googleRetry")
               : t("sendToGoogle")}

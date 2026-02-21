@@ -51,6 +51,8 @@ export async function POST(req: Request) {
       productId: string;
       success: boolean;
       googleProductId?: string;
+      merchantId?: string;
+      affiliateLink?: string;
       error?: string;
     }> = [];
 
@@ -63,6 +65,7 @@ export async function POST(req: Request) {
             productId,
             success: true,
             googleProductId: existing.google_product_id ?? undefined,
+            merchantId: existing.merchant_id ?? undefined,
             error: "already_submitted",
           });
           continue;
@@ -122,6 +125,8 @@ export async function POST(req: Request) {
           productId,
           success: submitResult.success,
           googleProductId: submitResult.googleProductId,
+          merchantId: process.env.GOOGLE_MERCHANT_ID ?? undefined,
+          affiliateLink: affiliateLink ?? undefined,
           error: submitResult.success ? undefined : "Submission failed",
         });
       } catch (err) {

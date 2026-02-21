@@ -30,6 +30,7 @@ import { Pagination } from "@/components/domain/pagination";
 import { ProductCard } from "./product-card";
 import { ContentDialog } from "./content-dialog";
 import { StoreGroupView } from "./store-group-view";
+import { GoogleMerchantModal } from "./google-merchant-modal";
 import { useFilterNavigation } from "@/hooks/use-filter-navigation";
 import {
   canDeleteProduct,
@@ -131,9 +132,11 @@ export function AIContentWorkstation({
 
   // Google Merchant — single Map tracks all statuses
   const [merchantStatus, setMerchantStatus] = useState<
-    Map<string, { status: string; errorMessage?: string; googleProductId?: string }>
+    Map<string, { status: string; errorMessage?: string; googleProductId?: string; merchantId?: string; submittedAt?: string; lastSyncedAt?: string }>
   >(new Map());
-  const [googleSendingProducts, setGoogleSendingProducts] = useState<Set<string>>(new Set());
+
+  // Google Merchant modal
+  const [merchantModalProduct, setMerchantModalProduct] = useState<Product | null>(null);
 
   // Load merchant statuses on mount
   useEffect(() => {
@@ -147,13 +150,16 @@ export function AIContentWorkstation({
       .then((res) => res.json())
       .then((data) => {
         if (data.statuses) {
-          const map = new Map<string, { status: string; errorMessage?: string; googleProductId?: string }>();
+          const map = new Map<string, { status: string; errorMessage?: string; googleProductId?: string; merchantId?: string; submittedAt?: string; lastSyncedAt?: string }>();
           for (const [pid, s] of Object.entries(data.statuses)) {
-            const sub = s as { status: string; errorMessage?: string | null; googleProductId?: string | null };
+            const sub = s as { status: string; errorMessage?: string | null; googleProductId?: string | null; merchantId?: string | null; submittedAt?: string | null; lastSyncedAt?: string | null };
             map.set(pid, {
               status: sub.status,
               errorMessage: sub.errorMessage ?? undefined,
               googleProductId: sub.googleProductId ?? undefined,
+              merchantId: sub.merchantId ?? undefined,
+              submittedAt: sub.submittedAt ?? undefined,
+              lastSyncedAt: sub.lastSyncedAt ?? undefined,
             });
           }
           setMerchantStatus(map);
@@ -577,71 +583,38 @@ export function AIContentWorkstation({
     );
   }
 
-  // Google Merchant
-  async function handleSendToGoogle(product: Product) {
-    // Already submitted? Toast and skip
-    const existing = merchantStatus.get(product.id);
-    if (existing && existing.status === "submitted") {
-      toast(t("sentToGoogle"));
-      return;
-    }
-
-    setGoogleSendingProducts((prev) => new Set(prev).add(product.id));
-
-    try {
-      const res = await fetch("/api/merchant/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productIds: [product.id] }),
-      });
-
-      const data = await res.json();
-      const result = data.results?.[0];
-
-      if (result?.success) {
-        setMerchantStatus((prev) => {
-          const next = new Map(prev);
-          next.set(product.id, {
-            status: "submitted",
-            googleProductId: result.googleProductId,
-          });
-          return next;
-        });
-        toast(t("googleSent"), {
-          description: t("googleSentDescription", { title: product.title }),
-        });
-      } else {
-        setMerchantStatus((prev) => {
-          const next = new Map(prev);
-          next.set(product.id, {
-            status: "error",
-            errorMessage: result?.error || "Unknown error",
-          });
-          return next;
-        });
-        toast.error(t("googleSendError"));
-      }
-    } catch {
-      setMerchantStatus((prev) => {
-        const next = new Map(prev);
-        next.set(product.id, {
-          status: "error",
-          errorMessage: "Network error",
-        });
-        return next;
-      });
-      toast.error(t("googleSendError"));
-    } finally {
-      setGoogleSendingProducts((prev) => {
-        const next = new Set(prev);
-        next.delete(product.id);
-        return next;
-      });
-    }
+  // Google Merchant — open modal on click
+  function handleSendToGoogle(product: Product) {
+    setMerchantModalProduct(product);
   }
 
-  function getGoogleStatus(productId: string): "none" | "sending" | "submitted" | "error" {
-    if (googleSendingProducts.has(productId)) return "sending";
+  function handleMerchantSubmitComplete(
+    productId: string,
+    result: { status: string; errorMessage?: string; googleProductId?: string; merchantId?: string }
+  ) {
+    setMerchantStatus((prev) => {
+      const next = new Map(prev);
+      const existing = prev.get(productId);
+      next.set(productId, {
+        ...existing,
+        status: result.status,
+        errorMessage: result.errorMessage,
+        googleProductId: result.googleProductId ?? existing?.googleProductId,
+        merchantId: result.merchantId ?? existing?.merchantId,
+      });
+      return next;
+    });
+  }
+
+  function handleMerchantClearComplete(productId: string) {
+    setMerchantStatus((prev) => {
+      const next = new Map(prev);
+      next.delete(productId);
+      return next;
+    });
+  }
+
+  function getGoogleStatus(productId: string): "none" | "submitted" | "error" {
     const entry = merchantStatus.get(productId);
     if (!entry) return "none";
     if (entry.status === "error") return "error";
@@ -1092,7 +1065,6 @@ export function AIContentWorkstation({
             search={filters.search}
             selectedProducts={selectedProducts}
             merchantStatus={merchantStatus}
-            googleSendingProducts={googleSendingProducts}
             allowSelection={allowDeleteProduct}
             allowDeleteProduct={allowDeleteProduct}
             allowGenerateContent={allowGenerateContent}
@@ -1142,6 +1114,32 @@ export function AIContentWorkstation({
         }}
         onSaveEdit={handleSaveEdit}
         onEditTextChange={setEditText}
+      />
+
+      {/* ── GOOGLE MERCHANT MODAL ── */}
+      <GoogleMerchantModal
+        product={merchantModalProduct}
+        store={merchantModalProduct ? storeMap[merchantModalProduct.store_id] : undefined}
+        existingSubmission={
+          merchantModalProduct
+            ? (() => {
+                const entry = merchantStatus.get(merchantModalProduct.id);
+                if (!entry) return null;
+                return {
+                  status: entry.status,
+                  googleProductId: entry.googleProductId ?? null,
+                  merchantId: entry.merchantId ?? null,
+                  errorMessage: entry.errorMessage ?? null,
+                  submittedAt: entry.submittedAt ?? null,
+                  lastSyncedAt: entry.lastSyncedAt ?? null,
+                };
+              })()
+            : null
+        }
+        t={t}
+        onClose={() => setMerchantModalProduct(null)}
+        onSubmitComplete={handleMerchantSubmitComplete}
+        onClearComplete={handleMerchantClearComplete}
       />
 
       {/* ── BULK DELETE CONFIRM DIALOG ── */}

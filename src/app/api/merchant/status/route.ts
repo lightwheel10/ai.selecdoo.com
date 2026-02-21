@@ -45,8 +45,10 @@ export async function POST(req: Request) {
       {
         status: string;
         googleProductId: string | null;
+        merchantId: string | null;
         errorMessage: string | null;
         submittedAt: string | null;
+        lastSyncedAt: string | null;
       }
     > = {};
 
@@ -54,8 +56,10 @@ export async function POST(req: Request) {
       statuses[pid] = {
         status: sub.status,
         googleProductId: sub.google_product_id,
+        merchantId: sub.merchant_id,
         errorMessage: sub.error_message,
         submittedAt: sub.submitted_at,
+        lastSyncedAt: sub.last_synced_at,
       };
     }
 

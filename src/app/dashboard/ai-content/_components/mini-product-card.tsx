@@ -5,7 +5,6 @@ import {
   PenSquare,
   ShoppingBag,
   Trash2,
-  Loader2,
   AlertTriangle,
 } from "lucide-react";
 import type { Product } from "@/types";
@@ -18,7 +17,7 @@ interface MiniProductCardProps {
   entry: ContentEntry | undefined;
   search: string;
   isSelected: boolean;
-  googleStatus: "none" | "sending" | "submitted" | "error";
+  googleStatus: "none" | "submitted" | "error";
   t: (key: string) => string;
   canSelect?: boolean;
   canDeleteProduct?: boolean;
@@ -192,10 +191,9 @@ export function MiniProductCard({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            if (googleStatus !== "sending") onSendToGoogle(product);
+            onSendToGoogle(product);
           }}
-          disabled={googleStatus === "sending"}
-          className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80 disabled:pointer-events-none"
+          className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"
           style={{
             backgroundColor:
               googleStatus === "error"
@@ -219,16 +217,12 @@ export function MiniProductCard({
           title={
             googleStatus === "submitted"
               ? t("sentToGoogle")
-              : googleStatus === "sending"
-              ? t("sendingToGoogle")
               : googleStatus === "error"
               ? t("googleRetry")
               : t("sendToGoogle")
           }
         >
-          {googleStatus === "sending" ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
-          ) : googleStatus === "error" ? (
+          {googleStatus === "error" ? (
             <AlertTriangle className="w-3 h-3" />
           ) : (
             <ShoppingBag className="w-3 h-3" />
