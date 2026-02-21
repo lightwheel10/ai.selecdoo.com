@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   createMonitoringLog,
@@ -108,7 +109,9 @@ export async function GET(req: Request) {
         );
 
         if (!apifyRes.ok) {
-          console.error(`Cron: Apify start failed for store ${store.id}:`, await apifyRes.text());
+          const apifyErrText = await apifyRes.text();
+          console.error(`Cron: Apify start failed for store ${store.id}:`, apifyErrText);
+          Sentry.captureMessage(`Cron: Apify start failed for store ${store.id}`, { level: "error", tags: { service: "apify", storeId: store.id }, extra: { status: apifyRes.status, body: apifyErrText } });
           await supabase
             .from("scrape_jobs")
             .update({ status: "failed", error_message: "Failed to start scraper" })
@@ -132,12 +135,14 @@ export async function GET(req: Request) {
         triggered++;
       } catch (err) {
         console.error(`Cron: failed to trigger store ${store.id}:`, err);
+        Sentry.captureException(err, { tags: { route: "cron/monitor", storeId: store.id } });
       }
     }
 
     return NextResponse.json({ triggered });
   } catch (err) {
     console.error("Cron monitor error:", err);
+    Sentry.captureException(err, { tags: { route: "cron/monitor" } });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

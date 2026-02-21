@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import {
   Search,
@@ -165,7 +166,7 @@ export function AIContentWorkstation({
           setMerchantStatus(map);
         }
       })
-      .catch((err) => console.error("Failed to load merchant statuses:", err));
+      .catch((err) => { console.error("Failed to load merchant statuses:", err); Sentry.captureException(err, { tags: { component: "ai-content-workstation", operation: "loadMerchantStatuses" } }); });
   }, [products]);
 
   // Modal

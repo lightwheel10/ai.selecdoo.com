@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getMapper } from "@/lib/product-mappers";
 import { detectAndLogChanges } from "@/lib/change-detection";
@@ -57,6 +58,7 @@ export async function GET(
     );
 
     if (!runRes.ok) {
+      Sentry.captureMessage(`Apify API returned ${runRes.status} for run ${job.apify_run_id}`, { level: "warning", tags: { service: "apify", jobId } });
       return NextResponse.json({ status: "running", products_found: 0, products_updated: 0 });
     }
 
@@ -76,6 +78,7 @@ export async function GET(
     // Failed
     if (runStatus === "FAILED" || runStatus === "ABORTED" || runStatus === "TIMED-OUT") {
       console.error(`Apify run ${job.apify_run_id} ended with status: ${runStatus}`);
+      Sentry.captureMessage(`Apify run failed: ${runStatus}`, { level: "error", tags: { service: "apify", jobId, runStatus }, extra: { runId: job.apify_run_id, storeId: job.store_id } });
       await supabase
         .from("scrape_jobs")
         .update({
@@ -229,6 +232,7 @@ export async function GET(
               .upsert(product, { onConflict: "hash_id" });
             if (singleErr) {
               console.error(`Upsert failed for hash_id=${product.hash_id}:`, singleErr.message);
+              Sentry.captureException(new Error(singleErr.message), { tags: { query: "productUpsert", jobId }, extra: { hashId: product.hash_id } });
             } else {
               totalUpserted += 1;
             }
@@ -278,6 +282,7 @@ export async function GET(
     });
   } catch (err) {
     console.error("Status API error:", err);
+    Sentry.captureException(err, { tags: { route: "scrape/status" } });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -1,4 +1,5 @@
 import FirecrawlApp from "@mendable/firecrawl-js";
+import * as Sentry from "@sentry/nextjs";
 
 let _client: FirecrawlApp | null = null;
 
@@ -82,7 +83,8 @@ async function mapSiteUrls(storeUrl: string): Promise<MapLink[]> {
     const links = (mapResult.links ?? []) as MapLink[];
     _mapCache.set(base, links);
     return links;
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, { tags: { service: "firecrawl", operation: "mapSiteUrls" }, extra: { storeUrl } });
     _mapCache.set(base, []);
     return [];
   }
@@ -168,6 +170,7 @@ export async function scrapeShippingPolicy(
     return sections.join("\n\n").slice(0, MAX_CHARS_TOTAL);
   } catch (err) {
     console.warn("Firecrawl scrapeShippingPolicy failed:", err);
+    Sentry.captureException(err, { tags: { service: "firecrawl", operation: "scrapeShippingPolicy" }, extra: { storeUrl } });
     return null;
   }
 }
@@ -232,6 +235,7 @@ export async function scrapeStoreDescription(
     return null;
   } catch (err) {
     console.warn("Firecrawl scrapeStoreDescription failed:", err);
+    Sentry.captureException(err, { tags: { service: "firecrawl", operation: "scrapeStoreDescription" }, extra: { storeUrl } });
     return null;
   }
 }

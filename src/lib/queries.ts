@@ -1,4 +1,5 @@
 import { cache } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type {
   Store,
@@ -49,6 +50,7 @@ export async function getStores(): Promise<Store[]> {
 
   if (error) {
     console.error("getStores error:", error.message);
+    Sentry.captureException(new Error(error.message), { tags: { query: "getStores" } });
     return [];
   }
 
@@ -123,6 +125,7 @@ export async function getProducts(): Promise<Product[]> {
 
     if (error) {
       console.error("getProducts error:", error.message);
+      Sentry.captureException(new Error(error.message), { tags: { query: "getProducts" }, extra: { offset } });
       break;
     }
 
@@ -155,6 +158,7 @@ export async function getProductsLight(): Promise<Pick<Product, "id" | "store_id
 
     if (error) {
       console.error("getProductsLight error:", error.message);
+      Sentry.captureException(new Error(error.message), { tags: { query: "getProductsLight" }, extra: { offset } });
       break;
     }
 
@@ -259,6 +263,7 @@ export async function getFilteredProducts(
 
   if (error) {
     console.error("getFilteredProducts error:", error.message);
+    Sentry.captureException(new Error(error.message), { tags: { query: "getFilteredProducts" }, extra: { page, pageSize } });
     return { products: [], totalCount: 0, page, pageSize, totalPages: 0 };
   }
 
@@ -285,6 +290,7 @@ export async function getRecentProducts(limit: number): Promise<Product[]> {
 
   if (error) {
     console.error("getRecentProducts error:", error.message);
+    Sentry.captureException(new Error(error.message), { tags: { query: "getRecentProducts" } });
     return [];
   }
 
@@ -333,6 +339,7 @@ export async function getProductById(id: string): Promise<ProductDetail | null> 
 
   if (error || !data) {
     console.error("getProductById error:", error?.message);
+    if (error) Sentry.captureException(new Error(error.message), { tags: { query: "getProductById" }, extra: { id } });
     return null;
   }
 
@@ -485,6 +492,7 @@ export async function getScrapeJobs(): Promise<ScrapeJob[]> {
 
   if (error) {
     console.error("getScrapeJobs error:", error.message);
+    Sentry.captureException(new Error(error.message), { tags: { query: "getScrapeJobs" } });
     return [];
   }
 
@@ -505,6 +513,7 @@ export async function getRecentJobs(limit: number): Promise<ScrapeJob[]> {
 
   if (error) {
     console.error("getRecentJobs error:", error.message);
+    Sentry.captureException(new Error(error.message), { tags: { query: "getRecentJobs" } });
     return [];
   }
 
@@ -541,6 +550,7 @@ export async function getProductChanges(limit = 500): Promise<ProductChange[]> {
 
   if (error) {
     console.error("getProductChanges error:", error.message);
+    Sentry.captureException(new Error(error.message), { tags: { query: "getProductChanges" } });
     return [];
   }
 
@@ -590,6 +600,7 @@ export async function getMonitoringConfigs(): Promise<MonitoringConfig[]> {
 
   if (error) {
     console.error("getMonitoringConfigs error:", error.message);
+    Sentry.captureException(new Error(error.message), { tags: { query: "getMonitoringConfigs" } });
     return [];
   }
 
@@ -624,6 +635,7 @@ export async function getMonitoringLogs(): Promise<MonitoringLog[]> {
 
   if (error) {
     console.error("getMonitoringLogs error:", error.message);
+    Sentry.captureException(new Error(error.message), { tags: { query: "getMonitoringLogs" } });
     return [];
   }
 
@@ -656,6 +668,7 @@ export async function getAIContent(): Promise<AIGeneratedContent[]> {
 
   if (error) {
     console.error("getAIContent error:", error.message);
+    Sentry.captureException(new Error(error.message), { tags: { query: "getAIContent" } });
     return [];
   }
 
@@ -697,6 +710,7 @@ export async function getAIActivityLogs(): Promise<AIActivityLog[]> {
 
   if (error) {
     console.error("getAIActivityLogs error:", error.message);
+    Sentry.captureException(new Error(error.message), { tags: { query: "getAIActivityLogs" } });
     return [];
   }
 
@@ -947,6 +961,7 @@ export async function getMerchantBatchStatus(
 
     if (error) {
       console.error("getMerchantBatchStatus error:", error.message);
+      Sentry.captureException(new Error(error.message), { tags: { query: "getMerchantBatchStatus" }, extra: { chunkIndex: i } });
       continue;
     }
 
@@ -984,6 +999,7 @@ export async function saveMerchantSubmission(
 
   if (error || !row) {
     console.error("saveMerchantSubmission error:", error?.message);
+    if (error) Sentry.captureException(new Error(error.message), { tags: { query: "saveMerchantSubmission" } });
     return null;
   }
   return mapMerchantSubmission(row);
@@ -1013,6 +1029,7 @@ export async function updateMerchantSubmission(
 
   if (error || !data) {
     console.error("updateMerchantSubmission error:", error?.message);
+    if (error) Sentry.captureException(new Error(error.message), { tags: { query: "updateMerchantSubmission" }, extra: { productId } });
     return null;
   }
   return mapMerchantSubmission(data);
@@ -1029,6 +1046,7 @@ export async function deleteMerchantSubmission(
 
   if (error) {
     console.error("deleteMerchantSubmission error:", error.message);
+    Sentry.captureException(new Error(error.message), { tags: { query: "deleteMerchantSubmission" }, extra: { productId } });
     return false;
   }
   return true;

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { getAuthContext } from "@/lib/auth/session";
 import { canSubmitToGoogleMerchant } from "@/lib/auth/roles";
 import { getProductById, getStoreById, getMerchantSubmissionByProductId, saveMerchantSubmission } from "@/lib/queries";
@@ -131,6 +132,7 @@ export async function POST(req: Request) {
         });
       } catch (err) {
         console.error(`Merchant submit error for ${productId}:`, err);
+        Sentry.captureException(err, { tags: { route: "merchant/submit", productId } });
 
         // Save error state to DB — generic message only
         await saveMerchantSubmission({
@@ -153,6 +155,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ results });
   } catch (err) {
     console.error("Merchant submit error:", err);
+    Sentry.captureException(err, { tags: { route: "merchant/submit" } });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

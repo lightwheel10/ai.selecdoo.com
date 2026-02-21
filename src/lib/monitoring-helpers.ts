@@ -1,5 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySupabaseClient = import("@supabase/supabase-js").SupabaseClient<any, any, any>;
+import * as Sentry from "@sentry/nextjs";
 import type { ChangeSummary } from "./change-detection";
 
 /**
@@ -21,6 +22,7 @@ export async function createMonitoringLog(
 
   if (error) {
     console.error("Failed to create monitoring_log:", error.message);
+    Sentry.captureException(new Error(error.message), { tags: { query: "createMonitoringLog" }, extra: { storeId } });
     return null;
   }
 
@@ -51,6 +53,7 @@ export async function completeMonitoringLog(
 
   if (error) {
     console.error("Failed to update monitoring_log:", error.message);
+    Sentry.captureException(new Error(error.message), { tags: { query: "completeMonitoringLog" }, extra: { logId } });
   }
 }
 
@@ -83,5 +86,6 @@ export async function updateMonitoringConfigTimestamps(
 
   if (error) {
     console.error("Failed to update monitoring_config timestamps:", error.message);
+    Sentry.captureException(new Error(error.message), { tags: { query: "updateMonitoringConfigTimestamps" }, extra: { storeId } });
   }
 }

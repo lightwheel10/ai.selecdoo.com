@@ -1,5 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySupabaseClient = import("@supabase/supabase-js").SupabaseClient<any, any, any>;
+import * as Sentry from "@sentry/nextjs";
 import type { MappedProduct } from "./product-mappers";
 
 export interface ChangeSummary {
@@ -148,6 +149,7 @@ export async function detectAndLogChanges(
       const { error } = await supabase.from("product_changes").insert(batch);
       if (error) {
         console.error("Failed to insert product_changes batch:", error.message);
+        Sentry.captureException(new Error(error.message), { tags: { query: "insertProductChanges" }, extra: { storeId, batchIndex: i, batchSize: batch.length } });
       }
     }
   }

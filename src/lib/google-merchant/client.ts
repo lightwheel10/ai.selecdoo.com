@@ -1,4 +1,5 @@
 import { google, type content_v2_1 } from "googleapis";
+import * as Sentry from "@sentry/nextjs";
 
 let _service: content_v2_1.Content | null = null;
 
@@ -56,6 +57,7 @@ export async function submitProduct(
     };
   } catch (err: unknown) {
     console.error("Google Merchant submitProduct error:", err);
+    Sentry.captureException(err, { tags: { service: "google-merchant", operation: "submitProduct" } });
     return { success: false, error: "Google API submission failed" };
   }
 }
@@ -100,6 +102,7 @@ export async function getProductStatus(
     };
   } catch (err: unknown) {
     console.error("Google Merchant getProductStatus error:", err);
+    Sentry.captureException(err, { tags: { service: "google-merchant", operation: "getProductStatus" }, extra: { googleProductId } });
     return { success: false, error: "Failed to check product status" };
   }
 }
@@ -119,6 +122,7 @@ export async function deleteProduct(
     return { success: true };
   } catch (err: unknown) {
     console.error("Google Merchant deleteProduct error:", err);
+    Sentry.captureException(err, { tags: { service: "google-merchant", operation: "deleteProduct" }, extra: { googleProductId } });
     return { success: false, error: "Failed to delete product" };
   }
 }

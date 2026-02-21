@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthContext } from "@/lib/auth/session";
 import { canGenerateAIContent } from "@/lib/auth/roles";
@@ -219,6 +220,7 @@ export async function POST(req: Request) {
 
     if (insertErr || !inserted) {
       console.error("AI content insert error:", insertErr);
+      if (insertErr) Sentry.captureException(new Error(insertErr.message), { tags: { route: "ai-content/generate", query: "insertAIContent" }, extra: { productId, contentType } });
       return NextResponse.json(
         { error: "Failed to save generated content" },
         { status: 500 }
@@ -242,6 +244,7 @@ export async function POST(req: Request) {
     return NextResponse.json(result);
   } catch (err) {
     console.error("AI content generate error:", err);
+    Sentry.captureException(err, { tags: { route: "ai-content/generate" } });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
