@@ -13,6 +13,8 @@ const CRON_SECRET = process.env.CRON_SECRET;
 
 const MAX_STORES_PER_RUN = 5;
 
+export const maxDuration = 60;
+
 export async function GET(req: Request) {
   try {
     // Verify cron secret
