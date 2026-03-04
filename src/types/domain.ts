@@ -198,6 +198,7 @@ export interface AIGeneratedContent {
   product_title: string | null;
   content_type: AIContentType;
   content: string;
+  webhook_response?: unknown;
   webhook_sent_at: string | null;
   webhook_status: string | null;
   created_at: string;

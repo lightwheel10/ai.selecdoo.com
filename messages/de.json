@@ -318,7 +318,9 @@
     "generateFailed": "Generierung fehlgeschlagen — siehe Fehler oben",
     "retryGenerate": "Erneut versuchen",
     "comingSoon": "Kommt bald",
-    "googleError": "Fehler"
+    "googleError": "Fehler",
+    "viewFormatted": "Formatiert",
+    "viewRaw": "Original"
   },
   "Monitoring": {
     "storeSchedules": "Shop-Zeitpläne",

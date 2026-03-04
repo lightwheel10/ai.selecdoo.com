@@ -318,7 +318,9 @@
     "generateFailed": "Generation failed — check the error above",
     "retryGenerate": "Try Again",
     "comingSoon": "Coming soon",
-    "googleError": "Error"
+    "googleError": "Error",
+    "viewFormatted": "Formatted",
+    "viewRaw": "Original"
   },
   "Monitoring": {
     "storeSchedules": "Store Schedules",

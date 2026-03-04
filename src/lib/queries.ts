@@ -737,6 +737,7 @@ function mapAIContent(row: any, storeNames: Record<string, string>): AIGenerated
     product_title: null,
     content_type: mapContentType(row.content_type),
     content: row.content,
+    webhook_response: row.webhook_response ?? null,
     webhook_sent_at: row.webhook_sent_at ?? null,
     webhook_status: row.webhook_status ?? null,
     created_at: row.created_at,

@@ -22,7 +22,7 @@ function parseN8nResponse(raw: any): string {
 
   // 2. Array with .raw object containing German fields
   if (Array.isArray(raw) && raw.length > 0 && raw[0]?.raw) {
-    return flattenGermanFields(raw[0].raw);
+    return flattenFields(raw[0].raw);
   }
 
   // 3. Object with body_text/subject (email-style)
@@ -35,7 +35,7 @@ function parseN8nResponse(raw: any): string {
 
   // 4. Object with direct German fields
   if (raw && typeof raw === "object" && !Array.isArray(raw) && (raw.h1 || raw.einleitung)) {
-    return flattenGermanFields(raw);
+    return flattenFields(raw);
   }
 
   // 5. String
@@ -47,23 +47,23 @@ function parseN8nResponse(raw: any): string {
   return JSON.stringify(raw);
 }
 
-const GERMAN_FIELD_ORDER = [
-  "h1", "einleitung", "problem", "produkt", "inhalt",
-  "vorteile", "rabatt", "countdown", "abschluss", "link",
-];
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function flattenGermanFields(obj: Record<string, any>): string {
+function flattenFields(obj: Record<string, any>): string {
   const parts: string[] = [];
-  for (const key of GERMAN_FIELD_ORDER) {
-    if (obj[key] && typeof obj[key] === "string") {
-      parts.push(obj[key]);
-    }
-  }
-  // Include any remaining fields not in the known list
-  for (const [key, value] of Object.entries(obj)) {
-    if (!GERMAN_FIELD_ORDER.includes(key) && typeof value === "string" && value.trim()) {
-      parts.push(value);
+  for (const [, value] of Object.entries(obj)) {
+    if (value == null) continue;
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed) parts.push(trimmed);
+    } else if (Array.isArray(value)) {
+      const joined = value.map((v) => String(v).trim()).filter(Boolean).join("\n");
+      if (joined) parts.push(joined);
+    } else if (typeof value === "object") {
+      const nested = flattenFields(value);
+      if (nested) parts.push(nested);
+    } else {
+      const str = String(value).trim();
+      if (str) parts.push(str);
     }
   }
   return parts.join("\n\n");
@@ -236,6 +236,7 @@ export async function POST(req: Request) {
       product_title: product.cleaned_title || product.title,
       content_type: inserted.content_type,
       content: inserted.content,
+      webhook_response: inserted.webhook_response ?? null,
       webhook_sent_at: inserted.webhook_sent_at ?? null,
       webhook_status: inserted.webhook_status ?? null,
       created_at: inserted.created_at,

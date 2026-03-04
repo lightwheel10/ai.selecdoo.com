@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Check,
   X,
@@ -269,6 +269,38 @@ export function ContentDialog({
   );
 }
 
+// ─── Format raw n8n response for display ───
+
+const SKIP_KEYS = new Set(["error", "errorMessage", "error_message", "stack", "trace"]);
+
+function formatRawResponse(raw: unknown): string {
+  // Unwrap: [{ raw: { ... }, error: "..." }] → inner object
+  let obj = raw;
+  if (Array.isArray(obj) && obj.length > 0) {
+    obj = obj[0]?.raw ?? obj[0];
+  }
+  if (typeof obj === "string") return obj;
+  if (!obj || typeof obj !== "object") return String(obj ?? "");
+
+  const lines: string[] = [];
+  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+    if (SKIP_KEYS.has(key)) continue;
+    if (value == null) continue;
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed) lines.push(`"${key}": "${trimmed}"`);
+    } else if (Array.isArray(value)) {
+      const items = value.map((v) => `"${String(v).trim()}"`).filter((v) => v !== '""');
+      if (items.length) lines.push(`"${key}":\n${items.join("\n")}`);
+    } else if (typeof value === "object") {
+      lines.push(`"${key}": "${JSON.stringify(value)}"`);
+    } else {
+      lines.push(`"${key}": "${String(value)}"`);
+    }
+  }
+  return lines.join("\n\n");
+}
+
 // ─── Content View (existing content) ───
 
 function ContentView({
@@ -306,6 +338,9 @@ function ContentView({
   onSaveEdit: (productId: string, contentType: "deal_post" | "social_post") => void;
   onEditTextChange: (text: string) => void;
 }) {
+  const [viewMode, setViewMode] = useState<"formatted" | "raw">(
+    content.webhook_response ? "raw" : "formatted"
+  );
   const isEditing = editingContent === content.id;
   const accentColor = contentType === "deal_post" ? "#22C55E" : "#5AC8FA";
 
@@ -395,13 +430,48 @@ function ContentView({
                 {t("generatedByAi")}
               </span>
               <span
-                className="ml-auto text-[9px] font-bold uppercase tracking-[0.15em]"
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  color: "var(--muted-foreground)",
-                }}
+                className="ml-auto flex items-center gap-2"
               >
-                {t("chars", { count: content.content.length })}
+                {!!content.webhook_response && (
+                  <span className="flex" style={{ border: "2px solid var(--border)" }}>
+                    <button
+                      onClick={() => setViewMode("formatted")}
+                      className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-colors"
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        backgroundColor: viewMode === "formatted" ? "var(--primary-muted)" : "transparent",
+                        color: viewMode === "formatted" ? "var(--primary-text)" : "var(--muted-foreground)",
+                        borderRight: "2px solid var(--border)",
+                      }}
+                    >
+                      {t("viewFormatted")}
+                    </button>
+                    <button
+                      onClick={() => setViewMode("raw")}
+                      className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-colors"
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        backgroundColor: viewMode === "raw" ? "var(--primary-muted)" : "transparent",
+                        color: viewMode === "raw" ? "var(--primary-text)" : "var(--muted-foreground)",
+                      }}
+                    >
+                      {t("viewRaw")}
+                    </button>
+                  </span>
+                )}
+                <span
+                  className="text-[9px] font-bold uppercase tracking-[0.15em]"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--muted-foreground)",
+                  }}
+                >
+                  {t("chars", {
+                    count: viewMode === "raw" && content.webhook_response
+                      ? formatRawResponse(content.webhook_response).length
+                      : content.content.length,
+                  })}
+                </span>
               </span>
             </div>
 
@@ -413,17 +483,31 @@ function ContentView({
                 overflowY: "auto",
               }}
             >
-              <p
-                className="text-[12px] leading-[1.7]"
-                style={{
-                  color: "var(--foreground)",
-                  opacity: 0.9,
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                }}
-              >
-                {content.content}
-              </p>
+              {viewMode === "raw" && content.webhook_response ? (
+                <p
+                  className="text-[12px] leading-[1.7]"
+                  style={{
+                    color: "var(--foreground)",
+                    opacity: 0.9,
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {formatRawResponse(content.webhook_response)}
+                </p>
+              ) : (
+                <p
+                  className="text-[12px] leading-[1.7]"
+                  style={{
+                    color: "var(--foreground)",
+                    opacity: 0.9,
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {content.content}
+                </p>
+              )}
             </div>
 
             {/* Card footer — timestamp */}
