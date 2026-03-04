@@ -44,6 +44,7 @@ export default async function ProductsPage({ searchParams }: Props) {
       maxPrice: maxPrice !== undefined && !isNaN(maxPrice) ? maxPrice : undefined,
       page,
       pageSize: 24,
+      randomize: true,
     }),
     getStores(),
     getAIContent(),
