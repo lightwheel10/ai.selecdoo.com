@@ -3,9 +3,8 @@
 import {
   Tags,
   PenSquare,
-  ShoppingBag,
+  ExternalLink,
   Trash2,
-  AlertTriangle,
 } from "lucide-react";
 import type { Product } from "@/types";
 import type { ContentEntry } from "./utils";
@@ -17,7 +16,6 @@ interface MiniProductCardProps {
   entry: ContentEntry | undefined;
   search: string;
   isSelected: boolean;
-  googleStatus: "none" | "submitted" | "error";
   t: (key: string) => string;
   canSelect?: boolean;
   canDeleteProduct?: boolean;
@@ -27,7 +25,6 @@ interface MiniProductCardProps {
     contentType: "deal_post" | "social_post"
   ) => void;
   onToggleSelect: (productId: string) => void;
-  onSendToGoogle: (product: Product) => void;
   onDelete?: (product: Product) => void;
 }
 
@@ -36,14 +33,12 @@ export function MiniProductCard({
   entry,
   search,
   isSelected,
-  googleStatus,
   t,
   canSelect = true,
   canDeleteProduct = false,
   canGenerateContent = true,
   onOpenModal,
   onToggleSelect,
-  onSendToGoogle,
   onDelete,
 }: MiniProductCardProps) {
   const hasDiscount =
@@ -187,47 +182,24 @@ export function MiniProductCard({
           <PenSquare className="w-3 h-3" />
         </button>
 
-        {/* Google Merchant */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onSendToGoogle(product);
-          }}
-          className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"
-          style={{
-            backgroundColor:
-              googleStatus === "error"
-                ? "#FF453A12"
-                : googleStatus === "submitted"
-                ? "#FF9F0A"
-                : "#FF9F0A12",
-            border:
-              googleStatus === "error"
-                ? "1.5px solid #FF453A"
-                : googleStatus === "submitted"
-                ? "1.5px solid #FF9F0A"
-                : "1.5px solid #FF9F0A40",
-            color:
-              googleStatus === "error"
-                ? "#FF453A"
-                : googleStatus === "submitted"
-                ? "var(--primary-foreground)"
-                : "#FF9F0A",
-          }}
-          title={
-            googleStatus === "submitted"
-              ? t("sentToGoogle")
-              : googleStatus === "error"
-              ? t("googleRetry")
-              : t("sendToGoogle")
-          }
-        >
-          {googleStatus === "error" ? (
-            <AlertTriangle className="w-3 h-3" />
-          ) : (
-            <ShoppingBag className="w-3 h-3" />
-          )}
-        </button>
+        {/* Visit Product */}
+        {product.product_url && (
+          <a
+            href={product.product_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"
+            style={{
+              backgroundColor: "var(--input)",
+              border: "1.5px solid var(--border)",
+              color: "var(--muted-foreground)",
+            }}
+            title={t("productCheck")}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        )}
 
         {canDeleteProduct && onDelete && (
           <button

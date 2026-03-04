@@ -1,6 +1,6 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
+
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import {
   Search,
@@ -31,7 +31,7 @@ import { Pagination } from "@/components/domain/pagination";
 import { ProductCard } from "./product-card";
 import { ContentDialog } from "./content-dialog";
 import { StoreGroupView } from "./store-group-view";
-import { GoogleMerchantModal } from "./google-merchant-modal";
+
 import { useFilterNavigation } from "@/hooks/use-filter-navigation";
 import {
   canDeleteProduct,
@@ -107,7 +107,6 @@ export function AIContentWorkstation({
 
   // Client-only filters (not in URL)
   const [contentStatusFilters, setContentStatusFilters] = useState<string[]>([]);
-  const [googleFilter, setGoogleFilter] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(true);
   const [expandedStores, setExpandedStores] = useState<Set<string>>(new Set());
@@ -130,44 +129,6 @@ export function AIContentWorkstation({
 
   // Selection
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
-
-  // Google Merchant — single Map tracks all statuses
-  const [merchantStatus, setMerchantStatus] = useState<
-    Map<string, { status: string; errorMessage?: string; googleProductId?: string; merchantId?: string; submittedAt?: string; lastSyncedAt?: string }>
-  >(new Map());
-
-  // Google Merchant modal
-  const [merchantModalProduct, setMerchantModalProduct] = useState<Product | null>(null);
-
-  // Load merchant statuses on mount
-  useEffect(() => {
-    const ids = products.map((p) => p.id);
-    if (ids.length === 0) return;
-    fetch("/api/merchant/status", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productIds: ids }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.statuses) {
-          const map = new Map<string, { status: string; errorMessage?: string; googleProductId?: string; merchantId?: string; submittedAt?: string; lastSyncedAt?: string }>();
-          for (const [pid, s] of Object.entries(data.statuses)) {
-            const sub = s as { status: string; errorMessage?: string | null; googleProductId?: string | null; merchantId?: string | null; submittedAt?: string | null; lastSyncedAt?: string | null };
-            map.set(pid, {
-              status: sub.status,
-              errorMessage: sub.errorMessage ?? undefined,
-              googleProductId: sub.googleProductId ?? undefined,
-              merchantId: sub.merchantId ?? undefined,
-              submittedAt: sub.submittedAt ?? undefined,
-              lastSyncedAt: sub.lastSyncedAt ?? undefined,
-            });
-          }
-          setMerchantStatus(map);
-        }
-      })
-      .catch((err) => { console.error("Failed to load merchant statuses:", err); Sentry.captureException(err, { tags: { component: "ai-content-workstation", operation: "loadMerchantStatuses" } }); });
-  }, [products]);
 
   // Modal
   const [modal, setModal] = useState<{
@@ -202,7 +163,7 @@ export function AIContentWorkstation({
   // ── Derived ──
   const contentMap = useMemo(() => buildContentMap(localContent), [localContent]);
 
-  // Client-side filtering (content status + google merchant only)
+  // Client-side filtering (content status)
   const filtered = useMemo(() => {
     let result = localProducts;
 
@@ -221,18 +182,8 @@ export function AIContentWorkstation({
       });
     }
 
-    if (googleFilter) {
-      result = result.filter((p) => {
-        const entry = merchantStatus.get(p.id);
-        const isSent = entry != null && entry.status !== "error";
-        if (googleFilter === "added") return isSent;
-        if (googleFilter === "not_added") return !isSent;
-        return true;
-      });
-    }
-
     return result;
-  }, [localProducts, contentStatusFilters, googleFilter, contentMap, merchantStatus]);
+  }, [localProducts, contentStatusFilters, contentMap]);
 
   // Content status counts (for filter badges)
   const contentCounts = useMemo(() => {
@@ -296,7 +247,7 @@ export function AIContentWorkstation({
       .sort((a, b) => b.products.length - a.products.length);
   }, [filtered, contentMap, storeMap]);
 
-  const hasClientFilter = contentStatusFilters.length > 0 || googleFilter;
+  const hasClientFilter = contentStatusFilters.length > 0;
   const hasServerFilter = filters.storeIds.length > 0 || filters.discountFilter || filters.search;
   const hasAnyFilter = hasClientFilter || hasServerFilter;
 
@@ -322,11 +273,6 @@ export function AIContentWorkstation({
     { label: t("discount50"), value: "50" },
   ];
 
-  const googleMerchantOptions = [
-    { label: t("googleAdded"), value: "added" },
-    { label: t("googleNotAdded"), value: "not_added" },
-  ];
-
   const sortDiscountOptions = [
     { label: t("highToLow"), value: "desc" },
     { label: t("lowToHigh"), value: "asc" },
@@ -345,7 +291,6 @@ export function AIContentWorkstation({
 
   function clearAll() {
     setContentStatusFilters([]);
-    setGoogleFilter(null);
     setSearchInput("");
     clearUrlFilters();
   }
@@ -582,44 +527,6 @@ export function AIContentWorkstation({
         store: storeMap[storeId]?.name || "Store",
       })
     );
-  }
-
-  // Google Merchant — open modal on click
-  function handleSendToGoogle(product: Product) {
-    setMerchantModalProduct(product);
-  }
-
-  function handleMerchantSubmitComplete(
-    productId: string,
-    result: { status: string; errorMessage?: string; googleProductId?: string; merchantId?: string }
-  ) {
-    setMerchantStatus((prev) => {
-      const next = new Map(prev);
-      const existing = prev.get(productId);
-      next.set(productId, {
-        ...existing,
-        status: result.status,
-        errorMessage: result.errorMessage,
-        googleProductId: result.googleProductId ?? existing?.googleProductId,
-        merchantId: result.merchantId ?? existing?.merchantId,
-      });
-      return next;
-    });
-  }
-
-  function handleMerchantClearComplete(productId: string) {
-    setMerchantStatus((prev) => {
-      const next = new Map(prev);
-      next.delete(productId);
-      return next;
-    });
-  }
-
-  function getGoogleStatus(productId: string): "none" | "submitted" | "error" {
-    const entry = merchantStatus.get(productId);
-    if (!entry) return "none";
-    if (entry.status === "error") return "error";
-    return "submitted";
   }
 
   // Selection
@@ -967,13 +874,6 @@ export function AIContentWorkstation({
             onChange={(v) => setFilter("discount", v)}
           />
           <SimpleFilter
-            label={t("googleMerchant")}
-            resetLabel={t("googleAll")}
-            options={googleMerchantOptions}
-            value={googleFilter}
-            onChange={setGoogleFilter}
-          />
-          <SimpleFilter
             label={t("sortDiscount")}
             resetLabel={t("noSort")}
             options={sortDiscountOptions}
@@ -1036,14 +936,12 @@ export function AIContentWorkstation({
                     entry={contentMap.get(product.id)}
                     search={filters.search}
                     isSelected={selectedProducts.has(product.id)}
-                    googleStatus={getGoogleStatus(product.id)}
                     t={t}
                     canSelect={allowDeleteProduct}
                     canDeleteProduct={allowDeleteProduct}
                     canGenerateContent={allowGenerateContent}
                     onOpenModal={openModal}
                     onToggleSelect={toggleSelect}
-                    onSendToGoogle={handleSendToGoogle}
                     onDelete={allowDeleteProduct ? handleDeleteProduct : undefined}
                   />
                 ))}
@@ -1065,7 +963,6 @@ export function AIContentWorkstation({
             contentMap={contentMap}
             search={filters.search}
             selectedProducts={selectedProducts}
-            merchantStatus={merchantStatus}
             allowSelection={allowDeleteProduct}
             allowDeleteProduct={allowDeleteProduct}
             allowGenerateContent={allowGenerateContent}
@@ -1078,7 +975,6 @@ export function AIContentWorkstation({
             onOpenModal={openModal}
             onToggleSelect={toggleSelect}
             onToggleStoreProducts={handleToggleStoreProducts}
-            onSendToGoogle={handleSendToGoogle}
             onDeleteProduct={allowDeleteProduct ? handleDeleteProduct : undefined}
           />
         )}
@@ -1115,32 +1011,6 @@ export function AIContentWorkstation({
         }}
         onSaveEdit={handleSaveEdit}
         onEditTextChange={setEditText}
-      />
-
-      {/* ── GOOGLE MERCHANT MODAL ── */}
-      <GoogleMerchantModal
-        product={merchantModalProduct}
-        store={merchantModalProduct ? storeMap[merchantModalProduct.store_id] : undefined}
-        existingSubmission={
-          merchantModalProduct
-            ? (() => {
-                const entry = merchantStatus.get(merchantModalProduct.id);
-                if (!entry) return null;
-                return {
-                  status: entry.status,
-                  googleProductId: entry.googleProductId ?? null,
-                  merchantId: entry.merchantId ?? null,
-                  errorMessage: entry.errorMessage ?? null,
-                  submittedAt: entry.submittedAt ?? null,
-                  lastSyncedAt: entry.lastSyncedAt ?? null,
-                };
-              })()
-            : null
-        }
-        t={t}
-        onClose={() => setMerchantModalProduct(null)}
-        onSubmitComplete={handleMerchantSubmitComplete}
-        onClearComplete={handleMerchantClearComplete}
       />
 
       {/* ── BULK DELETE CONFIRM DIALOG ── */}

@@ -18,7 +18,6 @@ export const APP_PERMISSIONS = [
   "product:delete",
   "ai_content:generate",
   "ai_content:edit",
-  "google_merchant:submit",
 ] as const;
 
 export type AppPermission = (typeof APP_PERMISSIONS)[number];
@@ -63,7 +62,6 @@ const DEFAULT_ROLE_PERMISSIONS: Record<AppRole, readonly AppPermission[]> = {
     "monitoring:run",
     "ai_content:generate",
     "ai_content:edit",
-    "google_merchant:submit",
   ],
   viewer: ["scrape:view", "products:access", "ai_content:access"],
 };
@@ -176,8 +174,4 @@ export function canGenerateAIContent(subject: PermissionSubject): boolean {
 
 export function canEditAIContent(subject: PermissionSubject): boolean {
   return hasPermission(subject, "ai_content:edit");
-}
-
-export function canSubmitToGoogleMerchant(subject: PermissionSubject): boolean {
-  return hasPermission(subject, "google_merchant:submit");
 }

@@ -17,7 +17,6 @@ interface StoreGroupViewProps {
   contentMap: Map<string, ContentEntry>;
   search: string;
   selectedProducts: Set<string>;
-  merchantStatus: Map<string, { status: string; errorMessage?: string; googleProductId?: string }>;
   allowSelection: boolean;
   allowDeleteProduct: boolean;
   allowGenerateContent: boolean;
@@ -42,7 +41,6 @@ interface StoreGroupViewProps {
   ) => void;
   onToggleSelect: (productId: string) => void;
   onToggleStoreProducts: (productIds: string[]) => void;
-  onSendToGoogle: (product: Product) => void;
   onDeleteProduct?: (product: Product) => void;
 }
 
@@ -52,7 +50,6 @@ export function StoreGroupView({
   contentMap,
   search,
   selectedProducts,
-  merchantStatus,
   allowSelection,
   allowDeleteProduct,
   allowGenerateContent,
@@ -65,16 +62,8 @@ export function StoreGroupView({
   onOpenModal,
   onToggleSelect,
   onToggleStoreProducts,
-  onSendToGoogle,
   onDeleteProduct,
 }: StoreGroupViewProps) {
-  function getGoogleStatus(productId: string): "none" | "submitted" | "error" {
-    const entry = merchantStatus.get(productId);
-    if (!entry) return "none";
-    if (entry.status === "error") return "error";
-    return "submitted";
-  }
-
   return (
     <>
       {/* Expand/Collapse controls */}
@@ -128,13 +117,6 @@ export function StoreGroupView({
           {storeGroups.map((group) => {
             const isExpanded = expandedStores.has(group.store.id);
             const isBulkGen = bulkGenerating?.storeId === group.store.id;
-
-            // Compute per-store google count
-            let googleCount = 0;
-            for (const p of group.products) {
-              const ms = merchantStatus.get(p.id);
-              if (ms && ms.status !== "error") googleCount++;
-            }
 
             // Per-store selection
             const storeProductIds = group.products.map((p) => p.id);
@@ -203,12 +185,6 @@ export function StoreGroupView({
                           count: group.postCount,
                         })}
                         color="#5AC8FA"
-                      />
-                      <StatPill
-                        label={t("storeGoogleCount", {
-                          count: googleCount,
-                        })}
-                        color="#FF9F0A"
                       />
                       {group.avgDiscount > 0 && (
                         <StatPill
@@ -381,14 +357,12 @@ export function StoreGroupView({
                           entry={contentMap.get(product.id)}
                           search={search}
                           isSelected={selectedProducts.has(product.id)}
-                          googleStatus={getGoogleStatus(product.id)}
                           t={t}
                           canSelect={allowSelection}
                           canDeleteProduct={allowDeleteProduct}
                           canGenerateContent={allowGenerateContent}
                           onOpenModal={onOpenModal}
                           onToggleSelect={onToggleSelect}
-                          onSendToGoogle={onSendToGoogle}
                           onDelete={onDeleteProduct}
                         />
                       ))}

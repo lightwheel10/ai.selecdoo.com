@@ -1,6 +1,6 @@
 "use client";
 
-import { Tags, PenSquare, ShoppingBag, Trash2, AlertTriangle } from "lucide-react";
+import { Tags, PenSquare, ExternalLink, Trash2 } from "lucide-react";
 import type { Product, Store } from "@/types";
 import type { ContentEntry } from "./utils";
 import { Highlight } from "./highlight";
@@ -14,14 +14,12 @@ interface ProductCardProps {
   entry: ContentEntry | undefined;
   search: string;
   isSelected: boolean;
-  googleStatus: "none" | "submitted" | "error";
   t: (key: string) => string;
   canSelect?: boolean;
   canDeleteProduct?: boolean;
   canGenerateContent?: boolean;
   onOpenModal: (product: Product, contentType: "deal_post" | "social_post") => void;
   onToggleSelect: (productId: string) => void;
-  onSendToGoogle: (product: Product) => void;
   onDelete?: (product: Product) => void;
 }
 
@@ -31,14 +29,12 @@ export function ProductCard({
   entry,
   search,
   isSelected,
-  googleStatus,
   t,
   canSelect = true,
   canDeleteProduct = false,
   canGenerateContent = true,
   onOpenModal,
   onToggleSelect,
-  onSendToGoogle,
   onDelete,
 }: ProductCardProps) {
   const hasDiscount =
@@ -229,46 +225,24 @@ export function ProductCard({
             </button>
           </div>
 
-          {/* Row 2: Product Check (full width) */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onSendToGoogle(product);
-            }}
-            className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
-            style={{
-              fontFamily: "var(--font-mono)",
-              backgroundColor:
-                googleStatus === "error"
-                  ? "#FF453A12"
-                  : googleStatus === "submitted"
-                  ? "#FF9F0A"
-                  : "#FF9F0A12",
-              border:
-                googleStatus === "error"
-                  ? "1.5px solid #FF453A"
-                  : googleStatus === "submitted"
-                  ? "1.5px solid #FF9F0A"
-                  : "1.5px solid #FF9F0A40",
-              color:
-                googleStatus === "error"
-                  ? "#FF453A"
-                  : googleStatus === "submitted"
-                  ? "var(--primary-foreground)"
-                  : "#FF9F0A",
-            }}
-          >
-            {googleStatus === "error" ? (
-              <AlertTriangle className="w-3 h-3" />
-            ) : (
-              <ShoppingBag className="w-3 h-3" />
-            )}
-            {googleStatus === "submitted"
-              ? t("sentToGoogle")
-              : googleStatus === "error"
-              ? t("googleRetry")
-              : t("sendToGoogle")}
-          </button>
+          {/* Row 2: Visit Product (full width) */}
+          {product.product_url && (
+            <a
+              href={product.product_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
+              style={{
+                fontFamily: "var(--font-mono)",
+                backgroundColor: "var(--input)",
+                border: "1.5px solid var(--border)",
+                color: "var(--muted-foreground)",
+              }}
+            >
+              <ExternalLink className="w-3 h-3" />
+              {t("productCheck")}
+            </a>
+          )}
         </div>
       </div>
     </div>
