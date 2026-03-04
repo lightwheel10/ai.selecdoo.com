@@ -180,37 +180,19 @@ export async function getProductsLight(): Promise<Pick<Product, "id" | "store_id
 
 const DEFAULT_PAGE_SIZE = 24;
 
-export async function getFilteredProducts(
-  params: ProductFilterParams
-): Promise<PaginatedProducts> {
-  const supabase = createAdminClient();
-  const page = params.page ?? 1;
-  const pageSize = params.pageSize ?? DEFAULT_PAGE_SIZE;
-  const offset = (page - 1) * pageSize;
-
-  let query = supabase
-    .from("products")
-    .select(PRODUCT_LIST_COLUMNS, { count: "exact" })
-    .is("deleted_at", null);
-
-  // Store filter (single)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyProductFilters(query: any, params: ProductFilterParams): any {
   if (params.storeId) {
     query = query.eq("store_id", params.storeId);
   }
-
-  // Store filter (multi)
   if (params.storeIds && params.storeIds.length > 0) {
     query = query.in("store_id", params.storeIds);
   }
-
-  // Stock filter
   if (params.stockFilter === "in_stock") {
     query = query.eq("in_stock", true);
   } else if (params.stockFilter === "out_of_stock") {
     query = query.eq("in_stock", false);
   }
-
-  // Discount filter
   if (params.discountFilter) {
     switch (params.discountFilter) {
       case "none":
@@ -228,34 +210,100 @@ export async function getFilteredProducts(
       }
     }
   }
-
-  // Price range
   if (params.minPrice !== undefined && !isNaN(params.minPrice)) {
     query = query.gte("price", params.minPrice);
   }
   if (params.maxPrice !== undefined && !isNaN(params.maxPrice)) {
     query = query.lte("price", params.maxPrice);
   }
-
-  // Brand filter (multi)
   if (params.brands && params.brands.length > 0) {
     query = query.in("brand", params.brands);
   }
-
-  // Search
   if (params.search && params.search.trim()) {
     const q = `%${params.search.trim()}%`;
     query = query.or(
       `cleaned_title.ilike.${q},title.ilike.${q},brand.ilike.${q},sku.ilike.${q}`
     );
   }
+  return query;
+}
 
-  // Sort
+function shuffleArray<T>(array: T[]): T[] {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+export async function getFilteredProducts(
+  params: ProductFilterParams
+): Promise<PaginatedProducts> {
+  const supabase = createAdminClient();
+  const page = params.page ?? 1;
+  const pageSize = params.pageSize ?? DEFAULT_PAGE_SIZE;
+  const emptyResult = { products: [], totalCount: 0, page, pageSize, totalPages: 0 };
+
+  if (params.randomize) {
+    // 1. Lightweight count-only query
+    let countQuery = supabase
+      .from("products")
+      .select("id", { count: "exact", head: true })
+      .is("deleted_at", null);
+    countQuery = applyProductFilters(countQuery, params);
+
+    const { count, error: countError } = await countQuery;
+    if (countError) {
+      console.error("getFilteredProducts count error:", countError.message);
+      Sentry.captureException(new Error(countError.message), { tags: { query: "getFilteredProducts" } });
+      return emptyResult;
+    }
+
+    const totalCount = count ?? 0;
+    if (totalCount === 0) return emptyResult;
+
+    // 2. Pick a random offset
+    const maxOffset = Math.max(0, totalCount - pageSize);
+    const randomOffset = Math.floor(Math.random() * (maxOffset + 1));
+
+    // 3. Fetch data from the random offset
+    let dataQuery = supabase
+      .from("products")
+      .select(PRODUCT_LIST_COLUMNS)
+      .is("deleted_at", null);
+    dataQuery = applyProductFilters(dataQuery, params);
+    dataQuery = dataQuery.range(randomOffset, randomOffset + pageSize - 1);
+
+    const { data, error: dataError } = await dataQuery;
+    if (dataError) {
+      console.error("getFilteredProducts data error:", dataError.message);
+      Sentry.captureException(new Error(dataError.message), { tags: { query: "getFilteredProducts" } });
+      return emptyResult;
+    }
+
+    return {
+      products: shuffleArray((data ?? []).map(mapProduct)),
+      totalCount,
+      page,
+      pageSize,
+      totalPages: Math.ceil(totalCount / pageSize),
+    };
+  }
+
+  // ── Standard sorted path ──
+  const offset = (page - 1) * pageSize;
+
+  let query = supabase
+    .from("products")
+    .select(PRODUCT_LIST_COLUMNS, { count: "exact" })
+    .is("deleted_at", null);
+
+  query = applyProductFilters(query, params);
+
   const sortBy = params.sortBy ?? "updated_at";
   const sortDir = params.sortDir ?? "desc";
   query = query.order(sortBy, { ascending: sortDir === "asc" });
-
-  // Pagination
   query = query.range(offset, offset + pageSize - 1);
 
   const { data, error, count } = await query;
@@ -263,7 +311,7 @@ export async function getFilteredProducts(
   if (error) {
     console.error("getFilteredProducts error:", error.message);
     Sentry.captureException(new Error(error.message), { tags: { query: "getFilteredProducts" }, extra: { page, pageSize } });
-    return { products: [], totalCount: 0, page, pageSize, totalPages: 0 };
+    return emptyResult;
   }
 
   const totalCount = count ?? 0;

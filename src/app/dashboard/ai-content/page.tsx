@@ -48,6 +48,7 @@ export default async function AIContentPage({ searchParams }: Props) {
       sortDir,
       page,
       pageSize: 12,
+      randomize: !sortBy,
     }),
     getStores(),
     getAIContent(),

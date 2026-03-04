@@ -255,6 +255,7 @@ export interface ProductFilterParams {
   sortDir?: "asc" | "desc";
   page?: number;
   pageSize?: number;
+  randomize?: boolean;
 }
 
 export interface PaginatedProducts {
