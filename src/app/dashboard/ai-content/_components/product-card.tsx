@@ -1,8 +1,9 @@
 "use client";
 
-import { Tags, PenSquare, ExternalLink, Trash2 } from "lucide-react";
-import type { Product, Store } from "@/types";
+import { Tags, PenSquare, Globe, Megaphone, ExternalLink, Trash2 } from "lucide-react";
+import type { Product, Store, AIContentType } from "@/types";
 import type { ContentEntry } from "./utils";
+import { CONTENT_TYPE_CONFIG } from "./utils";
 import { Highlight } from "./highlight";
 import { ContentStatusBadge } from "./content-status-badge";
 import { StatusBadge } from "@/components/domain/status-badge";
@@ -18,7 +19,7 @@ interface ProductCardProps {
   canSelect?: boolean;
   canDeleteProduct?: boolean;
   canGenerateContent?: boolean;
-  onOpenModal: (product: Product, contentType: "deal_post" | "social_post") => void;
+  onOpenModal: (product: Product, contentType: AIContentType) => void;
   onToggleSelect: (productId: string) => void;
   onDelete?: (product: Product) => void;
 }
@@ -40,8 +41,16 @@ export function ProductCard({
   const hasDiscount =
     product.discount_percentage && product.discount_percentage > 0;
 
-  const canOpenDeal = Boolean(entry?.hasDeal) || canGenerateContent;
-  const canOpenPost = Boolean(entry?.hasPost) || canGenerateContent;
+  const contentButtons: {
+    type: AIContentType;
+    icon: typeof Tags;
+    hasContent: boolean;
+  }[] = [
+    { type: "deal_post", icon: Tags, hasContent: entry?.hasDeal || false },
+    { type: "social_post", icon: PenSquare, hasContent: entry?.hasPost || false },
+    { type: "website_text", icon: Globe, hasContent: entry?.hasWebsite || false },
+    { type: "facebook_ad", icon: Megaphone, hasContent: entry?.hasFacebook || false },
+  ];
 
   return (
     <div
@@ -111,6 +120,8 @@ export function ProductCard({
           <ContentStatusBadge
             hasDeal={entry?.hasDeal || false}
             hasPost={entry?.hasPost || false}
+            hasWebsite={entry?.hasWebsite || false}
+            hasFacebook={entry?.hasFacebook || false}
             t={t}
           />
         </div>
@@ -184,66 +195,53 @@ export function ProductCard({
           )}
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col gap-1.5">
-          {/* Row 1: Deal + Post */}
-          <div className="flex gap-1.5">
-            <button
-              onClick={() => onOpenModal(product, "deal_post")}
-              disabled={!canOpenDeal}
-              className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
-              style={{
-                fontFamily: "var(--font-mono)",
-                backgroundColor: entry?.hasDeal ? "#22C55E" : "#22C55E12",
-                border: entry?.hasDeal
-                  ? "1.5px solid #22C55E"
-                  : "1.5px solid #22C55E40",
-                color: entry?.hasDeal ? "var(--primary-foreground)" : "#22C55E",
-                opacity: canOpenDeal ? 1 : 0.45,
-              }}
-            >
-              <Tags className="w-3 h-3" />
-              {entry?.hasDeal ? t("viewDeal") : t("generateDeal")}
-            </button>
+        {/* Action Buttons — 2x2 grid */}
+        <div className="grid grid-cols-2 gap-1.5">
 
-            <button
-              onClick={() => onOpenModal(product, "social_post")}
-              disabled={!canOpenPost}
-              className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
-              style={{
-                fontFamily: "var(--font-mono)",
-                backgroundColor: entry?.hasPost ? "#5AC8FA" : "#5AC8FA12",
-                border: entry?.hasPost
-                  ? "1.5px solid #5AC8FA"
-                  : "1.5px solid #5AC8FA40",
-                color: entry?.hasPost ? "var(--primary-foreground)" : "#5AC8FA",
-                opacity: canOpenPost ? 1 : 0.45,
-              }}
-            >
-              <PenSquare className="w-3 h-3" />
-              {entry?.hasPost ? t("viewPost") : t("generatePost")}
-            </button>
-          </div>
-
-          {/* Row 2: Visit Product (full width) */}
-          {product.product_url && (
-            <a
-              href={product.product_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
-              style={{
-                fontFamily: "var(--font-mono)",
-                backgroundColor: "var(--input)",
-                border: "1.5px solid var(--border)",
-                color: "var(--muted-foreground)",
-              }}
-            >
-              <ExternalLink className="w-3 h-3" />
-              {t("productCheck")}
-            </a>
-          )}
+          {contentButtons.map(({ type, icon: Icon, hasContent }) => {
+            const cfg = CONTENT_TYPE_CONFIG[type];
+            const canOpen = hasContent || canGenerateContent;
+            return (
+              <button
+                key={type}
+                onClick={() => onOpenModal(product, type)}
+                disabled={!canOpen}
+                className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[8px] font-bold uppercase tracking-[0.1em] transition-all duration-150 hover:opacity-80"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  backgroundColor: hasContent ? cfg.color : `${cfg.color}12`,
+                  border: hasContent
+                    ? `1.5px solid ${cfg.color}`
+                    : `1.5px solid ${cfg.color}40`,
+                  color: hasContent ? "var(--primary-foreground)" : cfg.color,
+                  opacity: canOpen ? 1 : 0.45,
+                }}
+              >
+                <Icon className="w-3 h-3 flex-shrink-0" />
+                {hasContent ? t(cfg.viewKey) : t(cfg.genKey)}
+              </button>
+            );
+          })}
         </div>
+
+        {/* Visit Product */}
+        {product.product_url && (
+          <a
+            href={product.product_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-1.5 w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
+            style={{
+              fontFamily: "var(--font-mono)",
+              backgroundColor: "var(--input)",
+              border: "1.5px solid var(--border)",
+              color: "var(--muted-foreground)",
+            }}
+          >
+            <ExternalLink className="w-3 h-3" />
+            {t("productCheck")}
+          </a>
+        )}
       </div>
     </div>
   );

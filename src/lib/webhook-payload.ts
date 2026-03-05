@@ -293,7 +293,7 @@ export function buildSendPayload(
   store: any,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   aiContent: any,
-  contentType: "deal_post" | "social_post",
+  contentType: string,
   config: WebhookFieldConfig
 ) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import type { Product, Store, AIGeneratedContent } from "@/types";
+import type { Product, Store, AIGeneratedContent, AIContentType } from "@/types";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,7 @@ import {
 
 import {
   buildContentMap,
+  CONTENT_TYPE_CONFIG,
   type StoreGroupData,
 } from "./utils";
 import { MultiSearchableFilter, MultiSimpleFilter, SimpleFilter, ToggleGroup } from "./filters";
@@ -133,7 +134,7 @@ export function AIContentWorkstation({
   // Modal
   const [modal, setModal] = useState<{
     product: Product;
-    contentType: "deal_post" | "social_post";
+    contentType: AIContentType;
   } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [editingContent, setEditingContent] = useState<string | null>(null);
@@ -145,7 +146,7 @@ export function AIContentWorkstation({
   // Bulk generation
   const [bulkGenerating, setBulkGenerating] = useState<{
     storeId: string;
-    type: "deal_post" | "social_post";
+    type: AIContentType;
     current: number;
     total: number;
   } | null>(null);
@@ -170,14 +171,12 @@ export function AIContentWorkstation({
     if (contentStatusFilters.length > 0) {
       result = result.filter((p) => {
         const entry = contentMap.get(p.id);
+        const count = [entry?.hasDeal, entry?.hasPost, entry?.hasWebsite, entry?.hasFacebook].filter(Boolean).length;
+        const totalTypes = Object.keys(CONTENT_TYPE_CONFIG).length;
         const status =
-          !entry || (!entry.hasDeal && !entry.hasPost)
-            ? "no_content"
-            : entry.hasDeal && !entry.hasPost
-            ? "deals_only"
-            : !entry.hasDeal && entry.hasPost
-            ? "posts_only"
-            : "complete";
+          count === 0 ? "no_content"
+          : count === totalTypes ? "complete"
+          : "partial";
         return contentStatusFilters.includes(status);
       });
     }
@@ -187,18 +186,18 @@ export function AIContentWorkstation({
 
   // Content status counts (for filter badges)
   const contentCounts = useMemo(() => {
+    const totalTypes = Object.keys(CONTENT_TYPE_CONFIG).length;
     let noContent = 0;
-    let dealsOnly = 0;
-    let postsOnly = 0;
+    let partial = 0;
     let complete = 0;
     for (const p of localProducts) {
       const entry = contentMap.get(p.id);
-      if (!entry || (!entry.hasDeal && !entry.hasPost)) noContent++;
-      else if (entry.hasDeal && !entry.hasPost) dealsOnly++;
-      else if (!entry.hasDeal && entry.hasPost) postsOnly++;
-      else if (entry.hasDeal && entry.hasPost) complete++;
+      const count = [entry?.hasDeal, entry?.hasPost, entry?.hasWebsite, entry?.hasFacebook].filter(Boolean).length;
+      if (count === 0) noContent++;
+      else if (count === totalTypes) complete++;
+      else partial++;
     }
-    return { noContent, dealsOnly, postsOnly, complete };
+    return { noContent, partial, complete };
   }, [localProducts, contentMap]);
 
   // Store groups (for store view) — use filtered (after client-side filters)
@@ -260,8 +259,7 @@ export function AIContentWorkstation({
   // ── Filter options ──
   const contentStatusOptions = [
     { label: t("noContent"), value: "no_content", count: contentCounts.noContent },
-    { label: t("dealsOnly"), value: "deals_only", count: contentCounts.dealsOnly },
-    { label: t("postsOnly"), value: "posts_only", count: contentCounts.postsOnly },
+    { label: t("partial"), value: "partial", count: contentCounts.partial },
     { label: t("complete"), value: "complete", count: contentCounts.complete },
   ];
 
@@ -300,12 +298,12 @@ export function AIContentWorkstation({
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function openModal(product: Product, contentType: "deal_post" | "social_post") {
+  function openModal(product: Product, contentType: AIContentType) {
     setModal({ product, contentType });
   }
 
   const handleGenerate = useCallback(
-    async (product: Product, contentType: "deal_post" | "social_post") => {
+    async (product: Product, contentType: AIContentType) => {
       if (!allowGenerateContent) {
         toast.error(t("noGenerateAccess"));
         return;
@@ -332,11 +330,10 @@ export function AIContentWorkstation({
           newContent,
         ]);
         setEditingContent(null);
-        const typeLabel =
-          contentType === "deal_post" ? t("dealPost") : t("socialPost");
+        const cfg = CONTENT_TYPE_CONFIG[contentType];
         toast(t("contentGenerated"), {
           description: t("contentGeneratedDescription", {
-            type: typeLabel,
+            type: cfg ? t(cfg.labelKey) : contentType,
             title: product.title,
           }),
         });
@@ -353,7 +350,7 @@ export function AIContentWorkstation({
 
   function handleRegenerate(
     product: Product,
-    contentType: "deal_post" | "social_post"
+    contentType: AIContentType
   ) {
     // Generate handles upsert (deletes old + inserts new on server)
     handleGenerate(product, contentType);
@@ -361,7 +358,7 @@ export function AIContentWorkstation({
 
   async function handleSendToWebhook(
     product: Product,
-    contentType: "deal_post" | "social_post"
+    contentType: AIContentType
   ) {
     const entry = localContent.find(
       (c) => c.product_id === product.id && c.content_type === contentType
@@ -396,11 +393,10 @@ export function AIContentWorkstation({
         )
       );
 
-      const typeLabel =
-        contentType === "deal_post" ? t("dealPost") : t("socialPost");
+      const cfg = CONTENT_TYPE_CONFIG[contentType];
       toast(t("webhookSentToast"), {
         description: t("webhookSentDescription", {
-          type: typeLabel,
+          type: cfg ? t(cfg.labelKey) : contentType,
           title: product.title,
         }),
       });
@@ -423,7 +419,7 @@ export function AIContentWorkstation({
 
   async function handleSaveEdit(
     productId: string,
-    contentType: "deal_post" | "social_post"
+    contentType: AIContentType
   ) {
     if (!allowEditContent) {
       toast.error(t("noEditAccess"));
@@ -466,18 +462,21 @@ export function AIContentWorkstation({
   async function handleBulkGenerate(
     storeId: string,
     storeProducts: Product[],
-    contentType: "deal_post" | "social_post"
+    contentType: AIContentType
   ) {
     if (!allowGenerateContent) {
       toast.error(t("noGenerateAccess"));
       return;
     }
 
-    const needsContent = storeProducts.filter((p) => {
-      const entry = contentMap.get(p.id);
-      if (contentType === "deal_post") return !entry?.hasDeal;
-      return !entry?.hasPost;
-    });
+    const hasContentLookup: Record<string, (e: import("./utils").ContentEntry | undefined) => boolean> = {
+      deal_post: (e) => !!e?.hasDeal,
+      social_post: (e) => !!e?.hasPost,
+      website_text: (e) => !!e?.hasWebsite,
+      facebook_ad: (e) => !!e?.hasFacebook,
+    };
+    const hasContentFn = hasContentLookup[contentType] ?? (() => false);
+    const needsContent = storeProducts.filter((p) => !hasContentFn(contentMap.get(p.id)));
 
     if (needsContent.length === 0) return;
 
@@ -519,7 +518,8 @@ export function AIContentWorkstation({
     }
 
     setBulkGenerating(null);
-    const typeLabel = contentType === "deal_post" ? "deals" : "posts";
+    const cfg = CONTENT_TYPE_CONFIG[contentType];
+    const typeLabel = cfg ? t(cfg.labelKey) : contentType;
     toast(
       t("bulkComplete", {
         count: needsContent.length,

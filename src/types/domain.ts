@@ -188,7 +188,7 @@ export interface MonitoringConfig {
 
 // ─── AI Content ───
 
-export type AIContentType = "deal_post" | "product_description" | "comparison" | "social_post";
+export type AIContentType = "deal_post" | "social_post" | "website_text" | "facebook_ad" | "product_description" | "comparison";
 
 export interface AIGeneratedContent {
   id: string;

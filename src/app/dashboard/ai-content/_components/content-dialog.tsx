@@ -11,6 +11,8 @@ import {
   Pencil,
   Tags,
   PenSquare,
+  Globe,
+  Megaphone,
 } from "lucide-react";
 import {
   Dialog,
@@ -18,13 +20,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { Product, Store, AIGeneratedContent } from "@/types";
+import type { Product, Store, AIGeneratedContent, AIContentType } from "@/types";
 import { CopyBtn } from "./copy-btn";
 import type { ContentEntry } from "./utils";
+import { CONTENT_TYPE_CONFIG } from "./utils";
 import { ProductImage } from "@/components/domain/product-image";
 
+const TYPE_ICONS: Record<string, typeof Tags> = {
+  deal_post: Tags,
+  social_post: PenSquare,
+  website_text: Globe,
+  facebook_ad: Megaphone,
+};
+
 interface ContentDialogProps {
-  modal: { product: Product; contentType: "deal_post" | "social_post" } | null;
+  modal: { product: Product; contentType: AIContentType } | null;
   contentMap: Map<string, ContentEntry>;
   isGenerating: boolean;
   isSending: boolean;
@@ -35,12 +45,12 @@ interface ContentDialogProps {
   canEditContent: boolean;
   t: (key: string, values?: Record<string, string | number>) => string;
   onClose: () => void;
-  onGenerate: (product: Product, contentType: "deal_post" | "social_post") => void;
-  onRegenerate: (product: Product, contentType: "deal_post" | "social_post") => void;
-  onSendToWebhook: (product: Product, contentType: "deal_post" | "social_post") => void;
+  onGenerate: (product: Product, contentType: AIContentType) => void;
+  onRegenerate: (product: Product, contentType: AIContentType) => void;
+  onSendToWebhook: (product: Product, contentType: AIContentType) => void;
   onStartEdit: (contentId: string, text: string) => void;
   onCancelEdit: () => void;
-  onSaveEdit: (productId: string, contentType: "deal_post" | "social_post") => void;
+  onSaveEdit: (productId: string, contentType: AIContentType) => void;
   onEditTextChange: (text: string) => void;
 }
 
@@ -66,16 +76,22 @@ export function ContentDialog({
 }: ContentDialogProps) {
   const contentType = modal?.contentType ?? "deal_post";
   const entry = modal ? contentMap.get(modal.product.id) : undefined;
-  const currentContent =
-    contentType === "deal_post" ? entry?.deal : entry?.post;
+  const contentLookup: Record<string, AIGeneratedContent | undefined> = {
+    deal_post: entry?.deal,
+    social_post: entry?.post,
+    website_text: entry?.website,
+    facebook_ad: entry?.facebook,
+  };
+  const currentContent = contentLookup[contentType];
 
   const hasDiscount =
     modal?.product.discount_percentage &&
     modal.product.discount_percentage > 0;
 
-  const accentColor = contentType === "deal_post" ? "#22C55E" : "#5AC8FA";
-  const TypeIcon = contentType === "deal_post" ? Tags : PenSquare;
-  const typeLabel = contentType === "deal_post" ? t("dealPost") : t("socialPost");
+  const cfg = CONTENT_TYPE_CONFIG[contentType];
+  const accentColor = cfg?.color ?? "#22C55E";
+  const TypeIcon = TYPE_ICONS[contentType] ?? Tags;
+  const typeLabel = cfg ? t(cfg.labelKey) : contentType;
 
   // Auto-generate when dialog opens with no existing content
   const autoGenerateRef = useRef<string | null>(null);
@@ -85,8 +101,13 @@ export function ContentDialog({
       return;
     }
     const key = `${modal.product.id}:${modal.contentType}`;
-    const hasContent =
-      modal.contentType === "deal_post" ? entry?.hasDeal : entry?.hasPost;
+    const hasContentLookup: Record<string, boolean | undefined> = {
+      deal_post: entry?.hasDeal,
+      social_post: entry?.hasPost,
+      website_text: entry?.hasWebsite,
+      facebook_ad: entry?.hasFacebook,
+    };
+    const hasContent = hasContentLookup[modal.contentType];
     if (
       canGenerateContent &&
       !hasContent &&
@@ -323,7 +344,7 @@ function ContentView({
 }: {
   content: AIGeneratedContent;
   product: Product;
-  contentType: "deal_post" | "social_post";
+  contentType: AIContentType;
   isGenerating: boolean;
   isSending: boolean;
   editingContent: string | null;
@@ -331,18 +352,18 @@ function ContentView({
   canGenerateContent: boolean;
   canEditContent: boolean;
   t: (key: string, values?: Record<string, string | number>) => string;
-  onRegenerate: (product: Product, contentType: "deal_post" | "social_post") => void;
-  onSendToWebhook: (product: Product, contentType: "deal_post" | "social_post") => void;
+  onRegenerate: (product: Product, contentType: AIContentType) => void;
+  onSendToWebhook: (product: Product, contentType: AIContentType) => void;
   onStartEdit: (contentId: string, text: string) => void;
   onCancelEdit: () => void;
-  onSaveEdit: (productId: string, contentType: "deal_post" | "social_post") => void;
+  onSaveEdit: (productId: string, contentType: AIContentType) => void;
   onEditTextChange: (text: string) => void;
 }) {
   const [viewMode, setViewMode] = useState<"formatted" | "raw">(
     content.webhook_response ? "raw" : "formatted"
   );
   const isEditing = editingContent === content.id;
-  const accentColor = contentType === "deal_post" ? "#22C55E" : "#5AC8FA";
+  const accentColor = CONTENT_TYPE_CONFIG[contentType]?.color ?? "#22C55E";
 
   const formattedDate = content.created_at
     ? new Date(content.created_at).toLocaleDateString()
@@ -698,10 +719,10 @@ function GeneratingView({
   contentType,
   t,
 }: {
-  contentType: "deal_post" | "social_post";
+  contentType: AIContentType;
   t: (key: string, values?: Record<string, string | number>) => string;
 }) {
-  const accentColor = contentType === "deal_post" ? "#22C55E" : "#5AC8FA";
+  const accentColor = CONTENT_TYPE_CONFIG[contentType]?.color ?? "#22C55E";
 
   return (
     <div className="pt-4">
@@ -738,12 +759,12 @@ function GenerateFailedView({
   t,
   onRetry,
 }: {
-  contentType: "deal_post" | "social_post";
+  contentType: AIContentType;
   product: Product;
   t: (key: string, values?: Record<string, string | number>) => string;
-  onRetry: (product: Product, contentType: "deal_post" | "social_post") => void;
+  onRetry: (product: Product, contentType: AIContentType) => void;
 }) {
-  const accentColor = contentType === "deal_post" ? "#22C55E" : "#5AC8FA";
+  const accentColor = CONTENT_TYPE_CONFIG[contentType]?.color ?? "#22C55E";
 
   return (
     <div className="pt-4">

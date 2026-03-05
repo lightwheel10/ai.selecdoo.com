@@ -3,13 +3,23 @@
 import {
   Tags,
   PenSquare,
+  Globe,
+  Megaphone,
   ExternalLink,
   Trash2,
 } from "lucide-react";
-import type { Product } from "@/types";
+import type { Product, AIContentType } from "@/types";
 import type { ContentEntry } from "./utils";
+import { CONTENT_TYPE_CONFIG } from "./utils";
 import { Highlight } from "./highlight";
 import { ProductImage } from "@/components/domain/product-image";
+
+const TYPE_ICONS: Record<string, typeof Tags> = {
+  deal_post: Tags,
+  social_post: PenSquare,
+  website_text: Globe,
+  facebook_ad: Megaphone,
+};
 
 interface MiniProductCardProps {
   product: Product;
@@ -22,7 +32,7 @@ interface MiniProductCardProps {
   canGenerateContent?: boolean;
   onOpenModal: (
     product: Product,
-    contentType: "deal_post" | "social_post"
+    contentType: AIContentType
   ) => void;
   onToggleSelect: (productId: string) => void;
   onDelete?: (product: Product) => void;
@@ -44,8 +54,15 @@ export function MiniProductCard({
   const hasDiscount =
     product.discount_percentage && product.discount_percentage > 0;
 
-  const canOpenDeal = Boolean(entry?.hasDeal) || canGenerateContent;
-  const canOpenPost = Boolean(entry?.hasPost) || canGenerateContent;
+  const contentButtons: {
+    type: AIContentType;
+    hasContent: boolean;
+  }[] = [
+    { type: "deal_post", hasContent: entry?.hasDeal || false },
+    { type: "social_post", hasContent: entry?.hasPost || false },
+    { type: "website_text", hasContent: entry?.hasWebsite || false },
+    { type: "facebook_ad", hasContent: entry?.hasFacebook || false },
+  ];
 
   return (
     <div
@@ -146,41 +163,30 @@ export function MiniProductCard({
 
       {/* Action icon buttons */}
       <div className="flex items-center gap-1 flex-shrink-0">
-        {/* Deal */}
-        <button
-          onClick={() => onOpenModal(product, "deal_post")}
-          disabled={!canOpenDeal}
-          className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"
-          style={{
-            backgroundColor: entry?.hasDeal ? "#22C55E" : "#22C55E12",
-            border: entry?.hasDeal
-              ? "1.5px solid #22C55E"
-              : "1.5px solid #22C55E40",
-            color: entry?.hasDeal ? "var(--primary-foreground)" : "#22C55E",
-            opacity: canOpenDeal ? 1 : 0.45,
-          }}
-          title={entry?.hasDeal ? t("viewDeal") : t("generateDeal")}
-        >
-          <Tags className="w-3 h-3" />
-        </button>
-
-        {/* Post */}
-        <button
-          onClick={() => onOpenModal(product, "social_post")}
-          disabled={!canOpenPost}
-          className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"
-          style={{
-            backgroundColor: entry?.hasPost ? "#5AC8FA" : "#5AC8FA12",
-            border: entry?.hasPost
-              ? "1.5px solid #5AC8FA"
-              : "1.5px solid #5AC8FA40",
-            color: entry?.hasPost ? "var(--primary-foreground)" : "#5AC8FA",
-            opacity: canOpenPost ? 1 : 0.45,
-          }}
-          title={entry?.hasPost ? t("viewPost") : t("generatePost")}
-        >
-          <PenSquare className="w-3 h-3" />
-        </button>
+        {contentButtons.map(({ type, hasContent }) => {
+          const cfg = CONTENT_TYPE_CONFIG[type];
+          const Icon = TYPE_ICONS[type] ?? Tags;
+          const canOpen = hasContent || canGenerateContent;
+          return (
+            <button
+              key={type}
+              onClick={() => onOpenModal(product, type)}
+              disabled={!canOpen}
+              className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"
+              style={{
+                backgroundColor: hasContent ? cfg.color : `${cfg.color}12`,
+                border: hasContent
+                  ? `1.5px solid ${cfg.color}`
+                  : `1.5px solid ${cfg.color}40`,
+                color: hasContent ? "var(--primary-foreground)" : cfg.color,
+                opacity: canOpen ? 1 : 0.45,
+              }}
+              title={hasContent ? t(cfg.viewKey) : t(cfg.genKey)}
+            >
+              <Icon className="w-3 h-3" />
+            </button>
+          );
+        })}
 
         {/* Visit Product */}
         {product.product_url && (

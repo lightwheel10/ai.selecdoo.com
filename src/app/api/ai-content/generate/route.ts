@@ -5,10 +5,12 @@ import { getAuthContext } from "@/lib/auth/session";
 import { canGenerateAIContent } from "@/lib/auth/roles";
 import { getWebhookFieldConfig, buildGeneratePayload } from "@/lib/webhook-payload";
 
-const N8N_URLS = {
-  deal_post: process.env.N8N_DEALS_WEBHOOK_URL!,
-  social_post: process.env.N8N_POSTS_WEBHOOK_URL!,
-} as const;
+const N8N_URLS: Record<string, string | undefined> = {
+  deal_post: process.env.N8N_DEALS_WEBHOOK_URL,
+  social_post: process.env.N8N_POSTS_WEBHOOK_URL,
+  website_text: process.env.N8N_WEBSITE_WEBHOOK_URL,
+  facebook_ad: process.env.N8N_FACEBOOK_WEBHOOK_URL,
+};
 
 const N8N_TIMEOUT = 120_000; // 120 seconds
 
@@ -89,9 +91,9 @@ export async function POST(req: Request) {
     if (!productId || typeof productId !== "string") {
       return NextResponse.json({ error: "productId is required" }, { status: 400 });
     }
-    if (contentType !== "deal_post" && contentType !== "social_post") {
+    if (!contentType || !N8N_URLS.hasOwnProperty(contentType)) {
       return NextResponse.json(
-        { error: "contentType must be 'deal_post' or 'social_post'" },
+        { error: `contentType must be one of: ${Object.keys(N8N_URLS).join(", ")}` },
         { status: 400 }
       );
     }

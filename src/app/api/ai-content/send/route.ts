@@ -30,9 +30,10 @@ export async function POST(req: Request) {
     if (!productId || typeof productId !== "string") {
       return NextResponse.json({ error: "productId is required" }, { status: 400 });
     }
-    if (contentType !== "deal_post" && contentType !== "social_post") {
+    const VALID_TYPES = ["deal_post", "social_post", "website_text", "facebook_ad"];
+    if (!contentType || !VALID_TYPES.includes(contentType)) {
       return NextResponse.json(
-        { error: "contentType must be 'deal_post' or 'social_post'" },
+        { error: `contentType must be one of: ${VALID_TYPES.join(", ")}` },
         { status: 400 }
       );
     }

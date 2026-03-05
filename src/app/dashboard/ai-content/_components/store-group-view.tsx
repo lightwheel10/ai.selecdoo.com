@@ -5,11 +5,21 @@ import {
   ChevronRight,
   Tags,
   PenSquare,
+  Globe,
+  Megaphone,
   Loader2,
 } from "lucide-react";
-import type { Product } from "@/types";
+import type { Product, AIContentType } from "@/types";
 import type { ContentEntry, StoreGroupData } from "./utils";
+import { CONTENT_TYPE_CONFIG } from "./utils";
 import { MiniProductCard } from "./mini-product-card";
+
+const BULK_ICONS: Record<string, typeof Tags> = {
+  deal_post: Tags,
+  social_post: PenSquare,
+  website_text: Globe,
+  facebook_ad: Megaphone,
+};
 
 interface StoreGroupViewProps {
   storeGroups: StoreGroupData[];
@@ -22,7 +32,7 @@ interface StoreGroupViewProps {
   allowGenerateContent: boolean;
   bulkGenerating: {
     storeId: string;
-    type: "deal_post" | "social_post";
+    type: AIContentType;
     current: number;
     total: number;
   } | null;
@@ -33,11 +43,11 @@ interface StoreGroupViewProps {
   onBulkGenerate: (
     storeId: string,
     products: Product[],
-    type: "deal_post" | "social_post"
+    type: AIContentType
   ) => void;
   onOpenModal: (
     product: Product,
-    contentType: "deal_post" | "social_post"
+    contentType: AIContentType
   ) => void;
   onToggleSelect: (productId: string) => void;
   onToggleStoreProducts: (productIds: string[]) => void;
@@ -264,81 +274,47 @@ export function StoreGroupView({
                         </>
                       )}
 
-                      {allowGenerateContent && (
-                        <>
-                          {/* Generate All Deals */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onBulkGenerate(
-                                group.store.id,
-                                group.products,
-                                "deal_post"
-                              );
-                            }}
-                            disabled={!!bulkGenerating}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
-                            style={{
-                              fontFamily: "var(--font-mono)",
-                              backgroundColor: "#22C55E12",
-                              border: "1.5px solid #22C55E40",
-                              color: "#22C55E",
-                            }}
-                          >
-                            {isBulkGen &&
-                            bulkGenerating?.type === "deal_post" ? (
-                              <>
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                                {t("generatingAll", {
-                                  current: bulkGenerating.current,
-                                  total: bulkGenerating.total,
-                                })}
-                              </>
-                            ) : (
-                              <>
-                                <Tags className="w-3 h-3" />
-                                {t("generateAllDeals")}
-                              </>
-                            )}
-                          </button>
-
-                          {/* Generate All Posts */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onBulkGenerate(
-                                group.store.id,
-                                group.products,
-                                "social_post"
-                              );
-                            }}
-                            disabled={!!bulkGenerating}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
-                            style={{
-                              fontFamily: "var(--font-mono)",
-                              backgroundColor: "#5AC8FA12",
-                              border: "1.5px solid #5AC8FA40",
-                              color: "#5AC8FA",
-                            }}
-                          >
-                            {isBulkGen &&
-                            bulkGenerating?.type === "social_post" ? (
-                              <>
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                                {t("generatingAll", {
-                                  current: bulkGenerating.current,
-                                  total: bulkGenerating.total,
-                                })}
-                              </>
-                            ) : (
-                              <>
-                                <PenSquare className="w-3 h-3" />
-                                {t("generateAllPosts")}
-                              </>
-                            )}
-                          </button>
-                        </>
-                      )}
+                      {allowGenerateContent &&
+                        Object.entries(CONTENT_TYPE_CONFIG).map(([type, cfg]) => {
+                          const Icon = BULK_ICONS[type] ?? Tags;
+                          const isThisBulk = isBulkGen && bulkGenerating?.type === type;
+                          return (
+                            <button
+                              key={type}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onBulkGenerate(
+                                  group.store.id,
+                                  group.products,
+                                  type as AIContentType
+                                );
+                              }}
+                              disabled={!!bulkGenerating}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
+                              style={{
+                                fontFamily: "var(--font-mono)",
+                                backgroundColor: `${cfg.color}12`,
+                                border: `1.5px solid ${cfg.color}40`,
+                                color: cfg.color,
+                              }}
+                            >
+                              {isThisBulk ? (
+                                <>
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                  {t("generatingAll", {
+                                    current: bulkGenerating!.current,
+                                    total: bulkGenerating!.total,
+                                  })}
+                                </>
+                              ) : (
+                                <>
+                                  <Icon className="w-3 h-3" />
+                                  {t(cfg.genKey)}
+                                </>
+                              )}
+                            </button>
+                          );
+                        })}
 
                     </div>
 
