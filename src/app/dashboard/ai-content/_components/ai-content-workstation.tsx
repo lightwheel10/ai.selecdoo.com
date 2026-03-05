@@ -25,6 +25,7 @@ import {
 import {
   buildContentMap,
   CONTENT_TYPE_CONFIG,
+  ACTIVE_CONTENT_TYPES,
   type StoreGroupData,
 } from "./utils";
 import { MultiSearchableFilter, MultiSimpleFilter, SimpleFilter, ToggleGroup } from "./filters";
@@ -164,18 +165,27 @@ export function AIContentWorkstation({
   // ── Derived ──
   const contentMap = useMemo(() => buildContentMap(localContent), [localContent]);
 
+  // Count active content types for a product entry
+  function countActiveContent(entry: ReturnType<typeof contentMap.get>) {
+    const flags: Record<string, boolean> = {
+      deal_post: !!entry?.hasDeal,
+      social_post: !!entry?.hasPost,
+      website_text: !!entry?.hasWebsite,
+      facebook_ad: !!entry?.hasFacebook,
+    };
+    return ACTIVE_CONTENT_TYPES.filter((t) => flags[t]).length;
+  }
+
   // Client-side filtering (content status)
   const filtered = useMemo(() => {
     let result = localProducts;
 
     if (contentStatusFilters.length > 0) {
       result = result.filter((p) => {
-        const entry = contentMap.get(p.id);
-        const count = [entry?.hasDeal, entry?.hasPost, entry?.hasWebsite, entry?.hasFacebook].filter(Boolean).length;
-        const totalTypes = Object.keys(CONTENT_TYPE_CONFIG).length;
+        const count = countActiveContent(contentMap.get(p.id));
         const status =
           count === 0 ? "no_content"
-          : count === totalTypes ? "complete"
+          : count === ACTIVE_CONTENT_TYPES.length ? "complete"
           : "partial";
         return contentStatusFilters.includes(status);
       });
@@ -186,15 +196,13 @@ export function AIContentWorkstation({
 
   // Content status counts (for filter badges)
   const contentCounts = useMemo(() => {
-    const totalTypes = Object.keys(CONTENT_TYPE_CONFIG).length;
     let noContent = 0;
     let partial = 0;
     let complete = 0;
     for (const p of localProducts) {
-      const entry = contentMap.get(p.id);
-      const count = [entry?.hasDeal, entry?.hasPost, entry?.hasWebsite, entry?.hasFacebook].filter(Boolean).length;
+      const count = countActiveContent(contentMap.get(p.id));
       if (count === 0) noContent++;
-      else if (count === totalTypes) complete++;
+      else if (count === ACTIVE_CONTENT_TYPES.length) complete++;
       else partial++;
     }
     return { noContent, partial, complete };

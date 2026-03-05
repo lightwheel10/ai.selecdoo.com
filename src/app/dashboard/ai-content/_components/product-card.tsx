@@ -3,7 +3,7 @@
 import { Tags, PenSquare, Globe, Megaphone, ExternalLink, Trash2 } from "lucide-react";
 import type { Product, Store, AIContentType } from "@/types";
 import type { ContentEntry } from "./utils";
-import { CONTENT_TYPE_CONFIG } from "./utils";
+import { CONTENT_TYPE_CONFIG, ACTIVE_CONTENT_TYPES } from "./utils";
 import { Highlight } from "./highlight";
 import { ContentStatusBadge } from "./content-status-badge";
 import { StatusBadge } from "@/components/domain/status-badge";
@@ -41,16 +41,20 @@ export function ProductCard({
   const hasDiscount =
     product.discount_percentage && product.discount_percentage > 0;
 
-  const contentButtons: {
-    type: AIContentType;
-    icon: typeof Tags;
-    hasContent: boolean;
-  }[] = [
-    { type: "deal_post", icon: Tags, hasContent: entry?.hasDeal || false },
-    { type: "social_post", icon: PenSquare, hasContent: entry?.hasPost || false },
-    { type: "website_text", icon: Globe, hasContent: entry?.hasWebsite || false },
-    { type: "facebook_ad", icon: Megaphone, hasContent: entry?.hasFacebook || false },
-  ];
+  const iconMap: Record<string, typeof Tags> = {
+    deal_post: Tags, social_post: PenSquare, website_text: Globe, facebook_ad: Megaphone,
+  };
+  const hasContentMap: Record<string, boolean> = {
+    deal_post: entry?.hasDeal || false,
+    social_post: entry?.hasPost || false,
+    website_text: entry?.hasWebsite || false,
+    facebook_ad: entry?.hasFacebook || false,
+  };
+  const contentButtons = ACTIVE_CONTENT_TYPES.map((type) => ({
+    type: type as AIContentType,
+    icon: iconMap[type] ?? Tags,
+    hasContent: hasContentMap[type] ?? false,
+  }));
 
   return (
     <div

@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import type { Product, AIContentType } from "@/types";
 import type { ContentEntry, StoreGroupData } from "./utils";
-import { CONTENT_TYPE_CONFIG } from "./utils";
+import { CONTENT_TYPE_CONFIG, ACTIVE_CONTENT_TYPES } from "./utils";
 import { MiniProductCard } from "./mini-product-card";
 
 const BULK_ICONS: Record<string, typeof Tags> = {
@@ -275,7 +275,8 @@ export function StoreGroupView({
                       )}
 
                       {allowGenerateContent &&
-                        Object.entries(CONTENT_TYPE_CONFIG).map(([type, cfg]) => {
+                        ACTIVE_CONTENT_TYPES.map((type) => {
+                          const cfg = CONTENT_TYPE_CONFIG[type];
                           const Icon = BULK_ICONS[type] ?? Tags;
                           const isThisBulk = isBulkGen && bulkGenerating?.type === type;
                           return (

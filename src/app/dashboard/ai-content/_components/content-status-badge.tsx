@@ -1,8 +1,8 @@
 "use client";
 
-import { CONTENT_TYPE_CONFIG } from "./utils";
+import { CONTENT_TYPE_CONFIG, ACTIVE_CONTENT_TYPES } from "./utils";
 
-const TOTAL_TYPES = Object.keys(CONTENT_TYPE_CONFIG).length;
+const TOTAL_TYPES = ACTIVE_CONTENT_TYPES.length;
 
 export function ContentStatusBadge({
   hasDeal,
@@ -17,7 +17,10 @@ export function ContentStatusBadge({
   hasFacebook?: boolean;
   t: (key: string) => string;
 }) {
-  const count = [hasDeal, hasPost, hasWebsite, hasFacebook].filter(Boolean).length;
+  const allFlags: Record<string, boolean> = {
+    deal_post: hasDeal, social_post: hasPost, website_text: hasWebsite, facebook_ad: hasFacebook,
+  };
+  const count = ACTIVE_CONTENT_TYPES.filter((t) => allFlags[t]).length;
 
   if (count === 0) {
     return (

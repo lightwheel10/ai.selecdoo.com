@@ -49,13 +49,17 @@ export function buildContentMap(
 
 export const CONTENT_TYPE_CONFIG: Record<
   string,
-  { color: string; labelKey: string; genKey: string; viewKey: string }
+  { color: string; labelKey: string; genKey: string; viewKey: string; enabled: boolean }
 > = {
-  deal_post: { color: "#22C55E", labelKey: "dealPost", genKey: "generateDeal", viewKey: "viewDeal" },
-  social_post: { color: "#5AC8FA", labelKey: "socialPost", genKey: "generatePost", viewKey: "viewPost" },
-  website_text: { color: "#FF9F0A", labelKey: "websiteText", genKey: "generateWebsite", viewKey: "viewWebsite" },
-  facebook_ad: { color: "#BF5AF2", labelKey: "facebookAd", genKey: "generateFacebook", viewKey: "viewFacebook" },
+  deal_post: { color: "#22C55E", labelKey: "dealPost", genKey: "generateDeal", viewKey: "viewDeal", enabled: true },
+  social_post: { color: "#5AC8FA", labelKey: "socialPost", genKey: "generatePost", viewKey: "viewPost", enabled: true },
+  website_text: { color: "#FF9F0A", labelKey: "websiteText", genKey: "generateWebsite", viewKey: "viewWebsite", enabled: false },
+  facebook_ad: { color: "#BF5AF2", labelKey: "facebookAd", genKey: "generateFacebook", viewKey: "viewFacebook", enabled: true },
 };
+
+export const ACTIVE_CONTENT_TYPES = Object.entries(CONTENT_TYPE_CONFIG)
+  .filter(([, cfg]) => cfg.enabled)
+  .map(([type]) => type);
 
 // ─── Store Group Data ───
 

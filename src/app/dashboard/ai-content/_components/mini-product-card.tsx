@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import type { Product, AIContentType } from "@/types";
 import type { ContentEntry } from "./utils";
-import { CONTENT_TYPE_CONFIG } from "./utils";
+import { CONTENT_TYPE_CONFIG, ACTIVE_CONTENT_TYPES } from "./utils";
 import { Highlight } from "./highlight";
 import { ProductImage } from "@/components/domain/product-image";
 
@@ -54,15 +54,16 @@ export function MiniProductCard({
   const hasDiscount =
     product.discount_percentage && product.discount_percentage > 0;
 
-  const contentButtons: {
-    type: AIContentType;
-    hasContent: boolean;
-  }[] = [
-    { type: "deal_post", hasContent: entry?.hasDeal || false },
-    { type: "social_post", hasContent: entry?.hasPost || false },
-    { type: "website_text", hasContent: entry?.hasWebsite || false },
-    { type: "facebook_ad", hasContent: entry?.hasFacebook || false },
-  ];
+  const hasContentMap: Record<string, boolean> = {
+    deal_post: entry?.hasDeal || false,
+    social_post: entry?.hasPost || false,
+    website_text: entry?.hasWebsite || false,
+    facebook_ad: entry?.hasFacebook || false,
+  };
+  const contentButtons = ACTIVE_CONTENT_TYPES.map((type) => ({
+    type: type as AIContentType,
+    hasContent: hasContentMap[type] ?? false,
+  }));
 
   return (
     <div
