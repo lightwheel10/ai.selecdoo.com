@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { ProductCatalog } from "./_components/product-catalog";
-import { getFilteredProducts, getStores, getAIContent } from "@/lib/queries";
+import { getFilteredProducts, getStores } from "@/lib/queries";
 import { canAccessProducts } from "@/lib/auth/roles";
 import { getAuthContext } from "@/lib/auth/session";
 
@@ -34,7 +34,7 @@ export default async function ProductsPage({ searchParams }: Props) {
   const page =
     typeof sp.page === "string" ? Math.max(1, parseInt(sp.page, 10)) : 1;
 
-  const [result, stores, aiContent] = await Promise.all([
+  const [result, stores] = await Promise.all([
     getFilteredProducts({
       search,
       storeId,
@@ -47,7 +47,6 @@ export default async function ProductsPage({ searchParams }: Props) {
       randomize: true,
     }),
     getStores(),
-    getAIContent(),
   ]);
 
   return (
@@ -57,7 +56,6 @@ export default async function ProductsPage({ searchParams }: Props) {
       totalPages={result.totalPages}
       currentPage={result.page}
       stores={stores}
-      aiContent={aiContent}
       filters={{
         search: search ?? "",
         storeId: storeId ?? null,
