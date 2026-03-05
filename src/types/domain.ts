@@ -298,3 +298,16 @@ export interface AIActivityLog {
   created_at: string;
 }
 
+// ─── Webhook Field Config ───
+
+export interface WebhookFieldConfig {
+  product: string[];
+  store: string[];
+}
+
+export interface FieldMeta {
+  key: string;
+  label: string;
+  group: string;
+}
+

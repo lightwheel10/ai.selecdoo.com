@@ -688,7 +688,22 @@
     "loadingActivity": "Aktivität wird geladen...",
     "loadError": "Daten konnten nicht geladen werden",
     "retry": "Erneut versuchen",
-    "clear": "Löschen"
+    "clear": "Löschen",
+    "webhookTab": "Webhook",
+    "webhookTitle": "Webhook-Payload Konfiguration",
+    "webhookDescription": "Steuern Sie, welche Produkt- und Shop-Felder an n8n-Webhooks für die KI-Content-Generierung gesendet werden.",
+    "webhookProductFields": "Produktfelder",
+    "webhookStoreFields": "Shopfelder",
+    "webhookPreview": "Live-Vorschau",
+    "webhookPreviewNote": "Vorschau zeigt das Generate-Webhook-Format mit echten Produktdaten. Seite neu laden für ein anderes Produkt.",
+    "webhookFieldsSelected": "{selected} von {total} Feldern ausgewählt",
+    "webhookResetDefaults": "Auf Standard zurücksetzen",
+    "webhookSave": "Änderungen speichern",
+    "webhookSaving": "Speichert...",
+    "webhookSaved": "Webhook-Konfiguration gespeichert",
+    "webhookSavedDescription": "Payload-Felder aktualisiert. Änderungen gelten für zukünftige Webhook-Aufrufe.",
+    "webhookSaveFailed": "Webhook-Konfiguration konnte nicht gespeichert werden",
+    "webhookLoading": "Webhook-Konfiguration wird geladen..."
   },
   "Landing": {
     "signIn": "Anmelden",

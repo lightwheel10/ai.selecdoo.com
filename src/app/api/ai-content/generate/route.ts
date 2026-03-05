@@ -3,6 +3,7 @@ import * as Sentry from "@sentry/nextjs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthContext } from "@/lib/auth/session";
 import { canGenerateAIContent } from "@/lib/auth/roles";
+import { getWebhookFieldConfig, buildGeneratePayload } from "@/lib/webhook-payload";
 
 const N8N_URLS = {
   deal_post: process.env.N8N_DEALS_WEBHOOK_URL!,
@@ -129,31 +130,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
     }
 
-    // Map v2 fields to v1 payload format (what n8n expects)
-    const payload = {
-      product: {
-        id: product.id,
-        hash_id: product.hash_id,
-        title: product.cleaned_title || product.title,
-        description: product.description,
-        image: product.image_url,
-        link: product.product_url,
-        price: product.price,
-        sale_price: product.original_price,
-        discount: product.discount_percentage,
-        brand: product.brand,
-        currency: product.currency,
-        in_stock: product.in_stock,
-        stores: {
-          id: store.id,
-          name: store.name,
-          url: store.url,
-          platform: store.platform,
-          status: store.status,
-          created_at: store.created_at,
-        },
-      },
-    };
+    // Build payload from configurable field list
+    const config = await getWebhookFieldConfig();
+    const payload = buildGeneratePayload(product, store, config);
 
     // Call n8n webhook
     const controller = new AbortController();

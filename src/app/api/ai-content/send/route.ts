@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthContext } from "@/lib/auth/session";
 import { canGenerateAIContent } from "@/lib/auth/roles";
+import { getWebhookFieldConfig, buildSendPayload } from "@/lib/webhook-payload";
 
 const N8N_SEND_WEBHOOK_URL = process.env.N8N_SEND_WEBHOOK_URL!;
 const SEND_TIMEOUT = 40_000; // 40 seconds
@@ -80,47 +81,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
     }
 
-    // Build payload matching v1 format (sal-dashboard/ai-content.js:5305-5356)
-    const payload = {
-      contentType: contentType === "deal_post" ? "deal" : "post",
-      productId: product.id,
-      hashId: product.hash_id || null,
-      content: aiContent.content,
-      product: {
-        id: product.id,
-        hashId: product.hash_id || null,
-        title: product.cleaned_title || product.title || "Untitled Product",
-        price: product.price || null,
-        salePrice: product.original_price || null,
-        currency: product.currency || "EUR",
-        discount: product.discount_percentage || 0,
-        image: product.image_url || null,
-        link: product.product_url || null,
-        brand: product.brand || "Unknown Brand",
-        condition: product.condition || "new",
-        availability: product.in_stock ? "in stock" : "out of stock",
-        gtin: product.gtin || null,
-        mpn: product.mpn || null,
-        description: product.description || null,
-      },
-      store: {
-        id: store.id,
-        name: store.name,
-        platform: store.platform || "unknown",
-        url: store.url,
-        programId: store.program_id || null,
-        affiliateLink: store.affiliate_link_base || null,
-        couponCode: store.coupon_code || null,
-        status: store.status,
-      },
-      metadata: {
-        contentStatus: aiContent.status || "generated",
-        createdAt: aiContent.created_at,
-        sentAt: new Date().toISOString(),
-        source: "v2-dashboard",
-        version: "2.0",
-      },
-    };
+    // Build payload from configurable field list
+    const config = await getWebhookFieldConfig();
+    const payload = buildSendPayload(product, store, aiContent, contentType, config);
 
     // Fire-and-forget: 5s timeout per v1 pattern
     const controller = new AbortController();

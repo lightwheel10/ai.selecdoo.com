@@ -688,7 +688,22 @@
     "loadingActivity": "Loading activity...",
     "loadError": "Failed to load data",
     "retry": "Retry",
-    "clear": "Clear"
+    "clear": "Clear",
+    "webhookTab": "Webhook",
+    "webhookTitle": "Webhook Payload Config",
+    "webhookDescription": "Control which product and store fields are sent to n8n webhooks for AI content generation.",
+    "webhookProductFields": "Product Fields",
+    "webhookStoreFields": "Store Fields",
+    "webhookPreview": "Live Preview",
+    "webhookPreviewNote": "Preview shows the generate webhook format with real product data. Refresh for a different product.",
+    "webhookFieldsSelected": "{selected} of {total} fields selected",
+    "webhookResetDefaults": "Reset to Default",
+    "webhookSave": "Save Changes",
+    "webhookSaving": "Saving...",
+    "webhookSaved": "Webhook config saved",
+    "webhookSavedDescription": "Payload fields updated. Changes apply to future webhook calls.",
+    "webhookSaveFailed": "Failed to save webhook config",
+    "webhookLoading": "Loading webhook config..."
   },
   "Landing": {
     "signIn": "Sign In",

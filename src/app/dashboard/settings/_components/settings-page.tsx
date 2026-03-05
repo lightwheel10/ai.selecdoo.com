@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import { Users, Store as StoreIcon, Package, Bot } from "lucide-react";
+import { Users, Store as StoreIcon, Package, Bot, Webhook } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TeamAccessManager } from "./team-access-manager";
 
@@ -16,6 +16,10 @@ const AdminProductsTab = dynamic(
 );
 const AdminAIActivityTab = dynamic(
   () => import("./admin-ai-activity-tab").then((m) => m.AdminAIActivityTab),
+  { ssr: false }
+);
+const AdminWebhookTab = dynamic(
+  () => import("./admin-webhook-tab").then((m) => m.AdminWebhookTab),
   { ssr: false }
 );
 
@@ -75,6 +79,10 @@ export function SettingsPage({ isAdmin, canManageTeam }: SettingsPageProps) {
           <Package className="w-3.5 h-3.5" />
           {ta("productsTab")}
         </TabsTrigger>
+        <TabsTrigger value="webhook">
+          <Webhook className="w-3.5 h-3.5" />
+          {ta("webhookTab")}
+        </TabsTrigger>
         <TabsTrigger value="ai-activity">
           <Bot className="w-3.5 h-3.5" />
           {ta("aiActivityTab")}
@@ -89,6 +97,9 @@ export function SettingsPage({ isAdmin, canManageTeam }: SettingsPageProps) {
       </TabsContent>
       <TabsContent value="products">
         <AdminProductsTab />
+      </TabsContent>
+      <TabsContent value="webhook">
+        <AdminWebhookTab />
       </TabsContent>
       <TabsContent value="ai-activity">
         <AdminAIActivityTab />
