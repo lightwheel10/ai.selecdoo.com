@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     // Fetch store with URL + platform for the prompt
     const { data: store, error: storeErr } = await supabase
       .from("stores")
-      .select("id, name, url, platform, description_en, description_de")
+      .select("id, name, url, platform, description_en, description_de, affiliate_link_base")
       .eq("id", storeId)
       .is("deleted_at", null)
       .single();
@@ -123,6 +123,13 @@ export async function POST(req: Request) {
     if (needsDescription) {
       if (result.description_en) dbUpdate.description_en = result.description_en;
       if (result.description_de) dbUpdate.description_de = result.description_de;
+    }
+
+    // Auto-set affiliate_link_base if missing (v1 parity)
+    // Ensures every store has trackable affiliate links from day 1
+    if (!store.affiliate_link_base && store.url) {
+      const cleanUrl = store.url.replace(/\/+$/, "");
+      dbUpdate.affiliate_link_base = `${cleanUrl}/?utm_source=marketforceone&utm_medium=affiliate&a_aid=4063096d&a_cid=`;
     }
 
     const { error: updateErr } = await supabase
