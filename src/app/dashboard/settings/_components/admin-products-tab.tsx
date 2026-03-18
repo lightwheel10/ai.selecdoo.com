@@ -484,14 +484,47 @@ export function AdminProductsTab() {
     setSearch("");
   }
 
-  function saveProduct(updated: Product) {
-    setLocalProducts((prev) =>
-      prev.map((p) => (p.id === updated.id ? updated : p))
-    );
-    setEditingProduct(null);
-    toast(t("productSaved"), {
-      description: t("productSavedDescription", { title: updated.title }),
-    });
+  // 2026-03-18: saveProduct now persists to DB via PATCH API
+  // (was previously local-state-only — changes were lost on refresh)
+  const [saving, setSaving] = useState(false);
+
+  async function saveProduct(updated: Product) {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/products/${updated.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          is_published: updated.is_published,
+          is_featured: updated.is_featured,
+          is_slider: updated.is_slider,
+          ai_category: updated.ai_category,
+          in_stock: updated.in_stock,
+          description_de: updated.description_de,
+          description_en: updated.description_en,
+          image_url: updated.image_url,
+          affiliate_link: updated.affiliate_link,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error ?? "Failed to save product");
+        return;
+      }
+
+      setLocalProducts((prev) =>
+        prev.map((p) => (p.id === updated.id ? updated : p))
+      );
+      setEditingProduct(null);
+      toast(t("productSaved"), {
+        description: t("productSavedDescription", { title: updated.title }),
+      });
+    } catch {
+      toast.error("Network error");
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (loading) {
@@ -1063,10 +1096,11 @@ export function AdminProductsTab() {
             </button>
             <button
               onClick={() => editingProduct && saveProduct(editingProduct)}
-              className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
+              disabled={saving}
+              className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80 disabled:opacity-50"
               style={{ fontFamily: "var(--font-mono)", backgroundColor: "var(--primary)", color: "var(--primary-foreground)", borderRadius: 0 }}
             >
-              {t("save")}
+              {saving ? "Saving..." : t("save")}
             </button>
           </div>
         </DialogContent>
