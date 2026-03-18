@@ -965,6 +965,78 @@ export function AdminProductsTab() {
                 </div>
               </div>
 
+              {/* Shipping */}
+              <SectionLabel>{t("shippingInfo")}</SectionLabel>
+              {editingProduct.ai_shipping_data ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <FieldLabel>{t("shippingCountry")}</FieldLabel>
+                    <Input
+                      value={editingProduct.ai_shipping_data.country || ""}
+                      readOnly
+                      className="text-xs border-2 focus-visible:ring-0 opacity-70"
+                      style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>{t("shippingPrice")}</FieldLabel>
+                    <Input
+                      value={editingProduct.ai_shipping_data.price || ""}
+                      readOnly
+                      className="text-xs border-2 focus-visible:ring-0 opacity-70"
+                      style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>{t("shippingService")}</FieldLabel>
+                    <Input
+                      value={editingProduct.ai_shipping_data.service || ""}
+                      readOnly
+                      className="text-xs border-2 focus-visible:ring-0 opacity-70"
+                      style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>{t("shippingCountries")}</FieldLabel>
+                    <Input
+                      value={editingProduct.ai_shipping_data.available_countries || ""}
+                      readOnly
+                      className="text-xs border-2 focus-visible:ring-0 opacity-70"
+                      style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>{t("handlingTime")}</FieldLabel>
+                    <Input
+                      value={editingProduct.ai_shipping_data.min_handling_time != null && editingProduct.ai_shipping_data.max_handling_time != null
+                        ? `${editingProduct.ai_shipping_data.min_handling_time}-${editingProduct.ai_shipping_data.max_handling_time} days`
+                        : ""}
+                      readOnly
+                      className="text-xs border-2 focus-visible:ring-0 opacity-70"
+                      style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>{t("transitTime")}</FieldLabel>
+                    <Input
+                      value={editingProduct.ai_shipping_data.min_transit_time != null && editingProduct.ai_shipping_data.max_transit_time != null
+                        ? `${editingProduct.ai_shipping_data.min_transit_time}-${editingProduct.ai_shipping_data.max_transit_time} days`
+                        : ""}
+                      readOnly
+                      className="text-xs border-2 focus-visible:ring-0 opacity-70"
+                      style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <p
+                  className="text-[10px] italic"
+                  style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+                >
+                  {t("noShippingData")}
+                </p>
+              )}
+
               {/* Affiliate */}
               <SectionLabel>{t("affiliateInfo")}</SectionLabel>
               <div>

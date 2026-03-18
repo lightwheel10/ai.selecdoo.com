@@ -65,6 +65,16 @@ export interface Product {
   affiliate_link?: string | null;
   description_de?: string | null;
   description_en?: string | null;
+  ai_shipping_data?: {
+    country?: string;
+    price?: string;
+    service?: string;
+    available_countries?: string;
+    min_handling_time?: number;
+    max_handling_time?: number;
+    min_transit_time?: number;
+    max_transit_time?: number;
+  } | null;
 }
 
 // ─── Product Detail (extended for detail page) ───

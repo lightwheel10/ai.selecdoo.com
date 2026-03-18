@@ -106,7 +106,7 @@ export async function getStoreById(id: string): Promise<Store | null> {
 // Only the columns needed by mapProduct() — excludes large JSONB columns
 // (medias, variants, options, recommend_products, categories) that are only
 // needed on the product detail page.
-const PRODUCT_LIST_COLUMNS = "id, store_id, cleaned_title, title, handle, sku, brand, price, original_price, discount_percentage, currency, in_stock, product_url, image_url, description, description_de, description_en, updated_at, is_published, is_featured, is_slider, ai_category, affiliate_link";
+const PRODUCT_LIST_COLUMNS = "id, store_id, cleaned_title, title, handle, sku, brand, price, original_price, discount_percentage, currency, in_stock, product_url, image_url, description, description_de, description_en, updated_at, is_published, is_featured, is_slider, ai_category, affiliate_link, ai_shipping_data";
 
 export async function getProducts(): Promise<Product[]> {
   const supabase = createAdminClient();
@@ -372,6 +372,7 @@ function mapProduct(row: any): Product {
     affiliate_link: row.affiliate_link,
     description_de: row.description_de ?? row.description,
     description_en: row.description_en,
+    ai_shipping_data: row.ai_shipping_data ?? null,
   };
 }
 

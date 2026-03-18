@@ -125,6 +125,7 @@ export async function POST(req: Request) {
           updateData.description_de = result.description;
           updateData.description_en = result.description_english;
           updateData.ai_category = result.category;
+          updateData.ai_shipping_data = result.shipping || null;
           updateData.ai_cleaned_at = new Date().toISOString();
         }
 
