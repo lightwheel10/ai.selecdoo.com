@@ -35,10 +35,6 @@ export interface CleanProductResult {
   category: string;
 }
 
-export interface CategorizeResult {
-  category: string;
-}
-
 export interface StoreCleanResult {
   cleaned_name: string;
   shipping: CleanProductShipping;
@@ -71,17 +67,6 @@ const CATEGORIES = [
 
 export const SYSTEM_PROMPT_CLEAN =
   "You return only valid JSON for admin data cleaning and SEO content generation.";
-
-export const SYSTEM_PROMPT_CATEGORIZE = `You are a product categorization specialist.
-Given product information, assign the most appropriate category from the list below.
-
-CATEGORIES:
-${CATEGORIES.join(", ")}
-
-Respond with ONLY valid JSON (no markdown fences):
-{
-  "category": "..."
-}`;
 
 export const SYSTEM_PROMPT_STORE =
   "You return only valid JSON for store data cleaning and shipping extraction.";
@@ -243,21 +228,6 @@ Store Shipping Policy:
 ${product.shipping_policy || "No shipping policy available"}
 
 NOW GENERATE THE COMPLETE JSON OUTPUT FOLLOWING ALL RULES ABOVE.`;
-}
-
-export function buildCategorizeUserPrompt(
-  product: Pick<CleanProductInput, "title" | "brand" | "price" | "currency" | "description">
-): string {
-  const parts = [
-    `Title: ${product.title}`,
-    product.brand ? `Brand: ${product.brand}` : null,
-    `Price: ${product.price} ${product.currency}`,
-    product.description
-      ? `Description:\n${product.description.slice(0, 500)}`
-      : null,
-  ];
-
-  return parts.filter(Boolean).join("\n");
 }
 
 export function buildStoreUserPrompt(

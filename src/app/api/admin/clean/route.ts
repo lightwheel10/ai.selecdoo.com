@@ -5,16 +5,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import {
   callClaudeJSON,
   SYSTEM_PROMPT_CLEAN,
-  SYSTEM_PROMPT_CATEGORIZE,
   buildCleanUserPrompt,
-  buildCategorizeUserPrompt,
   generateAffiliateLink,
   type CleanProductInput,
   type CleanProductResult,
-  type CategorizeResult,
 } from "@/lib/ai-clean";
 
-const VALID_SCOPES = ["descriptions", "categories", "full"] as const;
+const VALID_SCOPES = ["descriptions", "full"] as const;
 type CleanScope = (typeof VALID_SCOPES)[number];
 
 interface CleanRequest {
@@ -129,18 +126,6 @@ export async function POST(req: Request) {
           updateData.description_en = result.description_english;
           updateData.ai_category = result.category;
           updateData.ai_cleaned_at = new Date().toISOString();
-        } else if (scope === "categories") {
-          const result = await callClaudeJSON<CategorizeResult>(
-            SYSTEM_PROMPT_CATEGORIZE,
-            buildCategorizeUserPrompt({
-              title: product.cleaned_title || product.title,
-              brand: product.brand,
-              price: Number(product.price),
-              currency: product.currency,
-              description: product.description,
-            })
-          );
-          updateData.ai_category = result.category;
         }
 
         if (scope === "full") {
