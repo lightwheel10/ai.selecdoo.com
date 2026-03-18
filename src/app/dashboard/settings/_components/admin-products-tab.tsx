@@ -969,11 +969,12 @@ export function AdminProductsTab() {
               <SectionLabel>{t("affiliateInfo")}</SectionLabel>
               <div>
                 <FieldLabel>{t("affiliateLink")}</FieldLabel>
-                <Input
+                <textarea
                   value={editingProduct.affiliate_link || ""}
                   onChange={(e) => setEditingProduct({ ...editingProduct, affiliate_link: e.target.value || null })}
-                  className="text-xs border-2 focus-visible:ring-0 focus-visible:border-[var(--border)]"
-                  style={{ borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: "11px", borderColor: "var(--border)", backgroundColor: "var(--input)" }}
+                  rows={3}
+                  className="w-full px-3 py-2 text-[11px] border-2 outline-none resize-none break-all"
+                  style={{ borderRadius: 0, fontFamily: "var(--font-mono)", borderColor: "var(--border)", backgroundColor: "var(--input)", color: "var(--foreground)", wordBreak: "break-all" }}
                 />
               </div>
             </div>
