@@ -24,7 +24,7 @@ export async function callClaudeJSON<T>(
 
   const response = await client.messages.create({
     model,
-    max_tokens: 4096,
+    max_tokens: 12288,
     system,
     messages: [{ role: "user", content: user }],
   });
