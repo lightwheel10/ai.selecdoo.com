@@ -120,6 +120,13 @@ export async function POST(req: Request) {
             buildCleanUserPrompt(input)
           );
 
+          // Log Claude response for debugging
+          console.log(`[clean] Product ${product.id} — Claude response keys:`, Object.keys(result));
+          console.log(`[clean] cleaned_title: ${result.cleaned_title ? `✓ (${result.cleaned_title.length} chars)` : "✗ MISSING"}`);
+          console.log(`[clean] description (DE): ${result.description ? `✓ (${result.description.length} chars)` : "✗ MISSING"}`);
+          console.log(`[clean] description_english: ${result.description_english ? `✓ (${result.description_english.length} chars)` : "✗ MISSING"}`);
+          console.log(`[clean] category: ${result.category || "✗ MISSING"}`);
+
           // Map v1-style field names to v2 DB columns
           updateData.cleaned_title = result.cleaned_title;
           updateData.description_de = result.description;
@@ -135,10 +142,22 @@ export async function POST(req: Request) {
           }
         }
 
-        const { error: updateErr } = await supabase
+        // Log what we're about to write to DB
+        console.log(`[clean] Product ${product.id} — DB update fields:`, Object.keys(updateData));
+        console.log(`[clean] description_de value: ${updateData.description_de ? `✓ (${updateData.description_de.length} chars)` : "✗ null/undefined"}`);
+        console.log(`[clean] description_en value: ${updateData.description_en ? `✓ (${updateData.description_en.length} chars)` : "✗ null/undefined"}`);
+
+        const { error: updateErr, data: updateData_ } = await supabase
           .from("products")
           .update(updateData)
-          .eq("id", product.id);
+          .eq("id", product.id)
+          .select("id, description_de, description_en");
+
+        console.log(`[clean] Product ${product.id} — Supabase update result:`, updateErr ? `ERROR: ${updateErr.message}` : "OK");
+        if (updateData_) {
+          console.log(`[clean] After update — description_de: ${updateData_[0]?.description_de ? "✓ has value" : "✗ empty"}`);
+          console.log(`[clean] After update — description_en: ${updateData_[0]?.description_en ? "✓ has value" : "✗ empty"}`);
+        }
 
         if (updateErr) {
           results.push({ productId: product.id, status: "error", error: updateErr.message });
