@@ -31,6 +31,10 @@ export default async function ProductsPage({ searchParams }: Props) {
     typeof sp.minPrice === "string" ? parseFloat(sp.minPrice) : undefined;
   const maxPrice =
     typeof sp.maxPrice === "string" ? parseFloat(sp.maxPrice) : undefined;
+  const variantFilter =
+    sp.variants === "with_variants" || sp.variants === "without_variants"
+      ? sp.variants
+      : undefined;
   const page =
     typeof sp.page === "string" ? Math.max(1, parseInt(sp.page, 10)) : 1;
 
@@ -40,6 +44,7 @@ export default async function ProductsPage({ searchParams }: Props) {
       storeId,
       stockFilter,
       discountFilter,
+      variantFilter,
       minPrice: minPrice !== undefined && !isNaN(minPrice) ? minPrice : undefined,
       maxPrice: maxPrice !== undefined && !isNaN(maxPrice) ? maxPrice : undefined,
       page,
@@ -61,6 +66,7 @@ export default async function ProductsPage({ searchParams }: Props) {
         storeId: storeId ?? null,
         stockFilter: stockFilter ?? null,
         discountFilter: discountFilter ?? null,
+        variantFilter: variantFilter ?? null,
         minPrice: typeof sp.minPrice === "string" ? sp.minPrice : "",
         maxPrice: typeof sp.maxPrice === "string" ? sp.maxPrice : "",
       }}

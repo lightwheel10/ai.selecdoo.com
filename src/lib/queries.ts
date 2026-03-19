@@ -228,6 +228,11 @@ function applyProductFilters(query: any, params: ProductFilterParams): any {
   if (params.contentStatus && params.contentStatus.length > 0) {
     query = query.in("content_status", params.contentStatus);
   }
+  if (params.variantFilter === "with_variants") {
+    query = query.gte("variant_count", 2);
+  } else if (params.variantFilter === "without_variants") {
+    query = query.lt("variant_count", 2);
+  }
   return query;
 }
 
@@ -248,9 +253,15 @@ export async function getFilteredProducts(
   const pageSize = params.pageSize ?? DEFAULT_PAGE_SIZE;
   const emptyResult = { products: [], totalCount: 0, page, pageSize, totalPages: 0 };
 
-  // Use the view when content status filter is active (adds computed content_status column)
-  const table = params.contentStatus?.length
+  // Use views when computed-column filters are active
+  const needsContentStatus = !!params.contentStatus?.length;
+  const needsVariants = !!params.variantFilter;
+  const table = needsContentStatus && needsVariants
+    ? "products_with_all_filters"
+    : needsContentStatus
     ? "products_with_content_status"
+    : needsVariants
+    ? "products_with_variants"
     : "products";
 
   if (params.randomize) {

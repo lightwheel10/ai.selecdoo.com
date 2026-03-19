@@ -46,6 +46,7 @@ interface ProductCatalogProps {
     storeId: string | null;
     stockFilter: string | null;
     discountFilter: string | null;
+    variantFilter: string | null;
     minPrice: string;
     maxPrice: string;
   };
@@ -388,7 +389,7 @@ export function ProductCatalog({
   }
 
   const hasAnyFilter =
-    filters.storeId || filters.stockFilter || filters.discountFilter || filters.minPrice || filters.maxPrice;
+    filters.storeId || filters.stockFilter || filters.discountFilter || filters.variantFilter || filters.minPrice || filters.maxPrice;
 
   const stockOptions = [
     { label: ts("inStock"), value: "in_stock" },
@@ -402,6 +403,11 @@ export function ProductCatalog({
     { label: t("discount20"), value: "20" },
     { label: t("discount30"), value: "30" },
     { label: t("discount50"), value: "50" },
+  ];
+
+  const variantOptions = [
+    { label: t("withVariants"), value: "with_variants" },
+    { label: t("withoutVariants"), value: "without_variants" },
   ];
 
   return (
@@ -457,6 +463,15 @@ export function ProductCatalog({
           options={discountOptions}
           value={filters.discountFilter}
           onChange={(v) => setFilter("discount", v)}
+        />
+
+        {/* Variants — simple */}
+        <SimpleFilter
+          label={t("variants")}
+          resetLabel={t("allVariants")}
+          options={variantOptions}
+          value={filters.variantFilter}
+          onChange={(v) => setFilter("variants", v)}
         />
 
         {/* Price range */}

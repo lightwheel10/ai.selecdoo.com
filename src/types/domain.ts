@@ -260,6 +260,7 @@ export interface ProductFilterParams {
   stockFilter?: "in_stock" | "out_of_stock";
   discountFilter?: string; // "none", "any", "1", "10", "17", "20", "30", "50"
   contentStatus?: string[]; // "no_content", "partial", "complete"
+  variantFilter?: "with_variants" | "without_variants";
   minPrice?: number;
   maxPrice?: number;
   brands?: string[];
