@@ -230,6 +230,7 @@ export function AIContentWorkstation({
   ];
 
   const discountOptions = [
+    { label: t("allProducts"), value: "all" },
     { label: t("anyDiscount"), value: "1" },
     { label: t("discount17"), value: "17" },
     { label: t("discount20"), value: "20" },
@@ -622,7 +623,7 @@ export function AIContentWorkstation({
   return (
     <div>
       {/* Discount notice banner */}
-      {filters.discountFilter && (
+      {filters.discountFilter && filters.discountFilter !== "all" && (
         <div
           className="flex items-center gap-2 px-4 py-2 mb-4 border-2"
           style={{

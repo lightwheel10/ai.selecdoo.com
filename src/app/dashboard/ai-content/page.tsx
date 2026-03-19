@@ -49,7 +49,7 @@ export default async function AIContentPage({ searchParams }: Props) {
     getFilteredProducts({
       search,
       storeIds,
-      discountFilter: discountFilter || undefined,
+      discountFilter: discountFilter === "all" ? undefined : (discountFilter || undefined),
       contentStatus: contentStatus?.length ? contentStatus : undefined,
       sortBy: sortBy as "discount_percentage" | "price" | undefined,
       sortDir,
