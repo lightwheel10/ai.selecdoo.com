@@ -195,12 +195,14 @@ export async function DELETE(
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
     }
 
+    const now = new Date().toISOString();
+
     const { error: deleteErr } = await supabase
       .from("stores")
       .update({
-        deleted_at: new Date().toISOString(),
+        deleted_at: now,
         status: "paused",
-        updated_at: new Date().toISOString(),
+        updated_at: now,
       })
       .eq("id", id);
 
@@ -209,9 +211,16 @@ export async function DELETE(
       return NextResponse.json({ error: "Failed to delete store" }, { status: 500 });
     }
 
+    // Soft-delete all products belonging to this store
+    await supabase
+      .from("products")
+      .update({ deleted_at: now })
+      .eq("store_id", id)
+      .is("deleted_at", null);
+
     await supabase
       .from("monitoring_configs")
-      .update({ enabled: false, updated_at: new Date().toISOString() })
+      .update({ enabled: false, updated_at: now })
       .eq("store_id", id);
 
     return NextResponse.json({ success: true });
