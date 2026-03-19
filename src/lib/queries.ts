@@ -225,6 +225,9 @@ function applyProductFilters(query: any, params: ProductFilterParams): any {
       `cleaned_title.ilike.${q},title.ilike.${q},brand.ilike.${q},sku.ilike.${q}`
     );
   }
+  if (params.contentStatus && params.contentStatus.length > 0) {
+    query = query.in("content_status", params.contentStatus);
+  }
   return query;
 }
 
@@ -245,10 +248,15 @@ export async function getFilteredProducts(
   const pageSize = params.pageSize ?? DEFAULT_PAGE_SIZE;
   const emptyResult = { products: [], totalCount: 0, page, pageSize, totalPages: 0 };
 
+  // Use the view when content status filter is active (adds computed content_status column)
+  const table = params.contentStatus?.length
+    ? "products_with_content_status"
+    : "products";
+
   if (params.randomize) {
     // 1. Lightweight count-only query
     let countQuery = supabase
-      .from("products")
+      .from(table)
       .select("id", { count: "exact", head: true })
       .is("deleted_at", null);
     countQuery = applyProductFilters(countQuery, params);
@@ -269,7 +277,7 @@ export async function getFilteredProducts(
 
     // 3. Fetch data from the random offset
     let dataQuery = supabase
-      .from("products")
+      .from(table)
       .select(PRODUCT_LIST_COLUMNS)
       .is("deleted_at", null);
     dataQuery = applyProductFilters(dataQuery, params);
@@ -295,7 +303,7 @@ export async function getFilteredProducts(
   const offset = (page - 1) * pageSize;
 
   let query = supabase
-    .from("products")
+    .from(table)
     .select(PRODUCT_LIST_COLUMNS, { count: "exact" })
     .is("deleted_at", null);
 
@@ -707,10 +715,14 @@ function mapMonitoringLog(row: any, storeNames: Record<string, string>): Monitor
 
 // ─── AI Content ───
 
-export async function getAIContent(): Promise<AIGeneratedContent[]> {
+export async function getAIContent(productIds?: string[]): Promise<AIGeneratedContent[]> {
   const supabase = createAdminClient();
+  let query = supabase.from("ai_content").select("*").order("created_at", { ascending: false });
+  if (productIds && productIds.length > 0) {
+    query = query.in("product_id", productIds);
+  }
   const [{ data, error }, storeNames] = await Promise.all([
-    supabase.from("ai_content").select("*").order("created_at", { ascending: false }),
+    query,
     getStoreNameMap(),
   ]);
 
@@ -721,6 +733,20 @@ export async function getAIContent(): Promise<AIGeneratedContent[]> {
   }
 
   return (data ?? []).map((row) => mapAIContent(row, storeNames));
+}
+
+export async function getContentStatusCounts(): Promise<Record<string, number>> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase.rpc("content_status_counts");
+  if (error || !data) {
+    console.error("getContentStatusCounts error:", error?.message);
+    return { no_content: 0, partial: 0, complete: 0 };
+  }
+  const counts: Record<string, number> = { no_content: 0, partial: 0, complete: 0 };
+  for (const row of data as { status: string; count: number }[]) {
+    counts[row.status] = Number(row.count);
+  }
+  return counts;
 }
 
 function mapContentType(v2Type: string): AIContentType {

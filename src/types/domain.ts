@@ -259,6 +259,7 @@ export interface ProductFilterParams {
   storeIds?: string[];
   stockFilter?: "in_stock" | "out_of_stock";
   discountFilter?: string; // "none", "any", "1", "10", "17", "20", "30", "50"
+  contentStatus?: string[]; // "no_content", "partial", "complete"
   minPrice?: number;
   maxPrice?: number;
   brands?: string[];

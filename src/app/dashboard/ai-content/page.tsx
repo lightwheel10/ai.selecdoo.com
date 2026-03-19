@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { EmptyState } from "@/components/domain/empty-state";
 import { AIContentWorkstation } from "./_components/ai-content-workstation";
-import { getFilteredProducts, getStores, getAIContent } from "@/lib/queries";
+import { getFilteredProducts, getStores, getAIContent, getContentStatusCounts } from "@/lib/queries";
 import { canAccessAIContent } from "@/lib/auth/roles";
 import { getAuthContext } from "@/lib/auth/session";
 
@@ -39,11 +39,18 @@ export default async function AIContentPage({ searchParams }: Props) {
   const page =
     typeof sp.page === "string" ? Math.max(1, parseInt(sp.page, 10)) : 1;
 
-  const [result, stores, aiContent] = await Promise.all([
+  const VALID_CONTENT_STATUSES = ["no_content", "partial", "complete"];
+  const contentStatus =
+    typeof sp.contentStatus === "string" && sp.contentStatus
+      ? sp.contentStatus.split(",").filter((s) => VALID_CONTENT_STATUSES.includes(s))
+      : undefined;
+
+  const [result, stores, contentCounts] = await Promise.all([
     getFilteredProducts({
       search,
       storeIds,
       discountFilter: discountFilter || undefined,
+      contentStatus: contentStatus?.length ? contentStatus : undefined,
       sortBy: sortBy as "discount_percentage" | "price" | undefined,
       sortDir,
       page,
@@ -51,10 +58,16 @@ export default async function AIContentPage({ searchParams }: Props) {
       randomize: !sortBy,
     }),
     getStores(),
-    getAIContent(),
+    getContentStatusCounts(),
   ]);
 
-  if (result.totalCount === 0 && !search && !storeIds && !discountFilter) {
+  // Fetch AI content scoped to the current page's products only
+  const productIds = result.products.map((p) => p.id);
+  const aiContent = productIds.length > 0
+    ? await getAIContent(productIds)
+    : [];
+
+  if (result.totalCount === 0 && !search && !storeIds && !discountFilter && !contentStatus) {
     return (
       <EmptyState
         icon={Package}
@@ -72,10 +85,12 @@ export default async function AIContentPage({ searchParams }: Props) {
       currentPage={result.page}
       stores={stores}
       aiContent={aiContent}
+      contentCounts={contentCounts}
       filters={{
         search: search ?? "",
         storeIds: storeIds ?? [],
         discountFilter: discountFilter ?? null,
+        contentStatus: contentStatus ?? [],
         sortBy: sortBy ?? null,
         sortDir: sortDir ?? null,
       }}

@@ -25,7 +25,6 @@ import {
 import {
   buildContentMap,
   CONTENT_TYPE_CONFIG,
-  ACTIVE_CONTENT_TYPES,
   type StoreGroupData,
 } from "./utils";
 import { MultiSearchableFilter, MultiSimpleFilter, SimpleFilter, ToggleGroup } from "./filters";
@@ -53,10 +52,12 @@ interface AIContentWorkstationProps {
   currentPage: number;
   stores: Store[];
   aiContent: AIGeneratedContent[];
+  contentCounts: Record<string, number>;
   filters: {
     search: string;
     storeIds: string[];
     discountFilter: string | null;
+    contentStatus: string[];
     sortBy: string | null;
     sortDir: string | null;
   };
@@ -69,6 +70,7 @@ export function AIContentWorkstation({
   currentPage,
   stores,
   aiContent,
+  contentCounts,
   filters,
 }: AIContentWorkstationProps) {
   const t = useTranslations("AIContent");
@@ -107,8 +109,6 @@ export function AIContentWorkstation({
     setLocalContent(aiContent);
   }, [aiContent]);
 
-  // Client-only filters (not in URL)
-  const [contentStatusFilters, setContentStatusFilters] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(true);
   const [expandedStores, setExpandedStores] = useState<Set<string>>(new Set());
@@ -165,50 +165,10 @@ export function AIContentWorkstation({
   // ── Derived ──
   const contentMap = useMemo(() => buildContentMap(localContent), [localContent]);
 
-  // Count active content types for a product entry
-  function countActiveContent(entry: ReturnType<typeof contentMap.get>) {
-    const flags: Record<string, boolean> = {
-      deal_post: !!entry?.hasDeal,
-      social_post: !!entry?.hasPost,
-      website_text: !!entry?.hasWebsite,
-      facebook_ad: !!entry?.hasFacebook,
-    };
-    return ACTIVE_CONTENT_TYPES.filter((t) => flags[t]).length;
-  }
+  // Products are already filtered server-side (including content status)
+  const filtered = localProducts;
 
-  // Client-side filtering (content status)
-  const filtered = useMemo(() => {
-    let result = localProducts;
-
-    if (contentStatusFilters.length > 0) {
-      result = result.filter((p) => {
-        const count = countActiveContent(contentMap.get(p.id));
-        const status =
-          count === 0 ? "no_content"
-          : count === ACTIVE_CONTENT_TYPES.length ? "complete"
-          : "partial";
-        return contentStatusFilters.includes(status);
-      });
-    }
-
-    return result;
-  }, [localProducts, contentStatusFilters, contentMap]);
-
-  // Content status counts (for filter badges)
-  const contentCounts = useMemo(() => {
-    let noContent = 0;
-    let partial = 0;
-    let complete = 0;
-    for (const p of localProducts) {
-      const count = countActiveContent(contentMap.get(p.id));
-      if (count === 0) noContent++;
-      else if (count === ACTIVE_CONTENT_TYPES.length) complete++;
-      else partial++;
-    }
-    return { noContent, partial, complete };
-  }, [localProducts, contentMap]);
-
-  // Store groups (for store view) — use filtered (after client-side filters)
+  // Store groups (for store view)
   const storeGroups = useMemo((): StoreGroupData[] => {
     const groups = new Map<string, Product[]>();
     for (const p of filtered) {
@@ -254,9 +214,7 @@ export function AIContentWorkstation({
       .sort((a, b) => b.products.length - a.products.length);
   }, [filtered, contentMap, storeMap]);
 
-  const hasClientFilter = contentStatusFilters.length > 0;
-  const hasServerFilter = filters.storeIds.length > 0 || filters.discountFilter || filters.search;
-  const hasAnyFilter = hasClientFilter || hasServerFilter;
+  const hasAnyFilter = filters.storeIds.length > 0 || filters.discountFilter || filters.search || filters.contentStatus.length > 0;
 
   // Convert URL store IDs to names for the MultiSearchableFilter display
   const selectedStoreNames = useMemo(
@@ -266,9 +224,9 @@ export function AIContentWorkstation({
 
   // ── Filter options ──
   const contentStatusOptions = [
-    { label: t("noContent"), value: "no_content", count: contentCounts.noContent },
-    { label: t("partial"), value: "partial", count: contentCounts.partial },
-    { label: t("complete"), value: "complete", count: contentCounts.complete },
+    { label: t("noContent"), value: "no_content", count: contentCounts.no_content ?? 0 },
+    { label: t("partial"), value: "partial", count: contentCounts.partial ?? 0 },
+    { label: t("complete"), value: "complete", count: contentCounts.complete ?? 0 },
   ];
 
   const discountOptions = [
@@ -296,7 +254,6 @@ export function AIContentWorkstation({
   // ── Actions ──
 
   function clearAll() {
-    setContentStatusFilters([]);
     setSearchInput("");
     clearUrlFilters();
   }
@@ -871,8 +828,10 @@ export function AIContentWorkstation({
             resetLabel={t("allContent")}
             selectedText={(count) => t("contentSelected", { count })}
             options={contentStatusOptions}
-            value={contentStatusFilters}
-            onChange={setContentStatusFilters}
+            value={filters.contentStatus}
+            onChange={(values) => {
+              setFilter("contentStatus", values.length > 0 ? values.join(",") : null);
+            }}
           />
           <SimpleFilter
             label={t("discount")}
