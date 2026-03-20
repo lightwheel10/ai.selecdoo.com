@@ -352,7 +352,6 @@ function WebhookFieldEditor({
   const [productList, setProductList] = useState<{ id: string; title: string; brand: string | null; image_url: string | null; store_id: string }[]>([]);
   const [storeNameMap, setStoreNameMap] = useState<Record<string, string>>({});
   const [productListLoaded, setProductListLoaded] = useState(false);
-  const [loadingPreview, setLoadingPreview] = useState(false);
 
   // ── sessionStorage cache ──
   // Prevents skeleton flash when navigating away and back to this tab.
@@ -360,30 +359,51 @@ function WebhookFieldEditor({
   // Then refetch in the background to pick up any changes.
   const cacheKey = `webhook_fields_${type}`;
 
-  function applyApiData(data: ApiResponse, updateConfig: boolean) {
-    if (updateConfig) {
-      const pf = new Set(data.config.product);
-      const sf = new Set(data.config.store);
-      setProductFields(pf);
-      setStoreFields(sf);
-      setSavedProductFields(new Set(pf));
-      setSavedStoreFields(new Set(sf));
-      setProductFieldGroups(data.productFieldGroups);
-      setStoreFieldGroups(data.storeFieldGroups);
-    }
+  // Apply full API response (config + preview sample)
+  function applyFullData(data: ApiResponse) {
+    const pf = new Set(data.config.product);
+    const sf = new Set(data.config.store);
+    setProductFields(pf);
+    setStoreFields(sf);
+    setSavedProductFields(new Set(pf));
+    setSavedStoreFields(new Set(sf));
+    setProductFieldGroups(data.productFieldGroups);
+    setStoreFieldGroups(data.storeFieldGroups);
     setSampleProduct(data.sampleProduct);
     setSampleStore(data.sampleStore);
     setSampleContent(data.sampleContent ?? null);
   }
 
-  // Fetch config for this webhook type (initial load or when product changes)
-  const loadData = useCallback(async (productId?: string | null) => {
-    // If we already have the config and just changing preview product, only show preview loader
-    const isProductSwitch = productId !== undefined && productListLoaded;
-    if (isProductSwitch) {
-      setLoadingPreview(true);
-    }
-    // Don't set loading=true if we have cached data (avoids skeleton flash)
+  // Apply only the field config (not the preview sample).
+  // Used for background refetch when we already have a cached preview —
+  // prevents the preview from cycling through random products.
+  function applyConfigOnly(data: ApiResponse) {
+    const pf = new Set(data.config.product);
+    const sf = new Set(data.config.store);
+    setProductFields(pf);
+    setStoreFields(sf);
+    setSavedProductFields(new Set(pf));
+    setSavedStoreFields(new Set(sf));
+    setProductFieldGroups(data.productFieldGroups);
+    setStoreFieldGroups(data.storeFieldGroups);
+  }
+
+  // Apply only preview sample data (used when user selects a product in the picker)
+  function applyPreviewOnly(data: ApiResponse) {
+    setSampleProduct(data.sampleProduct);
+    setSampleStore(data.sampleStore);
+    setSampleContent(data.sampleContent ?? null);
+  }
+
+  // Fetch config for this webhook type.
+  // mode controls what gets updated:
+  //   "full" — config + preview (initial load, no cache)
+  //   "config-only" — only field config, keep cached preview stable
+  //   "preview-only" — only preview sample (user picked a product)
+  const loadData = useCallback(async (
+    mode: "full" | "config-only" | "preview-only" = "full",
+    productId?: string | null,
+  ) => {
     setError(null);
     try {
       const params = new URLSearchParams({ type });
@@ -392,12 +412,22 @@ function WebhookFieldEditor({
       if (!res.ok) throw new Error("Failed to load");
       const data: ApiResponse = await res.json();
 
-      applyApiData(data, !isProductSwitch);
+      if (mode === "full") {
+        applyFullData(data);
+      } else if (mode === "config-only") {
+        applyConfigOnly(data);
+      } else {
+        applyPreviewOnly(data);
+      }
 
-      // Cache the initial config response (not product-switch responses)
-      if (!isProductSwitch) {
+      // Cache the full response on initial loads (not product switches)
+      if (mode !== "preview-only") {
         try {
-          sessionStorage.setItem(cacheKey, JSON.stringify(data));
+          // Merge: keep the preview sample from cache if we only fetched config
+          const toCache = mode === "config-only"
+            ? { ...data, sampleProduct: sampleProduct ?? data.sampleProduct, sampleStore: sampleStore ?? data.sampleStore, sampleContent: sampleContent ?? data.sampleContent }
+            : data;
+          sessionStorage.setItem(cacheKey, JSON.stringify(toCache));
         } catch {
           // sessionStorage full or unavailable — non-critical
         }
@@ -406,37 +436,62 @@ function WebhookFieldEditor({
       setError(t("webhookSaveFailed"));
     } finally {
       setLoading(false);
-      setLoadingPreview(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type, t, productListLoaded]);
+  }, [type, t]);
 
   // On mount: restore from cache first (instant, no skeleton), then refetch
+  // only the field config in the background (keeps the preview stable).
   useEffect(() => {
     let hasCachedData = false;
     try {
       const cached = sessionStorage.getItem(cacheKey);
       if (cached) {
         const data: ApiResponse = JSON.parse(cached);
-        applyApiData(data, true);
-        setLoading(false); // Skip skeleton — we have cached data
+        applyFullData(data);
+        setLoading(false);
         hasCachedData = true;
       }
     } catch {
       // Invalid cache — ignore, will fetch fresh
     }
 
-    // Always fetch fresh data (silently if we have cache, with skeleton if not)
-    if (!hasCachedData) {
+    if (hasCachedData) {
+      // Cache hit: only refresh the field config, don't replace the preview
+      // with a different random product
+      loadData("config-only");
+    } else {
+      // No cache: full load with skeleton
       setLoading(true);
+      loadData("full");
     }
-    loadData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type]);
 
-  // Fetch lightweight product list + store names for the picker (once per tab)
+  // Fetch lightweight product list + store names for the picker.
+  // Cached in sessionStorage to prevent late pop-in and layout shift
+  // when navigating back to this tab.
   useEffect(() => {
     if (productListLoaded) return;
+
+    // Try restoring from cache first (instant — no layout shift)
+    const productCacheKey = "webhook_product_picker";
+    try {
+      const cached = sessionStorage.getItem(productCacheKey);
+      if (cached) {
+        const { products, stores } = JSON.parse(cached);
+        if (Array.isArray(products) && products.length > 0) {
+          setProductList(products);
+          setStoreNameMap(stores ?? {});
+          setProductListLoaded(true);
+          // Continue to background refresh below
+        }
+      }
+    } catch {
+      // Invalid cache — fetch fresh
+    }
+
+    // Always fetch fresh data in the background
     (async () => {
       try {
         const [productsRes, storesRes] = await Promise.all([
@@ -457,9 +512,9 @@ function WebhookFieldEditor({
         setProductList(list);
 
         // Build store name lookup
+        const map: Record<string, string> = {};
         if (storesRes.ok) {
           const storesData = await storesRes.json();
-          const map: Record<string, string> = {};
           for (const s of storesData.stores ?? []) {
             map[s.id] = s.name;
           }
@@ -467,16 +522,23 @@ function WebhookFieldEditor({
         }
 
         setProductListLoaded(true);
+
+        // Cache for next visit
+        try {
+          sessionStorage.setItem(productCacheKey, JSON.stringify({ products: list, stores: map }));
+        } catch {
+          // sessionStorage full — non-critical
+        }
       } catch {
         // Non-critical — picker just won't be available
       }
     })();
   }, [productListLoaded]);
 
-  // When user picks a product, reload preview with that product's data
+  // When user picks a product, reload only the preview with that product's data
   function handleProductSelect(productId: string | null) {
     setSelectedProductId(productId);
-    loadData(productId);
+    loadData("preview-only", productId);
   }
 
   const isDirty = useMemo(() => {
@@ -843,16 +905,24 @@ function WebhookFieldEditor({
 
         {/* Right: Preview + Product Picker */}
         <div className="lg:sticky lg:top-4 lg:self-start space-y-4">
-          {/* Product picker — search and select a product for the preview */}
-          {productListLoaded && productList.length > 0 && (
+          {/* Product picker — always reserves space to prevent layout shift.
+              Shows skeleton while product list loads, real picker once ready. */}
+          {productListLoaded && productList.length > 0 ? (
             <ProductPicker
               products={productList}
               storeNames={storeNameMap}
               selectedId={selectedProductId}
               onSelect={handleProductSelect}
-              loading={loadingPreview}
               t={t}
             />
+          ) : (
+            <div
+              className="border-2 p-4"
+              style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+            >
+              <Skeleton className="h-2.5 w-24 mb-3" />
+              <Skeleton className="h-9 w-full" />
+            </div>
           )}
 
           {/* Live preview */}
@@ -884,12 +954,10 @@ function WebhookFieldEditor({
               </p>
             )}
             <div
-              className="border-2 p-3 overflow-auto max-h-[600px] relative"
+              className="border-2 p-3 overflow-auto max-h-[600px]"
               style={{
                 backgroundColor: "var(--background)",
                 borderColor: "var(--border)",
-                opacity: loadingPreview ? 0.4 : 1,
-                transition: "opacity 150ms",
               }}
             >
               <pre
@@ -966,14 +1034,12 @@ function ProductPicker({
   storeNames,
   selectedId,
   onSelect,
-  loading,
   t,
 }: {
   products: { id: string; title: string; brand: string | null; image_url: string | null; store_id: string }[];
   storeNames: Record<string, string>;
   selectedId: string | null;
   onSelect: (id: string | null) => void;
-  loading: boolean;
   t: (key: string, values?: Record<string, string | number>) => string;
 }) {
   const [search, setSearch] = useState("");
@@ -1078,12 +1144,6 @@ function ProductPicker({
             fontFamily: "var(--font-mono)",
           }}
         />
-        {loading && (
-          <Loader2
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 animate-spin"
-            style={{ color: "var(--muted-foreground)" }}
-          />
-        )}
       </div>
 
       {/* Dropdown results */}
