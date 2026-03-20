@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
-import { Check, X, Loader2, RotateCcw } from "lucide-react";
+import { Check, X, Loader2, RotateCcw, Search } from "lucide-react";
 import { toast } from "sonner";
 import type { FieldMeta } from "@/types/domain";
-import { DEFAULT_WEBHOOK_FIELDS } from "@/lib/webhook-payload";
+import { DEFAULT_WEBHOOK_FIELDS, DEFAULT_SEND_WEBHOOK_FIELDS } from "@/lib/webhook-payload";
 
 // ─── Toggle Row (matches admin-products-tab pattern) ───
 
@@ -86,9 +86,10 @@ const GROUP_LABELS: Record<string, { en: string; de: string }> = {
   flags: { en: "Flags", de: "Flags" },
 };
 
-// ─── Preview builder (generate format, uses real DB data) ───
+// ─── Preview builders ───
 
-function buildPreview(
+// Generate preview: { product: { ...fields, stores: { ...storeFields } } }
+function buildGeneratePreview(
   productKeys: Set<string>,
   storeKeys: Set<string>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -100,7 +101,6 @@ function buildPreview(
     return "// No product data available";
   }
 
-  // Field name remapping matching buildGeneratePayload
   const REMAP: Record<string, string> = {
     image_url: "image",
     product_url: "link",
@@ -130,9 +130,121 @@ function buildPreview(
   return JSON.stringify({ product }, null, 2);
 }
 
-// ─── Main component ───
+// Send preview: { contentType, productId, hashId, content, product: {...}, store: {...}, metadata: {...} }
+// Shows the actual send payload format with camelCase keys and fixed structural fields
+function buildSendPreview(
+  productKeys: Set<string>,
+  storeKeys: Set<string>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  realProduct: Record<string, any> | null,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  realStore: Record<string, any> | null,
+  realContent?: { content: string; content_type: string; status: string; created_at: string } | null
+): string {
+  if (!realProduct || !realStore) {
+    return "// No product data available";
+  }
+
+  // camelCase remapping matching pickProductFieldForSend
+  const PRODUCT_REMAP: Record<string, string> = {
+    hash_id: "hashId",
+    cleaned_title: "cleanedTitle",
+    description_en: "descriptionEn",
+    original_price: "salePrice",
+    sale_price: "salePriceActual",
+    discount_percentage: "discount",
+    image_url: "image",
+    product_url: "link",
+    ai_category: "aiCategory",
+    source_retailer: "sourceRetailer",
+    source_language: "sourceLanguage",
+    affiliate_link: "affiliateLink",
+    coupon_code: "couponCode",
+    coupon_value: "couponValue",
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const product: Record<string, any> = {};
+  for (const key of productKeys) {
+    if (key === "title") {
+      product.title = realProduct.cleaned_title || realProduct.title;
+    } else if (key === "in_stock") {
+      product.availability = realProduct.in_stock ? "in stock" : "out of stock";
+    } else {
+      const outKey = PRODUCT_REMAP[key] || key;
+      product[outKey] = realProduct[key] ?? null;
+    }
+  }
+
+  // Store: camelCase remapping matching pickStoreFieldForSend
+  const STORE_REMAP: Record<string, string> = {
+    program_id: "programId",
+    affiliate_link_base: "affiliateLink",
+    coupon_code: "couponCode",
+    created_at: "createdAt",
+    description_de: "descriptionDe",
+    description_en: "descriptionEn",
+    logo_url: "logoUrl",
+    is_published: "isPublished",
+    is_featured: "isFeatured",
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const store: Record<string, any> = {};
+  for (const key of storeKeys) {
+    const outKey = STORE_REMAP[key] || key;
+    store[outKey] = realStore[key] ?? null;
+  }
+
+  // Build the full send payload shape with fixed structural fields
+  // These fixed fields are always included and cannot be toggled off
+  const contentType = realContent?.content_type === "deal_post" ? "deal" : "post";
+  const payload = {
+    contentType,
+    productId: realProduct.id,
+    hashId: realProduct.hash_id || null,
+    content: realContent?.content ?? "« No AI content generated yet »",
+    product,
+    store,
+    metadata: {
+      contentStatus: realContent?.status ?? "generated",
+      createdAt: realContent?.created_at ?? new Date().toISOString(),
+      sentAt: new Date().toISOString(),
+      source: "v2-dashboard",
+      version: "2.0",
+    },
+  };
+
+  return JSON.stringify(payload, null, 2);
+}
+
+// ─── Webhook type config ───
+
+type WebhookType = "generate" | "send";
+
+interface WebhookTypeConfig {
+  defaults: { product: string[]; store: string[] };
+  descriptionKey: string;
+  previewNoteKey: string;
+}
+
+const WEBHOOK_TYPE_CONFIG: Record<WebhookType, WebhookTypeConfig> = {
+  generate: {
+    defaults: { product: DEFAULT_WEBHOOK_FIELDS.product, store: DEFAULT_WEBHOOK_FIELDS.store },
+    descriptionKey: "webhookGenerateDescription",
+    previewNoteKey: "webhookGeneratePreviewNote",
+  },
+  send: {
+    defaults: { product: DEFAULT_SEND_WEBHOOK_FIELDS.product, store: DEFAULT_SEND_WEBHOOK_FIELDS.store },
+    descriptionKey: "webhookSendDescription",
+    previewNoteKey: "webhookSendPreviewNote",
+  },
+};
+
+// ─── API response shape ───
 
 interface ApiResponse {
+  type: string;
   config: { product: string[]; store: string[] };
   defaults: { product: string[]; store: string[] };
   productFieldGroups: FieldMeta[];
@@ -141,57 +253,176 @@ interface ApiResponse {
   sampleProduct: Record<string, any> | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sampleStore: Record<string, any> | null;
+  sampleContent: {
+    content: string;
+    content_type: string;
+    status: string;
+    created_at: string;
+  } | null;
 }
+
+// ─── Main component ───
 
 export function AdminWebhookTab() {
   const t = useTranslations("Admin");
+  const [activeTab, setActiveTab] = useState<WebhookType>("generate");
+
+  return (
+    <div className="space-y-4">
+      {/* Header with title + tabs */}
+      <div
+        className="border-2 p-4"
+        style={{
+          backgroundColor: "var(--card)",
+          borderColor: "var(--border)",
+        }}
+      >
+        <h2
+          className="text-[10px] font-bold uppercase tracking-[0.15em] mb-3"
+          style={{
+            fontFamily: "var(--font-mono)",
+            color: "var(--primary-text)",
+          }}
+        >
+          {t("webhookTitle")}
+        </h2>
+
+        {/* Generate / Send tab switcher */}
+        <div className="flex" style={{ borderBottom: "2px solid var(--border)" }}>
+          {(["generate", "send"] as const).map((type) => {
+            const isActive = activeTab === type;
+            const label = type === "generate" ? t("webhookGenerateTab") : t("webhookSendTab");
+            return (
+              <button
+                key={type}
+                onClick={() => setActiveTab(type)}
+                className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors -mb-[2px]"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  color: isActive ? "var(--primary-text)" : "var(--muted-foreground)",
+                  borderBottom: isActive ? "2px solid var(--primary-text)" : "2px solid transparent",
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Tab content — each tab has its own state and saves independently */}
+      <WebhookFieldEditor
+        key={activeTab}
+        type={activeTab}
+        t={t}
+      />
+    </div>
+  );
+}
+
+// ─── Per-tab field editor (handles its own loading, state, and saving) ───
+
+function WebhookFieldEditor({
+  type,
+  t,
+}: {
+  type: WebhookType;
+  t: (key: string, values?: Record<string, string | number>) => string;
+}) {
+  const typeConfig = WEBHOOK_TYPE_CONFIG[type];
 
   const [productFields, setProductFields] = useState<Set<string>>(new Set());
   const [storeFields, setStoreFields] = useState<Set<string>>(new Set());
-  const [savedProductFields, setSavedProductFields] = useState<Set<string>>(
-    new Set()
-  );
-  const [savedStoreFields, setSavedStoreFields] = useState<Set<string>>(
-    new Set()
-  );
+  const [savedProductFields, setSavedProductFields] = useState<Set<string>>(new Set());
+  const [savedStoreFields, setSavedStoreFields] = useState<Set<string>>(new Set());
   const [productFieldGroups, setProductFieldGroups] = useState<FieldMeta[]>([]);
   const [storeFieldGroups, setStoreFieldGroups] = useState<FieldMeta[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [sampleProduct, setSampleProduct] = useState<Record<string, any> | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [sampleStore, setSampleStore] = useState<Record<string, any> | null>(null);
+  const [sampleContent, setSampleContent] = useState<ApiResponse["sampleContent"]>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  // Product picker state
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [productList, setProductList] = useState<{ id: string; title: string; brand: string | null }[]>([]);
+  const [productListLoaded, setProductListLoaded] = useState(false);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
+  // Fetch config for this webhook type (initial load or when product changes)
+  const loadData = useCallback(async (productId?: string | null) => {
+    // If we already have the config and just changing preview product, only show preview loader
+    const isProductSwitch = productId !== undefined && productListLoaded;
+    if (isProductSwitch) {
+      setLoadingPreview(true);
+    } else {
+      setLoading(true);
+    }
     setError(null);
     try {
-      const res = await fetch("/api/settings/webhook-fields");
+      const params = new URLSearchParams({ type });
+      if (productId) params.set("productId", productId);
+      const res = await fetch(`/api/settings/webhook-fields?${params}`);
       if (!res.ok) throw new Error("Failed to load");
       const data: ApiResponse = await res.json();
 
-      const pf = new Set(data.config.product);
-      const sf = new Set(data.config.store);
-      setProductFields(pf);
-      setStoreFields(sf);
-      setSavedProductFields(new Set(pf));
-      setSavedStoreFields(new Set(sf));
-      setProductFieldGroups(data.productFieldGroups);
-      setStoreFieldGroups(data.storeFieldGroups);
+      // Only update field config on initial load (not on product switch)
+      if (!isProductSwitch) {
+        const pf = new Set(data.config.product);
+        const sf = new Set(data.config.store);
+        setProductFields(pf);
+        setStoreFields(sf);
+        setSavedProductFields(new Set(pf));
+        setSavedStoreFields(new Set(sf));
+        setProductFieldGroups(data.productFieldGroups);
+        setStoreFieldGroups(data.storeFieldGroups);
+      }
       setSampleProduct(data.sampleProduct);
       setSampleStore(data.sampleStore);
+      setSampleContent(data.sampleContent ?? null);
     } catch {
       setError(t("webhookSaveFailed"));
     } finally {
       setLoading(false);
+      setLoadingPreview(false);
     }
-  }, [t]);
+  }, [type, t, productListLoaded]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Fetch lightweight product list for the picker (once per tab)
+  useEffect(() => {
+    if (productListLoaded) return;
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/products?columns=light");
+        if (!res.ok) return;
+        const data = await res.json();
+        const list = (data.products ?? []).map(
+          (p: { id: string; title: string; brand: string | null }) => ({
+            id: p.id,
+            title: p.title,
+            brand: p.brand,
+          })
+        );
+        setProductList(list);
+        setProductListLoaded(true);
+      } catch {
+        // Non-critical — picker just won't be available
+      }
+    })();
+  }, [productListLoaded]);
+
+  // When user picks a product, reload preview with that product's data
+  function handleProductSelect(productId: string | null) {
+    setSelectedProductId(productId);
+    loadData(productId);
+  }
 
   const isDirty = useMemo(() => {
     if (productFields.size !== savedProductFields.size) return true;
@@ -205,6 +436,7 @@ export function AdminWebhookTab() {
     return false;
   }, [productFields, storeFields, savedProductFields, savedStoreFields]);
 
+  // Save config — includes `type` so the API saves to the correct key
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -212,6 +444,7 @@ export function AdminWebhookTab() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          type,
           product: Array.from(productFields),
           store: Array.from(storeFields),
         }),
@@ -231,8 +464,8 @@ export function AdminWebhookTab() {
   };
 
   const handleReset = () => {
-    setProductFields(new Set(DEFAULT_WEBHOOK_FIELDS.product));
-    setStoreFields(new Set(DEFAULT_WEBHOOK_FIELDS.store));
+    setProductFields(new Set(typeConfig.defaults.product));
+    setStoreFields(new Set(typeConfig.defaults.store));
   };
 
   const toggleProduct = (key: string, on: boolean) => {
@@ -253,9 +486,13 @@ export function AdminWebhookTab() {
     });
   };
 
+  // Build preview using the correct format for this webhook type
   const preview = useMemo(
-    () => buildPreview(productFields, storeFields, sampleProduct, sampleStore),
-    [productFields, storeFields, sampleProduct, sampleStore]
+    () =>
+      type === "send"
+        ? buildSendPreview(productFields, storeFields, sampleProduct, sampleStore, sampleContent)
+        : buildGeneratePreview(productFields, storeFields, sampleProduct, sampleStore),
+    [type, productFields, storeFields, sampleProduct, sampleStore, sampleContent]
   );
 
   // Group fields by group name
@@ -314,7 +551,7 @@ export function AdminWebhookTab() {
           {error}
         </p>
         <button
-          onClick={loadData}
+          onClick={() => loadData()}
           className="text-xs font-bold uppercase tracking-[0.15em] px-4 py-2 border-2"
           style={{
             fontFamily: "var(--font-mono)",
@@ -331,8 +568,8 @@ export function AdminWebhookTab() {
   const locale = (typeof window !== "undefined" && document.documentElement.lang) || "en";
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
+    <>
+      {/* Description */}
       <div
         className="border-2 p-4"
         style={{
@@ -340,15 +577,6 @@ export function AdminWebhookTab() {
           borderColor: "var(--border)",
         }}
       >
-        <h2
-          className="text-[10px] font-bold uppercase tracking-[0.15em] mb-1"
-          style={{
-            fontFamily: "var(--font-mono)",
-            color: "var(--primary-text)",
-          }}
-        >
-          {t("webhookTitle")}
-        </h2>
         <p
           className="text-xs"
           style={{
@@ -356,11 +584,11 @@ export function AdminWebhookTab() {
             color: "var(--muted-foreground)",
           }}
         >
-          {t("webhookDescription")}
+          {t(typeConfig.descriptionKey)}
         </p>
       </div>
 
-      {/* Two-column layout */}
+      {/* Two-column layout: field toggles + preview */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Left: Field toggles */}
         <div className="space-y-4">
@@ -467,8 +695,20 @@ export function AdminWebhookTab() {
           </div>
         </div>
 
-        {/* Right: Preview */}
-        <div className="lg:sticky lg:top-4 lg:self-start">
+        {/* Right: Preview + Product Picker */}
+        <div className="lg:sticky lg:top-4 lg:self-start space-y-4">
+          {/* Product picker — search and select a product for the preview */}
+          {productListLoaded && productList.length > 0 && (
+            <ProductPicker
+              products={productList}
+              selectedId={selectedProductId}
+              onSelect={handleProductSelect}
+              loading={loadingPreview}
+              t={t}
+            />
+          )}
+
+          {/* Live preview */}
           <div
             className="border-2 p-4"
             style={{
@@ -497,10 +737,12 @@ export function AdminWebhookTab() {
               </p>
             )}
             <div
-              className="border-2 p-3 overflow-auto max-h-[600px]"
+              className="border-2 p-3 overflow-auto max-h-[600px] relative"
               style={{
                 backgroundColor: "var(--background)",
                 borderColor: "var(--border)",
+                opacity: loadingPreview ? 0.4 : 1,
+                transition: "opacity 150ms",
               }}
             >
               <pre
@@ -520,7 +762,7 @@ export function AdminWebhookTab() {
                 color: "var(--muted-foreground)",
               }}
             >
-              {t("webhookPreviewNote")}
+              {t(typeConfig.previewNoteKey)}
             </p>
           </div>
         </div>
@@ -564,6 +806,193 @@ export function AdminWebhookTab() {
           {saving ? t("webhookSaving") : t("webhookSave")}
         </button>
       </div>
+    </>
+  );
+}
+
+// ─── Product Picker (searchable dropdown for preview product selection) ───
+
+const MAX_VISIBLE_RESULTS = 30;
+
+function ProductPicker({
+  products,
+  selectedId,
+  onSelect,
+  loading,
+  t,
+}: {
+  products: { id: string; title: string; brand: string | null }[];
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+  loading: boolean;
+  t: (key: string, values?: Record<string, string | number>) => string;
+}) {
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [open]);
+
+  // Filter products by search query (title or brand)
+  const filtered = useMemo(() => {
+    if (!search.trim()) return products.slice(0, MAX_VISIBLE_RESULTS);
+    const q = search.toLowerCase();
+    return products
+      .filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          (p.brand && p.brand.toLowerCase().includes(q))
+      )
+      .slice(0, MAX_VISIBLE_RESULTS);
+  }, [products, search]);
+
+  const selectedProduct = selectedId
+    ? products.find((p) => p.id === selectedId)
+    : null;
+
+  return (
+    <div
+      ref={containerRef}
+      className="border-2 p-4 relative"
+      style={{
+        backgroundColor: "var(--card)",
+        borderColor: "var(--border)",
+      }}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <h3
+          className="text-[10px] font-bold uppercase tracking-[0.15em]"
+          style={{
+            fontFamily: "var(--font-mono)",
+            color: "var(--primary-text)",
+          }}
+        >
+          {t("webhookPreviewProduct")}
+        </h3>
+        {selectedId && (
+          <button
+            onClick={() => {
+              onSelect(null);
+              setSearch("");
+            }}
+            className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
+            style={{
+              fontFamily: "var(--font-mono)",
+              color: "var(--muted-foreground)",
+            }}
+          >
+            <X className="w-3 h-3" />
+            {t("webhookPreviewRandom")}
+          </button>
+        )}
+      </div>
+
+      {/* Search input */}
+      <div className="relative">
+        <Search
+          className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
+          style={{ color: "var(--muted-foreground)" }}
+        />
+        <input
+          ref={inputRef}
+          type="text"
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          placeholder={
+            selectedProduct
+              ? selectedProduct.title
+              : t("webhookSearchProduct")
+          }
+          className="w-full pl-8 pr-3 py-2 text-[11px] border-2 outline-none transition-colors duration-150 focus:border-[var(--primary-text)]"
+          style={{
+            backgroundColor: "var(--input)",
+            borderColor: selectedId ? "var(--primary-border)" : "var(--border)",
+            color: "var(--foreground)",
+            borderRadius: 0,
+            fontFamily: "var(--font-mono)",
+          }}
+        />
+        {loading && (
+          <Loader2
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 animate-spin"
+            style={{ color: "var(--muted-foreground)" }}
+          />
+        )}
+      </div>
+
+      {/* Dropdown results */}
+      {open && (
+        <div
+          className="absolute left-0 right-0 z-20 border-2 border-t-0 overflow-auto"
+          style={{
+            backgroundColor: "var(--card)",
+            borderColor: "var(--border)",
+            maxHeight: 240,
+            top: "100%",
+          }}
+        >
+          {filtered.length === 0 ? (
+            <p
+              className="px-3 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-center"
+              style={{
+                fontFamily: "var(--font-mono)",
+                color: "var(--muted-foreground)",
+              }}
+            >
+              {t("noResults")}
+            </p>
+          ) : (
+            filtered.map((product) => (
+              <button
+                key={product.id}
+                onClick={() => {
+                  onSelect(product.id);
+                  setSearch("");
+                  setOpen(false);
+                }}
+                className="w-full text-left px-3 py-2 transition-colors hover:bg-[var(--subtle-overlay)]"
+                style={{
+                  borderBottom: "1px solid var(--border)",
+                }}
+              >
+                <p
+                  className="text-[11px] font-semibold truncate"
+                  style={{ color: "var(--foreground)" }}
+                >
+                  {product.title}
+                </p>
+                {product.brand && (
+                  <p
+                    className="text-[9px] font-bold uppercase tracking-[0.15em] mt-0.5"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      color: "var(--muted-foreground)",
+                    }}
+                  >
+                    {product.brand}
+                  </p>
+                )}
+              </button>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }

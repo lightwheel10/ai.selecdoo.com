@@ -1,7 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { WebhookFieldConfig, FieldMeta } from "@/types/domain";
 
-// ─── Default config — matches current hardcoded fields exactly ───
+// ─── Default configs ───
+// Generate: fields sent to n8n when generating AI content
+// Send: fields sent to n8n when clicking "Send to Webhook" (publishing/distribution)
 
 export const DEFAULT_WEBHOOK_FIELDS: WebhookFieldConfig = {
   product: [
@@ -19,6 +21,23 @@ export const DEFAULT_WEBHOOK_FIELDS: WebhookFieldConfig = {
     "in_stock",
   ],
   store: ["id", "name", "url", "platform", "status", "created_at"],
+};
+
+export const DEFAULT_SEND_WEBHOOK_FIELDS: WebhookFieldConfig = {
+  product: [
+    "id",
+    "hash_id",
+    "title",
+    "image_url",
+    "product_url",
+    "price",
+    "original_price",
+    "discount_percentage",
+    "brand",
+    "currency",
+    "in_stock",
+  ],
+  store: ["id", "name", "url", "platform", "coupon_code"],
 };
 
 // ─── All available fields with groups (used by API + UI) ───
@@ -101,7 +120,9 @@ export const STORE_FIELD_GROUPS: FieldMeta[] = [
 const ALL_PRODUCT_KEYS = new Set(PRODUCT_FIELD_GROUPS.map((f) => f.key));
 const ALL_STORE_KEYS = new Set(STORE_FIELD_GROUPS.map((f) => f.key));
 
-// ─── Config reader ───
+// ─── Config readers ───
+// Generate config: stored under key "webhook_fields" (backward compatible)
+// Send config: stored under key "webhook_fields_send"
 
 export async function getWebhookFieldConfig(): Promise<WebhookFieldConfig> {
   try {
@@ -121,6 +142,26 @@ export async function getWebhookFieldConfig(): Promise<WebhookFieldConfig> {
     // Table may not exist yet or no row — fall through to default
   }
   return DEFAULT_WEBHOOK_FIELDS;
+}
+
+export async function getSendWebhookFieldConfig(): Promise<WebhookFieldConfig> {
+  try {
+    const supabase = createAdminClient();
+    const { data } = await supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "webhook_fields_send")
+      .single();
+    if (data?.value && typeof data.value === "object") {
+      const val = data.value as WebhookFieldConfig;
+      if (Array.isArray(val.product) && Array.isArray(val.store)) {
+        return val;
+      }
+    }
+  } catch {
+    // No row yet — fall through to default
+  }
+  return DEFAULT_SEND_WEBHOOK_FIELDS;
 }
 
 // ─── Validation ───

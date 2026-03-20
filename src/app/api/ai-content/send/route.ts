@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthContext } from "@/lib/auth/session";
 import { canGenerateAIContent } from "@/lib/auth/roles";
-import { getWebhookFieldConfig, buildSendPayload } from "@/lib/webhook-payload";
+import { getSendWebhookFieldConfig, buildSendPayload } from "@/lib/webhook-payload";
 
 const N8N_SEND_WEBHOOK_URL = process.env.N8N_SEND_WEBHOOK_URL!;
 const SEND_TIMEOUT = 40_000; // 40 seconds
@@ -82,8 +82,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
     }
 
-    // Build payload from configurable field list
-    const config = await getWebhookFieldConfig();
+    // Build payload using the send-specific field config (separate from generate config)
+    const config = await getSendWebhookFieldConfig();
     const payload = buildSendPayload(product, store, aiContent, contentType, config);
 
     // Fire-and-forget: 5s timeout per v1 pattern
