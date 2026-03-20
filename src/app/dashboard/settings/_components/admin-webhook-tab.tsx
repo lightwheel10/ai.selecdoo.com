@@ -354,15 +354,36 @@ function WebhookFieldEditor({
   const [productListLoaded, setProductListLoaded] = useState(false);
   const [loadingPreview, setLoadingPreview] = useState(false);
 
+  // ── sessionStorage cache ──
+  // Prevents skeleton flash when navigating away and back to this tab.
+  // On mount: if cached data exists, initialize state from it (no skeleton).
+  // Then refetch in the background to pick up any changes.
+  const cacheKey = `webhook_fields_${type}`;
+
+  function applyApiData(data: ApiResponse, updateConfig: boolean) {
+    if (updateConfig) {
+      const pf = new Set(data.config.product);
+      const sf = new Set(data.config.store);
+      setProductFields(pf);
+      setStoreFields(sf);
+      setSavedProductFields(new Set(pf));
+      setSavedStoreFields(new Set(sf));
+      setProductFieldGroups(data.productFieldGroups);
+      setStoreFieldGroups(data.storeFieldGroups);
+    }
+    setSampleProduct(data.sampleProduct);
+    setSampleStore(data.sampleStore);
+    setSampleContent(data.sampleContent ?? null);
+  }
+
   // Fetch config for this webhook type (initial load or when product changes)
   const loadData = useCallback(async (productId?: string | null) => {
     // If we already have the config and just changing preview product, only show preview loader
     const isProductSwitch = productId !== undefined && productListLoaded;
     if (isProductSwitch) {
       setLoadingPreview(true);
-    } else {
-      setLoading(true);
     }
+    // Don't set loading=true if we have cached data (avoids skeleton flash)
     setError(null);
     try {
       const params = new URLSearchParams({ type });
@@ -371,31 +392,47 @@ function WebhookFieldEditor({
       if (!res.ok) throw new Error("Failed to load");
       const data: ApiResponse = await res.json();
 
-      // Only update field config on initial load (not on product switch)
+      applyApiData(data, !isProductSwitch);
+
+      // Cache the initial config response (not product-switch responses)
       if (!isProductSwitch) {
-        const pf = new Set(data.config.product);
-        const sf = new Set(data.config.store);
-        setProductFields(pf);
-        setStoreFields(sf);
-        setSavedProductFields(new Set(pf));
-        setSavedStoreFields(new Set(sf));
-        setProductFieldGroups(data.productFieldGroups);
-        setStoreFieldGroups(data.storeFieldGroups);
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify(data));
+        } catch {
+          // sessionStorage full or unavailable — non-critical
+        }
       }
-      setSampleProduct(data.sampleProduct);
-      setSampleStore(data.sampleStore);
-      setSampleContent(data.sampleContent ?? null);
     } catch {
       setError(t("webhookSaveFailed"));
     } finally {
       setLoading(false);
       setLoadingPreview(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type, t, productListLoaded]);
 
+  // On mount: restore from cache first (instant, no skeleton), then refetch
   useEffect(() => {
+    let hasCachedData = false;
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        const data: ApiResponse = JSON.parse(cached);
+        applyApiData(data, true);
+        setLoading(false); // Skip skeleton — we have cached data
+        hasCachedData = true;
+      }
+    } catch {
+      // Invalid cache — ignore, will fetch fresh
+    }
+
+    // Always fetch fresh data (silently if we have cache, with skeleton if not)
+    if (!hasCachedData) {
+      setLoading(true);
+    }
     loadData();
-  }, [loadData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type]);
 
   // Fetch lightweight product list + store names for the picker (once per tab)
   useEffect(() => {

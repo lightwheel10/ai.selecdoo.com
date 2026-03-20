@@ -2,6 +2,8 @@
 
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useCallback } from "react";
 import { Users, Store as StoreIcon, Package, Bot, Webhook } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TeamAccessManager } from "./team-access-manager";
@@ -28,9 +30,38 @@ interface SettingsPageProps {
   canManageTeam: boolean;
 }
 
+// Valid tab values — used to validate URL param
+const VALID_TABS = ["team", "shops", "products", "webhook", "ai-activity"] as const;
+type TabValue = (typeof VALID_TABS)[number];
+
 export function SettingsPage({ isAdmin, canManageTeam }: SettingsPageProps) {
   const t = useTranslations("Settings");
   const ta = useTranslations("Admin");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Persist active tab in URL so navigating away and back restores position
+  const tabParam = searchParams.get("tab");
+  const activeTab: TabValue =
+    tabParam && VALID_TABS.includes(tabParam as TabValue)
+      ? (tabParam as TabValue)
+      : "team";
+
+  const handleTabChange = useCallback(
+    (value: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (value === "team") {
+        // "team" is the default — no need to clutter the URL
+        params.delete("tab");
+      } else {
+        params.set("tab", value);
+      }
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname);
+    },
+    [router, pathname, searchParams]
+  );
 
   // No tabs visible — limited access
   if (!canManageTeam && !isAdmin) {
@@ -65,7 +96,7 @@ export function SettingsPage({ isAdmin, canManageTeam }: SettingsPageProps) {
 
   // Admin — full tabbed interface
   return (
-    <Tabs defaultValue="team">
+    <Tabs value={activeTab} onValueChange={handleTabChange}>
       <TabsList variant="line">
         <TabsTrigger value="team">
           <Users className="w-3.5 h-3.5" />
