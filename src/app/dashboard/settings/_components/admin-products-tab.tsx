@@ -589,28 +589,22 @@ export function AdminProductsTab() {
     });
   }
 
-  // Toggles all currently visible (filtered + paginated) products
+  // Selects/deselects ALL filtered products (across all pages, not just current page)
   function toggleSelectAll() {
-    const visibleIds = paginatedProducts.map((p) => p.id);
-    const allSelected = visibleIds.every((id) => selectedProducts.has(id));
+    const allIds = filtered.map((p) => p.id);
+    const allSelected = allIds.length > 0 && allIds.every((id) => selectedProducts.has(id));
     if (allSelected) {
-      setSelectedProducts((prev) => {
-        const next = new Set(prev);
-        for (const id of visibleIds) next.delete(id);
-        return next;
-      });
+      // Deselect all
+      setSelectedProducts(new Set());
     } else {
-      setSelectedProducts((prev) => {
-        const next = new Set(prev);
-        for (const id of visibleIds) next.add(id);
-        return next;
-      });
+      // Select all filtered products
+      setSelectedProducts(new Set(allIds));
     }
   }
 
-  const allPageSelected =
-    paginatedProducts.length > 0 &&
-    paginatedProducts.every((p) => selectedProducts.has(p.id));
+  const allFilteredSelected =
+    filtered.length > 0 &&
+    filtered.every((p) => selectedProducts.has(p.id));
 
   // Bulk delete — parallel individual DELETEs matching AI content workstation pattern
   async function handleBulkDelete() {
@@ -864,40 +858,38 @@ export function AdminProductsTab() {
           </button>
         )}
 
-        {/* Bulk selection controls — only visible to users with delete permission */}
-        {allowDeleteProduct && (
-          <label className="flex items-center gap-1.5 px-3 py-1.5 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={allPageSelected}
-              onChange={toggleSelectAll}
-              className="sr-only"
-            />
-            <div
-              className="w-4 h-4 border-2 flex items-center justify-center transition-colors"
-              style={{
-                backgroundColor: allPageSelected ? "var(--primary)" : "transparent",
-                borderColor: allPageSelected ? "var(--primary-text)" : "var(--border)",
-              }}
-            >
-              {allPageSelected && (
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="var(--primary-foreground)" strokeWidth="2" strokeLinecap="square">
-                  <path d="M2 5l2.5 2.5L8 3" />
-                </svg>
-              )}
-            </div>
-            <span
-              className="text-[10px] font-bold uppercase tracking-[0.15em]"
-              style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
-            >
-              {t("selectAll")}
-            </span>
-          </label>
-        )}
-
-        {/* Selected count + bulk delete button */}
+        {/* Bulk selection controls — hidden until a product is selected.
+            "Select all" selects ALL filtered products across all pages. */}
         {allowDeleteProduct && selectedProducts.size > 0 && (
           <>
+            <label className="flex items-center gap-1.5 px-3 py-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={allFilteredSelected}
+                onChange={toggleSelectAll}
+                className="sr-only"
+              />
+              <div
+                className="w-4 h-4 border-2 flex items-center justify-center transition-colors"
+                style={{
+                  backgroundColor: allFilteredSelected ? "var(--primary)" : "transparent",
+                  borderColor: allFilteredSelected ? "var(--primary-text)" : "var(--border)",
+                }}
+              >
+                {allFilteredSelected && (
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="var(--primary-foreground)" strokeWidth="2" strokeLinecap="square">
+                    <path d="M2 5l2.5 2.5L8 3" />
+                  </svg>
+                )}
+              </div>
+              <span
+                className="text-[10px] font-bold uppercase tracking-[0.15em]"
+                style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+              >
+                {t("selectAll")}
+              </span>
+            </label>
+
             <span
               className="text-[10px] font-bold uppercase tracking-[0.15em]"
               style={{ fontFamily: "var(--font-mono)", color: "var(--primary-text)" }}
