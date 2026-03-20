@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Check, X, Loader2, RotateCcw, Search } from "lucide-react";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { FieldMeta } from "@/types/domain";
 import { DEFAULT_WEBHOOK_FIELDS, DEFAULT_SEND_WEBHOOK_FIELDS } from "@/lib/webhook-payload";
 
@@ -534,24 +535,115 @@ function WebhookFieldEditor({
   }, [storeFieldGroups]);
 
   // ─── Loading state ───
+  // Uses Skeleton components to match the app-wide loading pattern
+  // (other settings tabs — shops, products, AI activity — all use skeletons)
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <Loader2
-          className="w-5 h-5 animate-spin"
-          style={{ color: "var(--muted-foreground)" }}
-        />
-        <span
-          className="ml-2 text-xs"
-          style={{
-            fontFamily: "var(--font-mono)",
-            color: "var(--muted-foreground)",
-          }}
+      <>
+        {/* Description skeleton */}
+        <div
+          className="border-2 p-4"
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
         >
-          {t("webhookLoading")}
-        </span>
-      </div>
+          <Skeleton className="h-3 w-3/4" />
+        </div>
+
+        {/* Two-column layout skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Left: Field toggles skeleton */}
+          <div className="space-y-4">
+            {/* Product fields card */}
+            <div
+              className="border-2 p-4"
+              style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <Skeleton className="h-2.5 w-24" />
+                <Skeleton className="h-2.5 w-32" />
+              </div>
+              {/* Group header + toggle rows */}
+              <Skeleton className="h-2.5 w-16 mt-4 mb-2" />
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={`p1-${i}`}
+                  className="flex items-center justify-between px-3 py-2 border-2 mb-1"
+                  style={{ borderColor: "var(--border)" }}
+                >
+                  <Skeleton className="h-2.5 w-20" />
+                  <Skeleton className="h-6 w-6" />
+                </div>
+              ))}
+              <Skeleton className="h-2.5 w-16 mt-4 mb-2" />
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={`p2-${i}`}
+                  className="flex items-center justify-between px-3 py-2 border-2 mb-1"
+                  style={{ borderColor: "var(--border)" }}
+                >
+                  <Skeleton className="h-2.5 w-24" />
+                  <Skeleton className="h-6 w-6" />
+                </div>
+              ))}
+            </div>
+
+            {/* Store fields card */}
+            <div
+              className="border-2 p-4"
+              style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <Skeleton className="h-2.5 w-20" />
+                <Skeleton className="h-2.5 w-32" />
+              </div>
+              <Skeleton className="h-2.5 w-16 mt-4 mb-2" />
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={`s-${i}`}
+                  className="flex items-center justify-between px-3 py-2 border-2 mb-1"
+                  style={{ borderColor: "var(--border)" }}
+                >
+                  <Skeleton className="h-2.5 w-20" />
+                  <Skeleton className="h-6 w-6" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: Preview skeleton */}
+          <div className="space-y-4">
+            <div
+              className="border-2 p-4"
+              style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+            >
+              <Skeleton className="h-2.5 w-24 mb-3" />
+              <Skeleton className="h-2.5 w-48 mb-3" />
+              <div
+                className="border-2 p-3"
+                style={{ borderColor: "var(--border)" }}
+              >
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <Skeleton
+                    key={`pre-${i}`}
+                    className="h-3 mb-2"
+                    style={{ width: `${60 + Math.random() * 40}%` }}
+                  />
+                ))}
+              </div>
+              <Skeleton className="h-2.5 w-56 mt-3" />
+            </div>
+          </div>
+        </div>
+
+        {/* Action buttons skeleton */}
+        <div
+          className="border-2 p-4 flex items-center justify-between"
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+        >
+          <Skeleton className="h-9 w-[140px]" />
+          <Skeleton className="h-9 w-[130px]" />
+        </div>
+      </>
     );
   }
 
