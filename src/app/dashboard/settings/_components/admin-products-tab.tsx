@@ -11,6 +11,8 @@ import {
   Eye,
   RotateCcw,
   Trash2,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductImage } from "@/components/domain/product-image";
@@ -48,7 +50,7 @@ import { StatusBadge } from "@/components/domain/status-badge";
 import { Pagination } from "@/components/domain/pagination";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { canDeleteProduct } from "@/lib/auth/roles";
+import { canDeleteProduct, canAccessAdmin } from "@/lib/auth/roles";
 import { useAuthAccess } from "@/components/domain/role-provider";
 import type { Product, Store, StockStatus } from "@/types";
 
@@ -352,12 +354,15 @@ export function AdminProductsTab() {
   const t = useTranslations("Admin");
   const access = useAuthAccess();
   const allowDeleteProduct = canDeleteProduct(access);
+  const allowAIClean = canAccessAdmin(access);
 
   const [localProducts, setLocalProducts] = useState<Product[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  // Tracks which product is currently being AI-cleaned (shows spinner on that row)
+  const [cleaningProductId, setCleaningProductId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -516,6 +521,58 @@ export function AdminProductsTab() {
       toast.error(t("deleteFailed"));
     }
     setPendingDelete(null);
+  }
+
+  // One-click AI clean for a single product.
+  // Calls POST /api/admin/clean with the product ID and "descriptions" scope.
+  // On success, updates the local product with the cleaned fields so the
+  // table reflects changes immediately without a full reload.
+  async function handleAIClean(product: Product) {
+    if (cleaningProductId) return; // Prevent concurrent cleans
+    setCleaningProductId(product.id);
+    try {
+      const res = await fetch("/api/admin/clean", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productIds: [product.id],
+          scope: "descriptions",
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+
+      const { results } = await res.json();
+      const result = results?.[0];
+
+      if (result?.status === "success") {
+        // Refetch the updated product to get the cleaned fields
+        const freshRes = await fetch("/api/admin/products");
+        if (freshRes.ok) {
+          const freshData = await freshRes.json();
+          const freshProduct = (freshData.products ?? []).find(
+            (p: Product) => p.id === product.id
+          );
+          if (freshProduct) {
+            setLocalProducts((prev) =>
+              prev.map((p) => (p.id === product.id ? freshProduct : p))
+            );
+          }
+        }
+        toast(t("aiCleanSuccess"), {
+          description: t("aiCleanSuccessDescription", { title: product.title }),
+        });
+      } else {
+        toast.error(result?.error || t("aiCleanFailed"));
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("aiCleanFailed"));
+    } finally {
+      setCleaningProductId(null);
+    }
   }
 
   function clearAll() {
@@ -927,6 +984,33 @@ export function AdminProductsTab() {
                             icon={Pencil}
                             title={t("edit")}
                           />
+                          {/* AI Clean — one-click product cleaning via Claude.
+                              Shows spinner while cleaning is in progress. */}
+                          {allowAIClean && (
+                            <button
+                              onClick={() => handleAIClean(product)}
+                              disabled={cleaningProductId !== null}
+                              title={t("aiClean")}
+                              className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
+                              style={{
+                                backgroundColor: cleaningProductId === product.id
+                                  ? "var(--primary-muted)"
+                                  : "rgba(168,85,247,0.12)",
+                                border: cleaningProductId === product.id
+                                  ? "1.5px solid var(--primary-muted)"
+                                  : "1.5px solid rgba(168,85,247,0.4)",
+                                color: cleaningProductId === product.id
+                                  ? "var(--primary-text)"
+                                  : "#A855F7",
+                              }}
+                            >
+                              {cleaningProductId === product.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Sparkles className="w-3 h-3" />
+                              )}
+                            </button>
+                          )}
                           {allowDeleteProduct && (
                             <button
                               onClick={() => setPendingDelete(product.id)}
