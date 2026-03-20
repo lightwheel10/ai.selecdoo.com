@@ -363,6 +363,9 @@ export function AdminProductsTab() {
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   // Tracks which product is currently being AI-cleaned (shows spinner on that row)
   const [cleaningProductId, setCleaningProductId] = useState<string | null>(null);
+  // Bulk selection state — uses Set<string> matching the AI content workstation pattern
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -573,6 +576,71 @@ export function AdminProductsTab() {
     } finally {
       setCleaningProductId(null);
     }
+  }
+
+  // ── Bulk selection helpers (matches AI content workstation pattern) ──
+
+  function toggleSelect(productId: string) {
+    setSelectedProducts((prev) => {
+      const next = new Set(prev);
+      if (next.has(productId)) next.delete(productId);
+      else next.add(productId);
+      return next;
+    });
+  }
+
+  // Toggles all currently visible (filtered + paginated) products
+  function toggleSelectAll() {
+    const visibleIds = paginatedProducts.map((p) => p.id);
+    const allSelected = visibleIds.every((id) => selectedProducts.has(id));
+    if (allSelected) {
+      setSelectedProducts((prev) => {
+        const next = new Set(prev);
+        for (const id of visibleIds) next.delete(id);
+        return next;
+      });
+    } else {
+      setSelectedProducts((prev) => {
+        const next = new Set(prev);
+        for (const id of visibleIds) next.add(id);
+        return next;
+      });
+    }
+  }
+
+  const allPageSelected =
+    paginatedProducts.length > 0 &&
+    paginatedProducts.every((p) => selectedProducts.has(p.id));
+
+  // Bulk delete — parallel individual DELETEs matching AI content workstation pattern
+  async function handleBulkDelete() {
+    const ids = Array.from(selectedProducts);
+    const results = await Promise.allSettled(
+      ids.map((id) => fetch(`/api/products/${id}`, { method: "DELETE" }))
+    );
+    const succeeded = results.filter(
+      (r) => r.status === "fulfilled" && (r.value as Response).ok
+    );
+    if (succeeded.length > 0) {
+      const deletedIds = new Set(
+        ids.filter(
+          (_, i) =>
+            results[i].status === "fulfilled" &&
+            (results[i] as PromiseFulfilledResult<Response>).value.ok
+        )
+      );
+      setLocalProducts((prev) => prev.filter((p) => !deletedIds.has(p.id)));
+      setSelectedProducts((prev) => {
+        const next = new Set(prev);
+        deletedIds.forEach((id) => next.delete(id));
+        return next;
+      });
+      toast(t("bulkDeleted", { count: succeeded.length }));
+    }
+    if (succeeded.length < ids.length) {
+      toast.error(t("bulkDeletePartialFail", { failed: ids.length - succeeded.length }));
+    }
+    setShowBulkDeleteConfirm(false);
   }
 
   function clearAll() {
@@ -796,6 +864,62 @@ export function AdminProductsTab() {
           </button>
         )}
 
+        {/* Bulk selection controls — only visible to users with delete permission */}
+        {allowDeleteProduct && (
+          <label className="flex items-center gap-1.5 px-3 py-1.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={allPageSelected}
+              onChange={toggleSelectAll}
+              className="sr-only"
+            />
+            <div
+              className="w-4 h-4 border-2 flex items-center justify-center transition-colors"
+              style={{
+                backgroundColor: allPageSelected ? "var(--primary)" : "transparent",
+                borderColor: allPageSelected ? "var(--primary-text)" : "var(--border)",
+              }}
+            >
+              {allPageSelected && (
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="var(--primary-foreground)" strokeWidth="2" strokeLinecap="square">
+                  <path d="M2 5l2.5 2.5L8 3" />
+                </svg>
+              )}
+            </div>
+            <span
+              className="text-[10px] font-bold uppercase tracking-[0.15em]"
+              style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+            >
+              {t("selectAll")}
+            </span>
+          </label>
+        )}
+
+        {/* Selected count + bulk delete button */}
+        {allowDeleteProduct && selectedProducts.size > 0 && (
+          <>
+            <span
+              className="text-[10px] font-bold uppercase tracking-[0.15em]"
+              style={{ fontFamily: "var(--font-mono)", color: "var(--primary-text)" }}
+            >
+              {t("selectedCount", { count: selectedProducts.size })}
+            </span>
+            <button
+              onClick={() => setShowBulkDeleteConfirm(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
+              style={{
+                fontFamily: "var(--font-mono)",
+                backgroundColor: "#FF453A12",
+                border: "1.5px solid #FF453A40",
+                color: "#FF453A",
+              }}
+            >
+              <Trash2 className="w-3 h-3" />
+              {t("deleteSelected")}
+            </button>
+          </>
+        )}
+
         <p
           className="ml-auto text-[10px] font-bold uppercase tracking-[0.15em] whitespace-nowrap"
           style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
@@ -830,8 +954,10 @@ export function AdminProductsTab() {
         >
           <Table style={{ tableLayout: "fixed", width: "100%" }}>
             <colgroup>
+              {/* Checkbox column only rendered when user has delete permission */}
+              {allowDeleteProduct && <col style={{ width: "3%" }} />}
               <col style={{ width: "5%" }} />
-              <col style={{ width: "24%" }} />
+              <col style={{ width: allowDeleteProduct ? "21%" : "24%" }} />
               <col style={{ width: "12%" }} />
               <col style={{ width: "10%" }} />
               <col style={{ width: "10%" }} />
@@ -843,6 +969,17 @@ export function AdminProductsTab() {
                 className="border-b-2 hover:bg-transparent sticky top-0 z-10"
                 style={{ borderColor: "var(--border)", backgroundColor: "var(--card)" }}
               >
+                {/* Checkbox header */}
+                {allowDeleteProduct && (
+                  <TableHead
+                    className="text-[9px] font-bold uppercase tracking-[0.15em] h-10"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      color: "var(--muted-foreground)",
+                      backgroundColor: "var(--table-header-bg)",
+                    }}
+                  />
+                )}
                 {[t("image"), t("title"), t("brand"), t("price"), t("stock"), t("published"), t("actions")].map(
                   (header, i) => (
                     <TableHead
@@ -869,6 +1006,32 @@ export function AdminProductsTab() {
                     className="border-b hover:bg-[var(--table-header-bg)]"
                     style={{ borderColor: "var(--border)" }}
                   >
+                    {/* Row checkbox for bulk selection */}
+                    {allowDeleteProduct && (
+                      <TableCell className="py-2">
+                        <label className="flex items-center justify-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedProducts.has(product.id)}
+                            onChange={() => toggleSelect(product.id)}
+                            className="sr-only"
+                          />
+                          <div
+                            className="w-4 h-4 border-2 flex items-center justify-center transition-colors"
+                            style={{
+                              backgroundColor: selectedProducts.has(product.id) ? "var(--primary)" : "transparent",
+                              borderColor: selectedProducts.has(product.id) ? "var(--primary-text)" : "var(--border)",
+                            }}
+                          >
+                            {selectedProducts.has(product.id) && (
+                              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="var(--primary-foreground)" strokeWidth="2" strokeLinecap="square">
+                                <path d="M2 5l2.5 2.5L8 3" />
+                              </svg>
+                            )}
+                          </div>
+                        </label>
+                      </TableCell>
+                    )}
                     {/* Image */}
                     <TableCell className="py-2">
                       <div
@@ -1319,6 +1482,74 @@ export function AdminProductsTab() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      {allowDeleteProduct && (
+        <Dialog
+          open={showBulkDeleteConfirm}
+          onOpenChange={(open) => {
+            if (!open) setShowBulkDeleteConfirm(false);
+          }}
+        >
+          <DialogContent
+            className="border-2 p-0 gap-0 sm:max-w-md"
+            style={{
+              borderColor: "var(--border)",
+              backgroundColor: "var(--card)",
+              borderRadius: 0,
+            }}
+          >
+            <DialogHeader className="px-6 pt-6 pb-4">
+              <DialogTitle
+                className="text-[13px] font-semibold"
+                style={{ color: "var(--foreground)" }}
+              >
+                {t("confirmBulkDelete", { count: selectedProducts.size })}
+              </DialogTitle>
+              <DialogDescription
+                className="text-[11px] mt-2"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  color: "var(--muted-foreground)",
+                }}
+              >
+                {t("confirmBulkDeleteDescription", { count: selectedProducts.size })}
+              </DialogDescription>
+            </DialogHeader>
+            <div
+              className="flex items-center justify-end gap-2 px-6 pb-6 pt-2"
+              style={{ borderTop: "1px solid var(--border)" }}
+            >
+              <button
+                onClick={() => setShowBulkDeleteConfirm(false)}
+                className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  backgroundColor: "transparent",
+                  borderColor: "var(--border)",
+                  color: "var(--muted-foreground)",
+                }}
+              >
+                {t("cancel")}
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none shadow-[3px_3px_0px]"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  backgroundColor: "#FF453A",
+                  borderColor: "#FF453A",
+                  color: "#fff",
+                  boxShadow: "3px 3px 0px #FF453A",
+                }}
+              >
+                <Trash2 className="w-3 h-3" />
+                {t("deleteSelected")}
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
