@@ -348,7 +348,8 @@ function WebhookFieldEditor({
 
   // Product picker state
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-  const [productList, setProductList] = useState<{ id: string; title: string; brand: string | null }[]>([]);
+  const [productList, setProductList] = useState<{ id: string; title: string; brand: string | null; image_url: string | null; store_id: string }[]>([]);
+  const [storeNameMap, setStoreNameMap] = useState<Record<string, string>>({});
   const [productListLoaded, setProductListLoaded] = useState(false);
   const [loadingPreview, setLoadingPreview] = useState(false);
 
@@ -395,22 +396,38 @@ function WebhookFieldEditor({
     loadData();
   }, [loadData]);
 
-  // Fetch lightweight product list for the picker (once per tab)
+  // Fetch lightweight product list + store names for the picker (once per tab)
   useEffect(() => {
     if (productListLoaded) return;
     (async () => {
       try {
-        const res = await fetch("/api/admin/products?columns=light");
-        if (!res.ok) return;
-        const data = await res.json();
-        const list = (data.products ?? []).map(
-          (p: { id: string; title: string; brand: string | null }) => ({
+        const [productsRes, storesRes] = await Promise.all([
+          fetch("/api/admin/products?columns=light"),
+          fetch("/api/admin/stores"),
+        ]);
+        if (!productsRes.ok) return;
+        const productsData = await productsRes.json();
+        const list = (productsData.products ?? []).map(
+          (p: { id: string; title: string; brand: string | null; image_url: string | null; store_id: string }) => ({
             id: p.id,
             title: p.title,
             brand: p.brand,
+            image_url: p.image_url,
+            store_id: p.store_id,
           })
         );
         setProductList(list);
+
+        // Build store name lookup
+        if (storesRes.ok) {
+          const storesData = await storesRes.json();
+          const map: Record<string, string> = {};
+          for (const s of storesData.stores ?? []) {
+            map[s.id] = s.name;
+          }
+          setStoreNameMap(map);
+        }
+
         setProductListLoaded(true);
       } catch {
         // Non-critical — picker just won't be available
@@ -701,6 +718,7 @@ function WebhookFieldEditor({
           {productListLoaded && productList.length > 0 && (
             <ProductPicker
               products={productList}
+              storeNames={storeNameMap}
               selectedId={selectedProductId}
               onSelect={handleProductSelect}
               loading={loadingPreview}
@@ -816,12 +834,14 @@ const MAX_VISIBLE_RESULTS = 30;
 
 function ProductPicker({
   products,
+  storeNames,
   selectedId,
   onSelect,
   loading,
   t,
 }: {
-  products: { id: string; title: string; brand: string | null }[];
+  products: { id: string; title: string; brand: string | null; image_url: string | null; store_id: string }[];
+  storeNames: Record<string, string>;
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   loading: boolean;
@@ -845,7 +865,7 @@ function ProductPicker({
     }
   }, [open]);
 
-  // Filter products by search query (title or brand)
+  // Filter products by search query (title, brand, or store name)
   const filtered = useMemo(() => {
     if (!search.trim()) return products.slice(0, MAX_VISIBLE_RESULTS);
     const q = search.toLowerCase();
@@ -853,10 +873,11 @@ function ProductPicker({
       .filter(
         (p) =>
           p.title.toLowerCase().includes(q) ||
-          (p.brand && p.brand.toLowerCase().includes(q))
+          (p.brand && p.brand.toLowerCase().includes(q)) ||
+          (storeNames[p.store_id] && storeNames[p.store_id].toLowerCase().includes(q))
       )
       .slice(0, MAX_VISIBLE_RESULTS);
-  }, [products, search]);
+  }, [products, search, storeNames]);
 
   const selectedProduct = selectedId
     ? products.find((p) => p.id === selectedId)
@@ -966,28 +987,78 @@ function ProductPicker({
                   setSearch("");
                   setOpen(false);
                 }}
-                className="w-full text-left px-3 py-2 transition-colors hover:bg-[var(--subtle-overlay)]"
+                className="w-full text-left px-3 py-2 flex items-center gap-2.5 transition-colors hover:bg-[var(--subtle-overlay)]"
                 style={{
                   borderBottom: "1px solid var(--border)",
                 }}
               >
-                <p
-                  className="text-[11px] font-semibold truncate"
-                  style={{ color: "var(--foreground)" }}
+                {/* Product thumbnail */}
+                <div
+                  className="w-8 h-8 flex-shrink-0 overflow-hidden"
+                  style={{
+                    backgroundColor: "var(--input)",
+                    border: "1px solid var(--border)",
+                  }}
                 >
-                  {product.title}
-                </p>
-                {product.brand && (
+                  {product.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={product.image_url}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <span
+                        className="text-[7px] font-bold"
+                        style={{ color: "var(--muted-foreground)", opacity: 0.4 }}
+                      >
+                        ?
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {/* Product info */}
+                <div className="flex-1 min-w-0">
                   <p
-                    className="text-[9px] font-bold uppercase tracking-[0.15em] mt-0.5"
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      color: "var(--muted-foreground)",
-                    }}
+                    className="text-[11px] font-semibold truncate"
+                    style={{ color: "var(--foreground)" }}
                   >
-                    {product.brand}
+                    {product.title}
                   </p>
-                )}
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    {storeNames[product.store_id] && (
+                      <span
+                        className="text-[9px] font-bold uppercase tracking-[0.15em] truncate"
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          color: "var(--primary-text)",
+                        }}
+                      >
+                        {storeNames[product.store_id]}
+                      </span>
+                    )}
+                    {product.brand && storeNames[product.store_id] && (
+                      <span
+                        className="text-[9px]"
+                        style={{ color: "var(--muted-foreground)", opacity: 0.4 }}
+                      >
+                        ·
+                      </span>
+                    )}
+                    {product.brand && (
+                      <span
+                        className="text-[9px] font-bold uppercase tracking-[0.15em] truncate"
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          color: "var(--muted-foreground)",
+                        }}
+                      >
+                        {product.brand}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </button>
             ))
           )}

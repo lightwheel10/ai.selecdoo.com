@@ -140,9 +140,9 @@ export async function getProducts(): Promise<Product[]> {
 
 // ─── Products (light — for AI Activity tab) ───
 
-const PRODUCT_LIGHT_COLUMNS = "id, store_id, title, cleaned_title, brand, ai_category";
+const PRODUCT_LIGHT_COLUMNS = "id, store_id, title, cleaned_title, brand, ai_category, image_url";
 
-export async function getProductsLight(): Promise<Pick<Product, "id" | "store_id" | "title" | "brand" | "ai_category">[]> {
+export async function getProductsLight(): Promise<Pick<Product, "id" | "store_id" | "title" | "brand" | "ai_category" | "image_url">[]> {
   const supabase = createAdminClient();
   const PAGE_SIZE = 1000;
   const allRows: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -173,6 +173,7 @@ export async function getProductsLight(): Promise<Pick<Product, "id" | "store_id
     title: row.cleaned_title || row.title,
     brand: row.brand,
     ai_category: row.ai_category,
+    image_url: row.image_url,
   }));
 }
 
