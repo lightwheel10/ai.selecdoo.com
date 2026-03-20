@@ -10,6 +10,7 @@ import {
   ExternalLink,
   Eye,
   RotateCcw,
+  Trash2,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductImage } from "@/components/domain/product-image";
@@ -47,6 +48,8 @@ import { StatusBadge } from "@/components/domain/status-badge";
 import { Pagination } from "@/components/domain/pagination";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { canDeleteProduct } from "@/lib/auth/roles";
+import { useAuthAccess } from "@/components/domain/role-provider";
 import type { Product, Store, StockStatus } from "@/types";
 
 const ITEMS_PER_PAGE = 50;
@@ -347,11 +350,14 @@ function ToggleRow({ label, checked, onChange }: { label: string; checked: boole
 
 export function AdminProductsTab() {
   const t = useTranslations("Admin");
+  const access = useAuthAccess();
+  const allowDeleteProduct = canDeleteProduct(access);
 
   const [localProducts, setLocalProducts] = useState<Product[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -494,6 +500,22 @@ export function AdminProductsTab() {
       );
       toast.error(t("publishFailed"));
     }
+  }
+
+  // Soft-delete a product (same pattern as stores tab delete).
+  // Removes from local list on success, shows error toast on failure.
+  async function deleteProduct(id: string) {
+    const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setLocalProducts((prev) => prev.filter((p) => p.id !== id));
+      const product = localProducts.find((p) => p.id === id);
+      toast(t("productDeleted"), {
+        description: product ? t("productDeletedDescription", { title: product.title }) : undefined,
+      });
+    } else {
+      toast.error(t("deleteFailed"));
+    }
+    setPendingDelete(null);
   }
 
   function clearAll() {
@@ -850,33 +872,76 @@ export function AdminProductsTab() {
                       </div>
                     </TableCell>
 
-                    {/* Actions */}
+                    {/* Actions — shows confirm state when delete is pending (same pattern as stores tab) */}
                     <TableCell className="text-center">
-                      <div className="flex items-center gap-1.5 justify-center">
-                        <Link
-                          href={`/dashboard/products/${product.id}`}
-                          className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"
-                          style={{
-                            backgroundColor: "transparent",
-                            border: "2px solid var(--border)",
-                            color: "var(--muted-foreground)",
-                          }}
-                          title={t("view")}
-                        >
-                          <Eye className="w-3 h-3" />
-                        </Link>
-                        {product.product_url && (
+                      {pendingDelete === product.id && allowDeleteProduct ? (
+                        <div className="flex items-center gap-1.5 justify-center">
+                          <button
+                            onClick={() => deleteProduct(product.id)}
+                            title={t("confirmDelete")}
+                            className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"
+                            style={{
+                              backgroundColor: "rgba(255,69,58,0.15)",
+                              border: "1.5px solid rgba(255,69,58,0.4)",
+                              color: "#FF453A",
+                            }}
+                          >
+                            <Check className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => setPendingDelete(null)}
+                            title={t("cancel")}
+                            className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"
+                            style={{
+                              backgroundColor: "transparent",
+                              border: "2px solid var(--border)",
+                              color: "var(--muted-foreground)",
+                            }}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 justify-center">
+                          <Link
+                            href={`/dashboard/products/${product.id}`}
+                            className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"
+                            style={{
+                              backgroundColor: "transparent",
+                              border: "2px solid var(--border)",
+                              color: "var(--muted-foreground)",
+                            }}
+                            title={t("view")}
+                          >
+                            <Eye className="w-3 h-3" />
+                          </Link>
+                          {product.product_url && (
+                            <IconButton
+                              onClick={() => window.open(product.product_url!, "_blank")}
+                              icon={ExternalLink}
+                            />
+                          )}
                           <IconButton
-                            onClick={() => window.open(product.product_url!, "_blank")}
-                            icon={ExternalLink}
+                            onClick={() => setEditingProduct({ ...product })}
+                            icon={Pencil}
+                            title={t("edit")}
                           />
-                        )}
-                        <IconButton
-                          onClick={() => setEditingProduct({ ...product })}
-                          icon={Pencil}
-                          title={t("edit")}
-                        />
-                      </div>
+                          {allowDeleteProduct && (
+                            <button
+                              onClick={() => setPendingDelete(product.id)}
+                              title={t("delete")}
+                              className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"
+                              style={{
+                                backgroundColor: "rgba(255,69,58,0.15)",
+                                border: "1.5px solid rgba(255,69,58,0.4)",
+                                color: "#FF453A",
+                              }}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 );
