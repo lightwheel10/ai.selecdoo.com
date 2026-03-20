@@ -18,6 +18,7 @@ const PRODUCT_FIELD_MAP: Record<string, string> = {
   description_en: "description_en",
   image_url: "image_url",
   affiliate_link: "affiliate_link",
+  ai_shipping_data: "ai_shipping_data", // JSONB — product-level shipping overrides
 };
 
 const MAX_BODY_SIZE = 16_384; // 16 KB
