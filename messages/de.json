@@ -626,6 +626,7 @@
     "storeSavedDescription": "{name} wurde aktualisiert.",
     "productSaved": "Produkt gespeichert",
     "productSavedDescription": "{title} wurde aktualisiert.",
+    "publishFailed": "Veröffentlichungsstatus konnte nicht aktualisiert werden",
     "image": "Bild",
     "title": "Titel",
     "brand": "Marke",

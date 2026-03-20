@@ -626,6 +626,7 @@
     "storeSavedDescription": "{name} has been updated.",
     "productSaved": "Product saved",
     "productSavedDescription": "{title} has been updated.",
+    "publishFailed": "Failed to update publish status",
     "image": "Image",
     "title": "Title",
     "brand": "Brand",

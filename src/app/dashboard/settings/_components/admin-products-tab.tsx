@@ -469,10 +469,31 @@ export function AdminProductsTab() {
     return filtered.slice(start, start + ITEMS_PER_PAGE);
   }, [filtered, currentPage]);
 
-  function togglePublish(id: string) {
+  // Persist publish toggle immediately to DB (matches stores tab pattern).
+  // Optimistic update: flip UI first, revert if API fails.
+  async function togglePublish(id: string) {
+    const product = localProducts.find((p) => p.id === id);
+    if (!product) return;
+
+    const newValue = !product.is_published;
+    // Optimistic update
     setLocalProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, is_published: !p.is_published } : p))
+      prev.map((p) => (p.id === id ? { ...p, is_published: newValue } : p))
     );
+
+    const res = await fetch(`/api/products/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_published: newValue }),
+    });
+
+    if (!res.ok) {
+      // Revert on failure
+      setLocalProducts((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, is_published: !newValue } : p))
+      );
+      toast.error(t("publishFailed"));
+    }
   }
 
   function clearAll() {
