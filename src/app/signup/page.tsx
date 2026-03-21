@@ -1,38 +1,49 @@
+/**
+ * Signup page — creates a new workspace + user account.
+ *
+ * Flow:
+ * 1. User enters workspace name + email
+ * 2. OTP code sent to email (same as login flow)
+ * 3. User verifies OTP
+ * 4. POST /api/workspaces creates the workspace + admin membership
+ * 5. Redirect to /dashboard
+ *
+ * Design matches the login page exactly (brutalist, monospace labels,
+ * 2px borders, hard shadows, grid texture background).
+ */
+
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { ArrowLeft, Zap, Loader2, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, Zap, Sparkles } from "lucide-react";
 import Link from "next/link";
 
-type Step = "idle" | "code_sent";
+type Step = "details" | "code_sent" | "creating";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const supabase = createClient();
 
+  const [workspaceName, setWorkspaceName] = useState("");
   const [email, setEmail] = useState("");
-  const [step, setStep] = useState<Step>("idle");
+  const [step, setStep] = useState<Step>("details");
   const [otpCode, setOtpCode] = useState("");
-  const initialError = useMemo(() => {
-    const urlError = searchParams.get("error");
-    return urlError === "verification_failed" ? "Verification failed. Please try again." : null;
-  }, [searchParams]);
-  const [error, setError] = useState<string | null>(initialError);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [cooldown, setCooldown] = useState(0);
 
-  // Cooldown timer
+  // Cooldown timer for resend button
   useEffect(() => {
     if (cooldown <= 0) return;
     const timer = setTimeout(() => setCooldown((c) => c - 1), 1000);
     return () => clearTimeout(timer);
   }, [cooldown]);
 
+  // Step 1: Send OTP code to email
   const handleSendCode = useCallback(async () => {
-    if (!email) return;
+    if (!email || !workspaceName.trim()) return;
     setError(null);
     setLoading(true);
 
@@ -51,27 +62,52 @@ export default function LoginPage() {
       setStep("code_sent");
       setCooldown(60);
     }
-  }, [email, supabase.auth]);
+  }, [email, workspaceName, supabase.auth]);
 
+  // Step 2: Verify OTP, then create workspace
   const handleVerifyOtp = useCallback(async () => {
     if (!otpCode || otpCode.length !== 6) return;
     setError(null);
     setLoading(true);
 
-    const { error } = await supabase.auth.verifyOtp({
+    // Verify the OTP code
+    const { error: verifyErr } = await supabase.auth.verifyOtp({
       email,
       token: otpCode,
       type: "email",
     });
 
-    setLoading(false);
-    if (error) {
-      setError(error.message);
-    } else {
-      router.push("/dashboard");
+    if (verifyErr) {
+      setLoading(false);
+      setError(verifyErr.message);
+      return;
     }
-  }, [email, otpCode, supabase.auth, router]);
 
+    // OTP verified — now create the workspace
+    setStep("creating");
+
+    try {
+      const res = await fetch("/api/workspaces", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: workspaceName.trim() }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+
+      // Workspace created — redirect to dashboard
+      router.push("/dashboard");
+    } catch (err) {
+      setLoading(false);
+      setStep("code_sent");
+      setError(err instanceof Error ? err.message : "Failed to create workspace");
+    }
+  }, [email, otpCode, workspaceName, supabase.auth, router]);
+
+  // Resend OTP code
   const handleResend = useCallback(async () => {
     if (cooldown > 0) return;
     setError(null);
@@ -94,14 +130,14 @@ export default function LoginPage() {
   }, [cooldown, email, supabase.auth]);
 
   const goBack = () => {
-    setStep("idle");
+    setStep("details");
     setOtpCode("");
     setError(null);
   };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      {/* Grid texture */}
+      {/* Grid texture — matches login page */}
       <div
         className="fixed inset-0 pointer-events-none"
         style={{
@@ -128,7 +164,7 @@ export default function LoginPage() {
           Back to Home
         </Link>
 
-        {/* Branding */}
+        {/* Branding — same as login */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-3">
             <div
@@ -155,7 +191,7 @@ export default function LoginPage() {
               color: "var(--muted-foreground)",
             }}
           >
-            Shopify Product Intelligence
+            Create Your Workspace
           </p>
         </div>
 
@@ -167,8 +203,8 @@ export default function LoginPage() {
             borderColor: "var(--border)",
           }}
         >
-          {/* ─── IDLE: Email Entry ─── */}
-          {step === "idle" && (
+          {/* ─── STEP 1: Workspace Name + Email ─── */}
+          {step === "details" && (
             <>
               <div className="mb-6">
                 <h1
@@ -178,11 +214,38 @@ export default function LoginPage() {
                     color: "var(--muted-foreground)",
                   }}
                 >
-                  Sign In
+                  Get Started
                 </h1>
                 <p className="text-sm" style={{ color: "var(--foreground)", opacity: 0.6 }}>
-                  Enter your email to receive a sign-in code.
+                  Name your workspace and enter your email to get started.
                 </p>
+              </div>
+
+              {/* Workspace name input */}
+              <div className="mb-4">
+                <label
+                  className="block text-[10px] font-bold uppercase tracking-[0.15em] mb-1.5"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--foreground)",
+                    opacity: 0.5,
+                  }}
+                >
+                  Workspace Name
+                </label>
+                <input
+                  type="text"
+                  value={workspaceName}
+                  onChange={(e) => setWorkspaceName(e.target.value)}
+                  placeholder="My Company"
+                  className="w-full px-3 py-2.5 text-xs border-2 outline-none transition-colors duration-150 focus:border-primary"
+                  style={{
+                    backgroundColor: "var(--input)",
+                    borderColor: "var(--border)",
+                    color: "var(--foreground)",
+                  }}
+                  autoFocus
+                />
               </div>
 
               {/* Email input */}
@@ -211,64 +274,45 @@ export default function LoginPage() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleSendCode();
                   }}
-                  autoFocus
                 />
               </div>
 
-              {/* Buttons */}
-              <div className="space-y-2.5">
-                <button
-                  onClick={handleSendCode}
-                  disabled={!email || loading}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-40 disabled:pointer-events-none bg-primary text-primary-foreground border-primary shadow-[3px_3px_0px] shadow-primary"
-                  style={{ fontFamily: "var(--font-mono)" }}
-                >
-                  {loading ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  )}
-                  Continue
-                </button>
-
-                {/* TODO: Remove dev bypass once Supabase dashboard access is granted */}
-                {process.env.NODE_ENV === "development" && (
-                  <button
-                    onClick={() => router.push("/dashboard")}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      backgroundColor: "rgba(255,69,58,0.08)",
-                      color: "#FF453A",
-                      borderColor: "rgba(255,69,58,0.3)",
-                    }}
-                  >
-                    <Zap className="w-3.5 h-3.5" />
-                    Dev Skip
-                  </button>
+              {/* Submit button */}
+              <button
+                onClick={handleSendCode}
+                disabled={!email || !workspaceName.trim() || loading}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-40 disabled:pointer-events-none bg-primary text-primary-foreground border-primary shadow-[3px_3px_0px] shadow-primary"
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                {loading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <ArrowRight className="w-3.5 h-3.5" />
                 )}
-                {/* Link to signup */}
-                <p
-                  className="text-center mt-5 text-[10px] font-bold uppercase tracking-[0.15em]"
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    color: "var(--muted-foreground)",
-                  }}
+                Continue
+              </button>
+
+              {/* Link to login */}
+              <p
+                className="text-center mt-5 text-[10px] font-bold uppercase tracking-[0.15em]"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  color: "var(--muted-foreground)",
+                }}
+              >
+                Already have an account?{" "}
+                <Link
+                  href="/login"
+                  className="transition-colors hover:opacity-80"
+                  style={{ color: "var(--primary-text)" }}
                 >
-                  Don&apos;t have an account?{" "}
-                  <Link
-                    href="/signup"
-                    className="transition-colors hover:opacity-80"
-                    style={{ color: "var(--primary-text)" }}
-                  >
-                    Sign Up
-                  </Link>
-                </p>
-              </div>
+                  Sign In
+                </Link>
+              </p>
             </>
           )}
 
-          {/* ─── CODE SENT: Code Entry ─── */}
+          {/* ─── STEP 2: OTP Code Entry ─── */}
           {step === "code_sent" && (
             <>
               <button
@@ -295,14 +339,14 @@ export default function LoginPage() {
                   Check Your Email
                 </h1>
                 <p className="text-sm" style={{ color: "var(--foreground)", opacity: 0.6 }}>
-                  Enter the 6-digit code or click the link we sent to{" "}
+                  Enter the 6-digit code we sent to{" "}
                   <span className="font-semibold" style={{ opacity: 1 }}>
                     {email}
                   </span>
                 </p>
               </div>
 
-              {/* OTP input */}
+              {/* OTP input — same style as login */}
               <div className="mb-5">
                 <label
                   className="block text-[10px] font-bold uppercase tracking-[0.15em] mb-1.5"
@@ -358,7 +402,7 @@ export default function LoginPage() {
                   ) : (
                     <Zap className="w-3.5 h-3.5" />
                   )}
-                  Verify Code
+                  Verify & Create Workspace
                 </button>
 
                 <button
@@ -378,7 +422,26 @@ export default function LoginPage() {
             </>
           )}
 
-          {/* Error message */}
+          {/* ─── STEP 3: Creating Workspace ─── */}
+          {step === "creating" && (
+            <div className="flex flex-col items-center py-8 gap-3">
+              <Sparkles
+                className="w-6 h-6 animate-pulse"
+                style={{ color: "var(--primary-text)" }}
+              />
+              <p
+                className="text-[10px] font-bold uppercase tracking-[0.15em]"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  color: "var(--muted-foreground)",
+                }}
+              >
+                Creating your workspace...
+              </p>
+            </div>
+          )}
+
+          {/* Error message — same style as login */}
           {error && (
             <div
               className="mt-4 p-3 text-[10px] font-bold uppercase tracking-wider border-2"
@@ -396,7 +459,7 @@ export default function LoginPage() {
           )}
         </div>
 
-        {/* Footer */}
+        {/* Footer — same as login */}
         <p
           className="text-center mt-6 text-[9px] font-bold uppercase tracking-[0.15em]"
           style={{
