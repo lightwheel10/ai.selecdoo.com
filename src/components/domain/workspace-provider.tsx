@@ -17,26 +17,30 @@ import { createContext, useContext, type ReactNode } from "react";
 interface WorkspaceContextValue {
   workspaceId: string | null;
   workspaceName: string | null;
+  publicSiteUrl: string | null;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextValue>({
   workspaceId: null,
   workspaceName: null,
+  publicSiteUrl: null,
 });
 
 interface WorkspaceProviderProps {
   workspaceId: string | null;
   workspaceName: string | null;
+  publicSiteUrl: string | null;
   children: ReactNode;
 }
 
 export function WorkspaceProvider({
   workspaceId,
   workspaceName,
+  publicSiteUrl,
   children,
 }: WorkspaceProviderProps) {
   return (
-    <WorkspaceContext.Provider value={{ workspaceId, workspaceName }}>
+    <WorkspaceContext.Provider value={{ workspaceId, workspaceName, publicSiteUrl }}>
       {children}
     </WorkspaceContext.Provider>
   );

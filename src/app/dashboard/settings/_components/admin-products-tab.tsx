@@ -55,6 +55,7 @@ import { canDeleteProduct, canAccessAdmin } from "@/lib/auth/roles";
 import { useAuthAccess } from "@/components/domain/role-provider";
 import type { Product, Store, StockStatus } from "@/types";
 import { getProductExternalUrl } from "@/lib/shopshout";
+import { useWorkspace } from "@/components/domain/workspace-provider";
 
 const ITEMS_PER_PAGE = 50;
 
@@ -354,6 +355,7 @@ function ToggleRow({ label, checked, onChange }: { label: string; checked: boole
 
 export function AdminProductsTab() {
   const t = useTranslations("Admin");
+  const { publicSiteUrl } = useWorkspace();
   const access = useAuthAccess();
   const allowDeleteProduct = canDeleteProduct(access);
   const allowAIClean = canAccessAdmin(access);
@@ -1200,7 +1202,7 @@ export function AdminProductsTab() {
                             <Eye className="w-3 h-3" />
                           </Link>
                           {(() => {
-                            const extUrl = getProductExternalUrl(product);
+                            const extUrl = getProductExternalUrl(product, publicSiteUrl);
                             return extUrl ? (
                               <IconButton
                                 onClick={() => window.open(extUrl, "_blank")}

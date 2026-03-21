@@ -14,6 +14,7 @@ import { CONTENT_TYPE_CONFIG, ACTIVE_CONTENT_TYPES } from "./utils";
 import { Highlight } from "./highlight";
 import { ProductImage } from "@/components/domain/product-image";
 import { getProductExternalUrl } from "@/lib/shopshout";
+import { useWorkspace } from "@/components/domain/workspace-provider";
 
 const TYPE_ICONS: Record<string, typeof Tags> = {
   deal_post: Tags,
@@ -52,6 +53,7 @@ export function MiniProductCard({
   onToggleSelect,
   onDelete,
 }: MiniProductCardProps) {
+  const { publicSiteUrl } = useWorkspace();
   const hasDiscount =
     product.discount_percentage && product.discount_percentage > 0;
 
@@ -191,9 +193,9 @@ export function MiniProductCard({
         })}
 
         {/* Visit Product */}
-        {getProductExternalUrl(product) && (
+        {getProductExternalUrl(product, publicSiteUrl) && (
           <a
-            href={getProductExternalUrl(product) || '#'}
+            href={getProductExternalUrl(product, publicSiteUrl) || '#'}
             target="_blank"
             rel="noopener noreferrer"
             className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"

@@ -34,21 +34,23 @@ export default async function DashboardLayout({
     redirect("/signup");
   }
 
-  // Fetch workspace name for the provider
+  // Fetch workspace name + public site URL for the provider
   let workspaceName: string | null = null;
+  let publicSiteUrl: string | null = null;
   if (workspaceId) {
     const supabase = createAdminClient();
     const { data } = await supabase
       .from("workspaces")
-      .select("name")
+      .select("name, public_site_url")
       .eq("id", workspaceId)
       .single();
     workspaceName = data?.name ?? null;
+    publicSiteUrl = data?.public_site_url ?? null;
   }
 
   return (
     <SidebarProvider>
-      <WorkspaceProvider workspaceId={workspaceId} workspaceName={workspaceName}>
+      <WorkspaceProvider workspaceId={workspaceId} workspaceName={workspaceName} publicSiteUrl={publicSiteUrl}>
         <RoleProvider role={role} permissions={permissions}>
           <AppSidebar user={user} role={role} permissions={permissions} />
           <SidebarInset>

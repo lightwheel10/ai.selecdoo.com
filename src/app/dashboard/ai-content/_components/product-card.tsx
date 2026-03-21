@@ -9,6 +9,7 @@ import { ContentStatusBadge } from "./content-status-badge";
 import { StatusBadge } from "@/components/domain/status-badge";
 import { ProductImage } from "@/components/domain/product-image";
 import { getProductExternalUrl } from "@/lib/shopshout";
+import { useWorkspace } from "@/components/domain/workspace-provider";
 
 interface ProductCardProps {
   product: Product;
@@ -39,6 +40,7 @@ export function ProductCard({
   onToggleSelect,
   onDelete,
 }: ProductCardProps) {
+  const { publicSiteUrl } = useWorkspace();
   const hasDiscount =
     product.discount_percentage && product.discount_percentage > 0;
 
@@ -230,9 +232,9 @@ export function ProductCard({
         </div>
 
         {/* Visit Product */}
-        {getProductExternalUrl(product) && (
+        {getProductExternalUrl(product, publicSiteUrl) && (
           <a
-            href={getProductExternalUrl(product) || '#'}
+            href={getProductExternalUrl(product, publicSiteUrl) || '#'}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-1.5 w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"

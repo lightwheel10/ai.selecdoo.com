@@ -16,6 +16,7 @@ import { VariantTable } from "./variant-table";
 import { ProductMetadata } from "./product-metadata";
 import type { ProductDetail, RecommendedProduct, Store } from "@/types";
 import { getProductExternalUrl } from "@/lib/shopshout";
+import { useWorkspace } from "@/components/domain/workspace-provider";
 
 interface ProductDetailViewProps {
   product: ProductDetail;
@@ -24,6 +25,7 @@ interface ProductDetailViewProps {
 
 export function ProductDetailView({ product, store }: ProductDetailViewProps) {
   const t = useTranslations("ProductDetail");
+  const { publicSiteUrl } = useWorkspace();
   const [copied, setCopied] = useState(false);
   const [descLang, setDescLang] = useState<"de" | "en">(
     product.description_de ? "de" : "en"
@@ -39,7 +41,7 @@ export function ProductDetailView({ product, store }: ProductDetailViewProps) {
     product.discount_percentage != null && product.discount_percentage > 0;
 
   function handleCopyLink() {
-    const extUrl = getProductExternalUrl(product);
+    const extUrl = getProductExternalUrl(product, publicSiteUrl);
     if (extUrl) {
       navigator.clipboard.writeText(extUrl);
       setCopied(true);
@@ -226,9 +228,9 @@ export function ProductDetailView({ product, store }: ProductDetailViewProps) {
 
           {/* Actions: Visit Store + Copy Link */}
           <div className="flex flex-wrap gap-2 mb-4">
-            {getProductExternalUrl(product) && (
+            {getProductExternalUrl(product, publicSiteUrl) && (
               <a
-                href={getProductExternalUrl(product) || '#'}
+                href={getProductExternalUrl(product, publicSiteUrl) || '#'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 hover:opacity-80"
@@ -242,7 +244,7 @@ export function ProductDetailView({ product, store }: ProductDetailViewProps) {
                 {t("visitStore")}
               </a>
             )}
-            {getProductExternalUrl(product) && (
+            {getProductExternalUrl(product, publicSiteUrl) && (
               <button
                 onClick={handleCopyLink}
                 className="inline-flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 hover:opacity-80"
@@ -460,6 +462,7 @@ function RecommendedProductCard({
   product: RecommendedProduct;
   currency: string;
 }) {
+  const { publicSiteUrl } = useWorkspace();
   const fmt = (value: number) =>
     new Intl.NumberFormat(undefined, {
       style: "currency",
@@ -532,10 +535,10 @@ function RecommendedProductCard({
     </div>
   );
 
-  if (getProductExternalUrl(product)) {
+  if (getProductExternalUrl(product, publicSiteUrl)) {
     return (
       <a
-        href={getProductExternalUrl(product)!}
+        href={getProductExternalUrl(product, publicSiteUrl)!}
         target="_blank"
         rel="noopener noreferrer"
       >

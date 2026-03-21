@@ -1,39 +1,33 @@
 /**
- * ShopShout URL generation for published products.
+ * Public storefront URL generation for published products.
  *
- * Published products link to shopshout.ai instead of the store directly.
- * ShopShout acts as a redirect wrapper — it shows the product page with
- * price comparison, then redirects to the store with affiliate tracking.
+ * Each workspace can optionally have a public_site_url configured
+ * (e.g., "https://www.shopshout.ai/product.html" for Selecdoo).
+ * If set, published products link to that URL with the hash_id.
+ * If not set, published products link to the original store URL.
  *
- * URL format: https://www.shopshout.ai/product.html?id={hash_id}
- * The shopshout website looks up the product by hash_id in the v2 schema.
+ * This is a temporary solution until per-workspace storefronts are
+ * built into the main app. At that point, public_site_url would be
+ * set automatically (e.g., "marketforce.revenueworks.ai/ws/{slug}/product").
  */
-
-const SHOPSHOUT_BASE = "https://www.shopshout.ai/product.html";
 
 /**
  * Get the external URL for a product.
- * - Published products → shopshout.ai URL (via hash_id)
- * - Unpublished products → original store URL (product_url)
+ * - Workspace has public_site_url + product is published → storefront URL
+ * - Otherwise → original store URL (product_url)
  */
-export function getProductExternalUrl(product: {
-  hash_id?: string | null;
-  product_url?: string | null;
-  is_published?: boolean;
-}): string | null {
-  if (product.is_published && product.hash_id) {
-    return `${SHOPSHOUT_BASE}?id=${encodeURIComponent(product.hash_id)}`;
+export function getProductExternalUrl(
+  product: {
+    hash_id?: string | null;
+    product_url?: string | null;
+    is_published?: boolean;
+  },
+  publicSiteUrl?: string | null
+): string | null {
+  // If workspace has a public storefront and product is published, link to it
+  if (publicSiteUrl && product.is_published && product.hash_id) {
+    return `${publicSiteUrl}?id=${encodeURIComponent(product.hash_id)}`;
   }
+  // Otherwise link to the original store URL
   return product.product_url || null;
-}
-
-/**
- * Check if a product should show the shopshout link (published)
- * or the direct store link (unpublished).
- */
-export function isShopshoutLink(product: {
-  hash_id?: string | null;
-  is_published?: boolean;
-}): boolean {
-  return !!product.is_published && !!product.hash_id;
 }
