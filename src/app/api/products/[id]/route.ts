@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { canAccessAdmin, canDeleteProduct } from "@/lib/auth/roles";
 import { getAuthContext } from "@/lib/auth/session";
+import { verifyStoreInWorkspace } from "@/lib/auth/workspace";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -34,7 +35,7 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const { user, role, permissions, isDevBypass } = await getAuthContext();
+    const { user, role, permissions, isDevBypass, workspaceId } = await getAuthContext();
 
     if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -80,12 +81,16 @@ export async function PATCH(
 
     const { data: existing, error: lookupErr } = await supabase
       .from("products")
-      .select("id")
+      .select("id, store_id")
       .eq("id", id)
       .is("deleted_at", null)
       .single();
 
     if (lookupErr || !existing) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    if (workspaceId && !(await verifyStoreInWorkspace(existing.store_id, workspaceId))) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
@@ -111,7 +116,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { user, role, permissions, isDevBypass } = await getAuthContext();
+    const { user, role, permissions, isDevBypass, workspaceId } = await getAuthContext();
     if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -129,12 +134,16 @@ export async function DELETE(
 
     const { data: product, error: lookupErr } = await supabase
       .from("products")
-      .select("id")
+      .select("id, store_id")
       .eq("id", id)
       .is("deleted_at", null)
       .single();
 
     if (lookupErr || !product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    if (workspaceId && !(await verifyStoreInWorkspace(product.store_id, workspaceId))) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 

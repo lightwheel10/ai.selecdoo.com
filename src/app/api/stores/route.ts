@@ -67,7 +67,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Request body too large" }, { status: 413 });
     }
 
-    const { user, role, permissions, isDevBypass } = await getAuthContext();
+    const { user, role, permissions, isDevBypass, workspaceId } = await getAuthContext();
     if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -97,6 +97,7 @@ export async function POST(req: Request) {
       .from("stores")
       .select("id")
       .eq("url", normalized)
+      .eq("workspace_id", workspaceId)
       .is("deleted_at", null)
       .single();
 
@@ -112,6 +113,7 @@ export async function POST(req: Request) {
         platform: "shopify",
         status: "active",
         user_id: user?.id ?? null,
+        workspace_id: workspaceId,
       })
       .select("id, url, name, platform, status")
       .single();

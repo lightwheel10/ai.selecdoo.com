@@ -3,6 +3,7 @@ import * as Sentry from "@sentry/nextjs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthContext } from "@/lib/auth/session";
 import { canGenerateAIContent } from "@/lib/auth/roles";
+import { verifyStoreInWorkspace } from "@/lib/auth/workspace";
 import { getWebhookFieldConfig, buildGeneratePayload } from "@/lib/webhook-payload";
 
 const N8N_URLS: Record<string, string | undefined> = {
@@ -74,7 +75,7 @@ function flattenFields(obj: Record<string, any>): string {
 
 export async function POST(req: Request) {
   try {
-    const { user, role, permissions, isDevBypass } = await getAuthContext();
+    const { user, role, permissions, isDevBypass, workspaceId } = await getAuthContext();
     if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -117,6 +118,10 @@ export async function POST(req: Request) {
       .single();
 
     if (productErr || !product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    if (workspaceId && !(await verifyStoreInWorkspace(product.store_id, workspaceId))) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 

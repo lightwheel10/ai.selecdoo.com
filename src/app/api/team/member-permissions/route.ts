@@ -1,15 +1,24 @@
+/**
+ * Team member permissions API — workspace-scoped.
+ *
+ * POST: Set per-member permission overrides within a workspace.
+ *
+ * Multi-tenant: overrides are stored in workspace_members.permissions,
+ * NOT in app_metadata.permission_overrides.
+ */
+
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizePermissionList } from "@/lib/auth/roles";
-import { isBootstrapAdminEmail, resolveAppRole } from "@/lib/auth/roles-server";
 import {
-  applyExplicitPermissionsToMetadata,
-  getPermissionOverridesFromMetadata,
+  deriveOverridesFromPermissions,
+  computeEffectivePermissions,
+  normalizePermissionOverrides,
   hasPermissionOverrides,
 } from "@/lib/auth/team-access";
-import { authenticateTeamAdmin, listAllAuthUsers } from "@/lib/auth/team-admin";
+import { authenticateTeamAdmin } from "@/lib/auth/team-admin";
 
-const MAX_BODY_SIZE = 8_192; // 8 KB
+const MAX_BODY_SIZE = 8_192;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function POST(req: Request) {
@@ -32,25 +41,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
 
-    const users = await listAllAuthUsers();
-    const target = users.find((user) => user.id === userId);
+    const supabase = createAdminClient();
 
-    if (!target) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    // Find the member in this workspace
+    const { data: member } = await supabase
+      .from("workspace_members")
+      .select("id, user_id, role")
+      .eq("workspace_id", actor.workspaceId)
+      .eq("user_id", userId)
+      .single();
+
+    if (!member) {
+      return NextResponse.json({ error: "Member not found in workspace" }, { status: 404 });
     }
 
-    if (isBootstrapAdminEmail(target.email)) {
-      return NextResponse.json(
-        { error: "Bootstrap admin access is controlled by environment." },
-        { status: 400 }
-      );
-    }
-
-    const role = resolveAppRole({
-      email: target.email,
-      app_metadata:
-        (target.app_metadata as Record<string, unknown> | undefined) ?? null,
-    });
+    const role = member.role as "admin" | "operator" | "viewer";
 
     if (role === "admin") {
       return NextResponse.json(
@@ -59,37 +64,48 @@ export async function POST(req: Request) {
       );
     }
 
-    const supabase = createAdminClient();
-    // Convert explicit user permissions into role-relative allow/deny overrides.
-    const nextMetadata = applyExplicitPermissionsToMetadata(
-      target.app_metadata,
+    // Derive overrides (allow/deny) from the requested permissions
+    // relative to the workspace's role defaults
+    const overrides = deriveOverridesFromPermissions(
       role,
       actor.workspaceMatrix,
       requestedPermissions
     );
+    const effectivePermissions = computeEffectivePermissions(
+      role,
+      actor.workspaceMatrix,
+      overrides
+    );
 
-    const { error: updateErr } = await supabase.auth.admin.updateUserById(target.id, {
-      app_metadata: nextMetadata,
-    });
+    // Store overrides on workspace_members.permissions
+    const permissionsData = hasPermissionOverrides(overrides)
+      ? { allow: overrides.allow, deny: overrides.deny }
+      : null;
+
+    const { error: updateErr } = await supabase
+      .from("workspace_members")
+      .update({ permissions: permissionsData })
+      .eq("id", member.id);
 
     if (updateErr) {
-      console.error("Team member permissions update error:", updateErr);
+      console.error("Member permissions update error:", updateErr);
       return NextResponse.json(
         { error: "Failed to update member permissions" },
         { status: 500 }
       );
     }
 
-    const metadata = nextMetadata as Record<string, unknown>;
-    const overrides = getPermissionOverridesFromMetadata(nextMetadata);
+    // Look up email for the response
+    const { data: authData } = await supabase.auth.admin.getUserById(userId);
+    const email = authData?.user?.email ?? "";
 
     return NextResponse.json({
       success: true,
       member: {
-        id: target.id,
-        email: target.email,
+        id: userId,
+        email,
         role,
-        permissions: normalizePermissionList(metadata.permissions),
+        permissions: effectivePermissions,
         is_customized: hasPermissionOverrides(overrides),
       },
     });

@@ -16,7 +16,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const { user, role, permissions, isDevBypass } = await getAuthContext();
+    const { user, role, permissions, isDevBypass, workspaceId } = await getAuthContext();
 
     if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -55,6 +55,7 @@ export async function POST(
       .from("stores")
       .select("*")
       .eq("id", id)
+      .eq("workspace_id", workspaceId)
       .is("deleted_at", null)
       .single();
 

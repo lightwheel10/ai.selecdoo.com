@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthContext } from "@/lib/auth/session";
 import { canGenerateAIContent } from "@/lib/auth/roles";
+import { verifyStoreInWorkspace } from "@/lib/auth/workspace";
 import { getSendWebhookFieldConfig, buildSendPayload } from "@/lib/webhook-payload";
 
 const N8N_SEND_WEBHOOK_URL = process.env.N8N_SEND_WEBHOOK_URL!;
@@ -9,7 +10,7 @@ const SEND_TIMEOUT = 40_000; // 40 seconds
 
 export async function POST(req: Request) {
   try {
-    const { user, role, permissions, isDevBypass } = await getAuthContext();
+    const { user, role, permissions, isDevBypass, workspaceId } = await getAuthContext();
     if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -67,6 +68,10 @@ export async function POST(req: Request) {
       .single();
 
     if (productErr || !product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    if (workspaceId && !(await verifyStoreInWorkspace(product.store_id, workspaceId))) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 

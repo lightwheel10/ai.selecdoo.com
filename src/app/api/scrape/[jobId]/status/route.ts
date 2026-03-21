@@ -3,6 +3,7 @@ import * as Sentry from "@sentry/nextjs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { canViewScrape } from "@/lib/auth/roles";
 import { getAuthContext } from "@/lib/auth/session";
+import { verifyStoreInWorkspace } from "@/lib/auth/workspace";
 import {
   checkApifyRunStatus,
   processCompletedScrape,
@@ -14,7 +15,7 @@ export async function GET(
   { params }: { params: Promise<{ jobId: string }> }
 ) {
   try {
-    const { user, role, permissions, isDevBypass } = await getAuthContext();
+    const { user, role, permissions, isDevBypass, workspaceId } = await getAuthContext();
     if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -33,6 +34,10 @@ export async function GET(
       .single();
 
     if (jobErr || !job) {
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    }
+
+    if (workspaceId && !(await verifyStoreInWorkspace(job.store_id, workspaceId))) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 

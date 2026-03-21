@@ -18,7 +18,7 @@ interface ShippingRequest {
 
 export async function POST(req: Request) {
   try {
-    const { role, permissions, user, isDevBypass } = await getAuthContext();
+    const { role, permissions, user, isDevBypass, workspaceId } = await getAuthContext();
     if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -40,6 +40,7 @@ export async function POST(req: Request) {
       .from("stores")
       .select("id, name, url, platform, description_en, description_de, affiliate_link_base")
       .eq("id", storeId)
+      .eq("workspace_id", workspaceId)
       .is("deleted_at", null)
       .single();
 

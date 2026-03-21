@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthContext } from "@/lib/auth/session";
 import { canEditAIContent } from "@/lib/auth/roles";
+import { verifyStoreInWorkspace } from "@/lib/auth/workspace";
 
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { user, role, permissions, isDevBypass } = await getAuthContext();
+    const { user, role, permissions, isDevBypass, workspaceId } = await getAuthContext();
     if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -28,6 +29,21 @@ export async function PATCH(
     }
 
     const supabase = createAdminClient();
+
+    // Verify record exists and belongs to workspace
+    const { data: existing, error: lookupErr } = await supabase
+      .from("ai_content")
+      .select("id, store_id")
+      .eq("id", id)
+      .single();
+
+    if (lookupErr || !existing) {
+      return NextResponse.json({ error: "Content not found" }, { status: 404 });
+    }
+
+    if (workspaceId && !(await verifyStoreInWorkspace(existing.store_id, workspaceId))) {
+      return NextResponse.json({ error: "Content not found" }, { status: 404 });
+    }
 
     const { data: updated, error } = await supabase
       .from("ai_content")

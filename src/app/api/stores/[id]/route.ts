@@ -48,7 +48,7 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const { user, role, permissions, isDevBypass } = await getAuthContext();
+    const { user, role, permissions, isDevBypass, workspaceId } = await getAuthContext();
 
     if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -130,6 +130,7 @@ export async function PATCH(
       .from("stores")
       .select("id")
       .eq("id", id)
+      .eq("workspace_id", workspaceId)
       .is("deleted_at", null)
       .single();
 
@@ -168,7 +169,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const { user, role, permissions, isDevBypass } = await getAuthContext();
+    const { user, role, permissions, isDevBypass, workspaceId } = await getAuthContext();
 
     if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -188,6 +189,7 @@ export async function DELETE(
       .from("stores")
       .select("id")
       .eq("id", id)
+      .eq("workspace_id", workspaceId)
       .is("deleted_at", null)
       .single();
 

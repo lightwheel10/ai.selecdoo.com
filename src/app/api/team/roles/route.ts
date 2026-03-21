@@ -1,32 +1,29 @@
-import type { User } from "@supabase/supabase-js";
+/**
+ * Team roles API — workspace-scoped.
+ *
+ * GET: List members of the current workspace with their roles/permissions.
+ * POST: Add or change a member's role in the workspace.
+ *
+ * Multi-tenant: all operations are scoped to the actor's workspace.
+ * Members are stored in workspace_members, not in app_metadata.
+ */
+
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   isAppRole,
-  normalizeAppRole,
-  normalizePermissionList,
+  normalizeRolePermissionMatrix,
+  type AppRole,
 } from "@/lib/auth/roles";
-import { isBootstrapAdminEmail, resolveAppRole } from "@/lib/auth/roles-server";
 import {
-  applyRoleAndPermissionsToMetadata,
   computeEffectivePermissions,
-  getPermissionOverridesFromMetadata,
+  normalizePermissionOverrides,
   hasPermissionOverrides,
 } from "@/lib/auth/team-access";
-import { authenticateTeamAdmin, listAllAuthUsers } from "@/lib/auth/team-admin";
+import { authenticateTeamAdmin, listWorkspaceMembers } from "@/lib/auth/team-admin";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MAX_BODY_SIZE = 8_192; // 8 KB
-const DEFAULT_APP_METADATA: Record<string, unknown> = {};
-
-function hasExplicitPermissions(metadata: Record<string, unknown>): boolean {
-  return "permissions" in metadata;
-}
-
-function listEquals(a: string[], b: string[]): boolean {
-  if (a.length !== b.length) return false;
-  return a.every((value, index) => value === b[index]);
-}
+const MAX_BODY_SIZE = 8_192;
 
 export async function GET() {
   try {
@@ -35,40 +32,31 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const users = await listAllAuthUsers();
+    const members = await listWorkspaceMembers(actor.workspaceId);
 
-    const mapped = users
-      .filter((u) => !!u.email)
-      .map((u) => {
-        const metadata =
-          (u.app_metadata as Record<string, unknown> | undefined) ??
-          DEFAULT_APP_METADATA;
-        const role = resolveAppRole({
-          email: u.email,
-          app_metadata: metadata,
-        });
-        const overrides = getPermissionOverridesFromMetadata(metadata);
-        const permissions = hasExplicitPermissions(metadata)
-          ? normalizePermissionList(metadata.permissions)
-          : computeEffectivePermissions(role, actor.workspaceMatrix, overrides);
-        const roleDefaults =
-          role === "admin" ? actor.workspaceMatrix.admin : actor.workspaceMatrix[role];
-        const isCustomized =
-          role !== "admin" &&
-          (hasPermissionOverrides(overrides) || !listEquals(permissions, roleDefaults));
+    const mapped = members.map((m) => {
+      const role = (m.role as AppRole) || "viewer";
+      const overrides = normalizePermissionOverrides(m.permissions);
+      const permissions = computeEffectivePermissions(
+        role,
+        actor.workspaceMatrix,
+        overrides
+      );
+      const roleDefaults =
+        role === "admin" ? actor.workspaceMatrix.admin : actor.workspaceMatrix[role];
+      const isCustomized =
+        role !== "admin" && hasPermissionOverrides(overrides);
 
-        return {
-          id: u.id,
-          email: u.email!,
-          role,
-          permissions,
-          is_customized: isCustomized,
-          created_at: u.created_at ?? null,
-          last_sign_in_at: u.last_sign_in_at ?? null,
-          is_bootstrap_admin: isBootstrapAdminEmail(u.email),
-        };
-      })
-      .sort((a, b) => a.email.localeCompare(b.email));
+      return {
+        id: m.user_id,
+        email: m.email,
+        role,
+        permissions,
+        is_customized: isCustomized,
+        created_at: m.created_at,
+        last_sign_in_at: m.last_sign_in_at,
+      };
+    }).sort((a, b) => a.email.localeCompare(b.email));
 
     return NextResponse.json({ members: mapped });
   } catch (err) {
@@ -103,8 +91,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid role" }, { status: 400 });
     }
 
-    const users = await listAllAuthUsers();
-    const target = users.find((u) => (u.email ?? "").toLowerCase() === email);
+    const supabase = createAdminClient();
+
+    // Find user by email in Supabase Auth
+    const { data: authData } = await supabase.auth.admin.listUsers({
+      page: 1,
+      perPage: 1000,
+    });
+    const target = (authData?.users ?? []).find(
+      (u) => (u.email ?? "").toLowerCase() === email
+    );
 
     if (!target) {
       return NextResponse.json(
@@ -113,14 +109,15 @@ export async function POST(req: Request) {
       );
     }
 
-    if (isBootstrapAdminEmail(target.email)) {
-      return NextResponse.json(
-        { error: "Bootstrap admin role is controlled by environment." },
-        { status: 400 }
-      );
-    }
+    // Check if user is already a member of this workspace
+    const { data: existingMember } = await supabase
+      .from("workspace_members")
+      .select("id, role")
+      .eq("workspace_id", actor.workspaceId)
+      .eq("user_id", target.id)
+      .single();
 
-    const targetRole = normalizeAppRole(target.app_metadata?.role);
+    // Prevent self-demotion from admin
     if (target.id === actor.id && roleInput !== "admin") {
       return NextResponse.json(
         { error: "You cannot remove your own admin role." },
@@ -128,17 +125,15 @@ export async function POST(req: Request) {
       );
     }
 
-    if (targetRole === "admin" && roleInput !== "admin") {
-      const adminCount = users.filter(
-        (u) =>
-          resolveAppRole({
-            email: u.email,
-            app_metadata:
-              (u.app_metadata as Record<string, unknown> | undefined) ?? null,
-          }) === "admin"
-      ).length;
+    // Prevent removing last admin
+    if (existingMember?.role === "admin" && roleInput !== "admin") {
+      const { count } = await supabase
+        .from("workspace_members")
+        .select("id", { count: "exact", head: true })
+        .eq("workspace_id", actor.workspaceId)
+        .eq("role", "admin");
 
-      if (adminCount <= 1) {
+      if ((count ?? 0) <= 1) {
         return NextResponse.json(
           { error: "At least one admin must remain." },
           { status: 400 }
@@ -146,20 +141,32 @@ export async function POST(req: Request) {
       }
     }
 
-    const supabase = createAdminClient();
-    const nextMetadata = applyRoleAndPermissionsToMetadata(
-      target.app_metadata,
-      roleInput,
-      actor.workspaceMatrix
-    );
-    const { error: updateErr } = await supabase.auth.admin.updateUserById(
-      target.id,
-      { app_metadata: nextMetadata }
-    );
+    if (existingMember) {
+      // Update existing member's role
+      const { error: updateErr } = await supabase
+        .from("workspace_members")
+        .update({ role: roleInput })
+        .eq("id", existingMember.id);
 
-    if (updateErr) {
-      console.error("Role update error:", updateErr);
-      return NextResponse.json({ error: "Failed to update role" }, { status: 500 });
+      if (updateErr) {
+        console.error("Role update error:", updateErr);
+        return NextResponse.json({ error: "Failed to update role" }, { status: 500 });
+      }
+    } else {
+      // Add new member to workspace
+      const { error: insertErr } = await supabase
+        .from("workspace_members")
+        .insert({
+          workspace_id: actor.workspaceId,
+          user_id: target.id,
+          role: roleInput,
+          invited_by: actor.id,
+        });
+
+      if (insertErr) {
+        console.error("Member insert error:", insertErr);
+        return NextResponse.json({ error: "Failed to add member" }, { status: 500 });
+      }
     }
 
     return NextResponse.json({

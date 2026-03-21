@@ -27,7 +27,7 @@ interface ProductResult {
 
 export async function POST(req: Request) {
   try {
-    const { role, permissions, user, isDevBypass } = await getAuthContext();
+    const { role, permissions, user, isDevBypass, workspaceId } = await getAuthContext();
     if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -76,10 +76,12 @@ export async function POST(req: Request) {
 
     // Fetch stores with platform + affiliate fields
     const storeIds = [...new Set(products.map((p) => p.store_id))];
-    const { data: stores } = await supabase
+    const storeQuery = supabase
       .from("stores")
       .select("id, name, url, platform, affiliate_link_base, program_id, coupon_code")
       .in("id", storeIds);
+    if (workspaceId) storeQuery.eq("workspace_id", workspaceId);
+    const { data: stores } = await storeQuery;
 
     const storeMap = new Map(
       (stores ?? []).map((s) => [s.id, s])

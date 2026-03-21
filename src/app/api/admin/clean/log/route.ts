@@ -26,7 +26,7 @@ interface LogRequest {
 
 export async function POST(req: Request) {
   try {
-    const { role, permissions, user, isDevBypass } = await getAuthContext();
+    const { role, permissions, user, isDevBypass, workspaceId } = await getAuthContext();
     if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
