@@ -102,14 +102,18 @@ function mapStore(row: any): Store {
   };
 }
 
-export async function getStoreById(id: string): Promise<Store | null> {
+export async function getStoreById(id: string, workspaceId?: string): Promise<Store | null> {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("stores")
     .select("*")
     .eq("id", id)
-    .is("deleted_at", null)
-    .single();
+    .is("deleted_at", null);
+  // Workspace filter ensures cross-workspace stores can't be accessed
+  if (workspaceId) {
+    query = query.eq("workspace_id", workspaceId);
+  }
+  const { data, error } = await query.single();
 
   if (error || !data) return null;
   return mapStore(data);
