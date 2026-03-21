@@ -127,9 +127,10 @@ export async function POST(req: Request) {
 
     // Auto-set affiliate_link_base if missing (v1 parity)
     // Ensures every store has trackable affiliate links from day 1
+    // ⚠️ utm_source MUST be "selecdoo" — see src/lib/ai-clean/affiliate.ts for details
     if (!store.affiliate_link_base && store.url) {
       const cleanUrl = store.url.replace(/\/+$/, "");
-      dbUpdate.affiliate_link_base = `${cleanUrl}/?utm_source=marketforceone&utm_medium=affiliate&a_aid=4063096d&a_cid=`;
+      dbUpdate.affiliate_link_base = `${cleanUrl}/?utm_source=selecdoo&utm_medium=affiliate&a_aid=4063096d&a_cid=`;
     }
 
     const { error: updateErr } = await supabase
