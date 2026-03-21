@@ -1,7 +1,12 @@
 import type { Store } from "@/types";
 
+// ⚠️ DO NOT CHANGE these default affiliate params without client approval.
+// utm_source MUST be "selecdoo" (the client's brand).
+// a_aid is the client's constant affiliate ID across all stores.
+// These are hardcoded intentionally — they match v1 and the client's
+// affiliate program configuration.
 const DEFAULT_PARAMS: Record<string, string> = {
-  utm_source: "marketforceone",
+  utm_source: "selecdoo",
   utm_medium: "affiliate",
   a_aid: "4063096d",
 };
@@ -116,7 +121,7 @@ export function generateAffiliateLink(
     // --- Step 7: Fallback — append basic tracking to original URL ---
     try {
       const basicParams =
-        "utm_source=marketforceone&utm_medium=affiliate&a_aid=4063096d&a_cid=";
+        "utm_source=selecdoo&utm_medium=affiliate&a_aid=4063096d&a_cid=";
       const separator = productUrl.includes("?") ? "&" : "?";
       return `${productUrl}${separator}${basicParams}`;
     } catch {
