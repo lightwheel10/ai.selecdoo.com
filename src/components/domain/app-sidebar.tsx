@@ -286,19 +286,21 @@ export function AppSidebar({ user, role, permissions }: AppSidebarProps) {
               {t("cancel")}
             </button>
 
-            <form action={signOut}>
-              <button
-                type="submit"
-                className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all"
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  backgroundColor: "var(--destructive)",
-                  color: "var(--destructive-foreground)",
-                }}
-              >
-                {t("signOutConfirmAction")}
-              </button>
-            </form>
+            {/* Using onClick instead of <form action> because Radix Dialog
+                portals content outside the React tree, which can break
+                Next.js server action form bindings in some environments. */}
+            <button
+              type="button"
+              onClick={() => signOut()}
+              className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all"
+              style={{
+                fontFamily: "var(--font-mono)",
+                backgroundColor: "var(--destructive)",
+                color: "var(--destructive-foreground)",
+              }}
+            >
+              {t("signOutConfirmAction")}
+            </button>
           </div>
         </DialogContent>
       </Dialog>
