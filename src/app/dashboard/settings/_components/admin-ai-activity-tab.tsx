@@ -700,110 +700,99 @@ export function AdminAIActivityTab() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <p
-          className="text-[10px] font-bold uppercase tracking-[0.15em]"
-          style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
-        >
-          {t("aiActivityTitle")}
-        </p>
+      {/* Toolbar — filters + clean data button in one row */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        {/* Status filters */}
+        {(["success", "error"] as const).map((status) => {
+          const active = statusFilter === status;
+          const cfg = statusConfig[status];
+          return (
+            <button
+              key={status}
+              onClick={() => setStatusFilter(active ? null : status)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
+              style={{
+                fontFamily: "var(--font-mono)",
+                backgroundColor: active ? `${cfg.color}12` : "transparent",
+                borderColor: active ? `${cfg.color}40` : "var(--border)",
+                color: active ? cfg.color : "var(--muted-foreground)",
+              }}
+            >
+              {status === "success" ? (
+                <CheckCircle className="w-3 h-3" />
+              ) : (
+                <XCircle className="w-3 h-3" />
+              )}
+              {t(`filterStatus_${status}`)}
+            </button>
+          );
+        })}
+
+        {/* Scope filters (shops = shipping, products = full) */}
         <button
-          onClick={openDialog}
-          className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
+          onClick={() => setScopeFilter(scopeFilter === "shipping" ? null : "shipping")}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
           style={{
             fontFamily: "var(--font-mono)",
-            backgroundColor: "var(--primary)",
-            color: "#000",
-            borderRadius: 0,
+            backgroundColor: scopeFilter === "shipping" ? "#A78BFA12" : "transparent",
+            borderColor: scopeFilter === "shipping" ? "#A78BFA40" : "var(--border)",
+            color: scopeFilter === "shipping" ? "#A78BFA" : "var(--muted-foreground)",
           }}
         >
-          <Sparkles className="w-3 h-3" />
-          {t("cleanData")}
+          <StoreIcon className="w-3 h-3" />
+          {t("modeShops")}
         </button>
-      </div>
+        <button
+          onClick={() => setScopeFilter(scopeFilter === "full" ? null : "full")}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
+          style={{
+            fontFamily: "var(--font-mono)",
+            backgroundColor: scopeFilter === "full" ? "#5AC8FA12" : "transparent",
+            borderColor: scopeFilter === "full" ? "#5AC8FA40" : "var(--border)",
+            color: scopeFilter === "full" ? "#5AC8FA" : "var(--muted-foreground)",
+          }}
+        >
+          <Package className="w-3 h-3" />
+          {t("modeProducts")}
+        </button>
 
-      {/* Timeline filters — inline toggle buttons matching the tab's design pattern.
-          Filters by status (success/error) and scope/mode (shops/products). */}
-      {activityLogs.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 mb-4">
-          {/* Status filter */}
-          {(["success", "error"] as const).map((status) => {
-            const active = statusFilter === status;
-            const cfg = statusConfig[status];
-            return (
-              <button
-                key={status}
-                onClick={() => setStatusFilter(active ? null : status)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  backgroundColor: active ? `${cfg.color}12` : "transparent",
-                  borderColor: active ? `${cfg.color}40` : "var(--border)",
-                  color: active ? cfg.color : "var(--muted-foreground)",
-                }}
-              >
-                {status === "success" ? (
-                  <CheckCircle className="w-3 h-3" />
-                ) : (
-                  <XCircle className="w-3 h-3" />
-                )}
-                {t(`filterStatus_${status}`)}
-              </button>
-            );
-          })}
-
-          {/* Scope filter (shops = shipping, products = full) */}
+        {/* Clear filters */}
+        {hasTimelineFilter && (
           <button
-            onClick={() => setScopeFilter(scopeFilter === "shipping" ? null : "shipping")}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
-            style={{
-              fontFamily: "var(--font-mono)",
-              backgroundColor: scopeFilter === "shipping" ? "#A78BFA12" : "transparent",
-              borderColor: scopeFilter === "shipping" ? "#A78BFA40" : "var(--border)",
-              color: scopeFilter === "shipping" ? "#A78BFA" : "var(--muted-foreground)",
-            }}
+            onClick={() => { setStatusFilter(null); setScopeFilter(null); }}
+            className="flex items-center gap-1 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
+            style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
           >
-            <StoreIcon className="w-3 h-3" />
-            {t("modeShops")}
+            <X className="w-3 h-3" />
+            {t("clear")}
           </button>
-          <button
-            onClick={() => setScopeFilter(scopeFilter === "full" ? null : "full")}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
-            style={{
-              fontFamily: "var(--font-mono)",
-              backgroundColor: scopeFilter === "full" ? "#5AC8FA12" : "transparent",
-              borderColor: scopeFilter === "full" ? "#5AC8FA40" : "var(--border)",
-              color: scopeFilter === "full" ? "#5AC8FA" : "var(--muted-foreground)",
-            }}
-          >
-            <Package className="w-3 h-3" />
-            {t("modeProducts")}
-          </button>
+        )}
 
-          {/* Clear filters */}
-          {hasTimelineFilter && (
-            <button
-              onClick={() => { setStatusFilter(null); setScopeFilter(null); }}
-              className="flex items-center gap-1 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
-              style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
-            >
-              <X className="w-3 h-3" />
-              {t("clear")}
-            </button>
-          )}
-
-          {/* Filtered count */}
+        {/* Filtered count + Clean Data button — pushed right */}
+        <div className="ml-auto flex items-center gap-3">
           {hasTimelineFilter && (
             <p
-              className="ml-auto text-[10px] font-bold uppercase tracking-[0.15em]"
+              className="text-[10px] font-bold uppercase tracking-[0.15em]"
               style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
             >
               {t("logsFiltered", { filtered: filteredLogs.length, total: activityLogs.length })}
             </p>
           )}
+          <button
+            onClick={openDialog}
+            className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
+            style={{
+              fontFamily: "var(--font-mono)",
+              backgroundColor: "var(--primary)",
+              color: "#000",
+              borderRadius: 0,
+            }}
+          >
+            <Sparkles className="w-3 h-3" />
+            {t("cleanData")}
+          </button>
         </div>
-      )}
+      </div>
 
       {/* Timeline */}
       {activityLogs.length === 0 ? (
