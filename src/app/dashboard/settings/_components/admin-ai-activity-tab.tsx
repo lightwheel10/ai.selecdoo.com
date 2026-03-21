@@ -194,6 +194,11 @@ export function AdminAIActivityTab() {
     return stores.filter((s) => storeIdsInProducts.has(s.id));
   }, [stores, products]);
 
+  // ─── Timeline filters ───
+  // Filters for the activity log timeline (status + scope/mode)
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [scopeFilter, setScopeFilter] = useState<string | null>(null);
+
   // ─── Timeline state ───
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [expandedLogIds, setExpandedLogIds] = useState<Set<string>>(new Set());
@@ -207,8 +212,21 @@ export function AdminAIActivityTab() {
     });
   }, []);
 
-  const visibleLogs = activityLogs.slice(0, visibleCount);
-  const remaining = activityLogs.length - visibleCount;
+  // Apply timeline filters before pagination
+  const filteredLogs = useMemo(() => {
+    let result = activityLogs;
+    if (statusFilter) {
+      result = result.filter((log) => log.status === statusFilter);
+    }
+    if (scopeFilter) {
+      result = result.filter((log) => log.scope === scopeFilter);
+    }
+    return result;
+  }, [activityLogs, statusFilter, scopeFilter]);
+
+  const visibleLogs = filteredLogs.slice(0, visibleCount);
+  const remaining = filteredLogs.length - visibleCount;
+  const hasTimelineFilter = statusFilter !== null || scopeFilter !== null;
 
   // ─── Dropdown items (filtered by search, excluding selected) ───
   const dropdownItems = useMemo(() => {
@@ -705,6 +723,88 @@ export function AdminAIActivityTab() {
         </button>
       </div>
 
+      {/* Timeline filters — inline toggle buttons matching the tab's design pattern.
+          Filters by status (success/error) and scope/mode (shops/products). */}
+      {activityLogs.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          {/* Status filter */}
+          {(["success", "error"] as const).map((status) => {
+            const active = statusFilter === status;
+            const cfg = statusConfig[status];
+            return (
+              <button
+                key={status}
+                onClick={() => setStatusFilter(active ? null : status)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  backgroundColor: active ? `${cfg.color}12` : "transparent",
+                  borderColor: active ? `${cfg.color}40` : "var(--border)",
+                  color: active ? cfg.color : "var(--muted-foreground)",
+                }}
+              >
+                {status === "success" ? (
+                  <CheckCircle className="w-3 h-3" />
+                ) : (
+                  <XCircle className="w-3 h-3" />
+                )}
+                {t(`filterStatus_${status}`)}
+              </button>
+            );
+          })}
+
+          {/* Scope filter (shops = shipping, products = full) */}
+          <button
+            onClick={() => setScopeFilter(scopeFilter === "shipping" ? null : "shipping")}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
+            style={{
+              fontFamily: "var(--font-mono)",
+              backgroundColor: scopeFilter === "shipping" ? "#A78BFA12" : "transparent",
+              borderColor: scopeFilter === "shipping" ? "#A78BFA40" : "var(--border)",
+              color: scopeFilter === "shipping" ? "#A78BFA" : "var(--muted-foreground)",
+            }}
+          >
+            <StoreIcon className="w-3 h-3" />
+            {t("modeShops")}
+          </button>
+          <button
+            onClick={() => setScopeFilter(scopeFilter === "full" ? null : "full")}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
+            style={{
+              fontFamily: "var(--font-mono)",
+              backgroundColor: scopeFilter === "full" ? "#5AC8FA12" : "transparent",
+              borderColor: scopeFilter === "full" ? "#5AC8FA40" : "var(--border)",
+              color: scopeFilter === "full" ? "#5AC8FA" : "var(--muted-foreground)",
+            }}
+          >
+            <Package className="w-3 h-3" />
+            {t("modeProducts")}
+          </button>
+
+          {/* Clear filters */}
+          {hasTimelineFilter && (
+            <button
+              onClick={() => { setStatusFilter(null); setScopeFilter(null); }}
+              className="flex items-center gap-1 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
+              style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+            >
+              <X className="w-3 h-3" />
+              {t("clear")}
+            </button>
+          )}
+
+          {/* Filtered count */}
+          {hasTimelineFilter && (
+            <p
+              className="ml-auto text-[10px] font-bold uppercase tracking-[0.15em]"
+              style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+            >
+              {t("logsFiltered", { filtered: filteredLogs.length, total: activityLogs.length })}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Timeline */}
       {activityLogs.length === 0 ? (
         <div
@@ -716,6 +816,18 @@ export function AdminAIActivityTab() {
             style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
           >
             {t("noActivity")}
+          </p>
+        </div>
+      ) : filteredLogs.length === 0 ? (
+        <div
+          className="border-2 py-16 text-center"
+          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+        >
+          <p
+            className="text-[11px] font-bold uppercase tracking-[0.15em]"
+            style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+          >
+            {t("noMatchingLogs")}
           </p>
         </div>
       ) : (
