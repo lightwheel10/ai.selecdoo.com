@@ -555,7 +555,8 @@ export function AdminProductsTab() {
   }
 
   // One-click AI clean for a single product.
-  // Calls POST /api/admin/clean with the product ID and "descriptions" scope.
+  // Uses scope "full" to match v1 behavior — cleans titles, descriptions,
+  // categories, shipping AND generates affiliate links.
   // On success, updates the local product with the cleaned fields so the
   // table reflects changes immediately without a full reload.
   async function handleAIClean(product: Product) {
@@ -567,7 +568,7 @@ export function AdminProductsTab() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productIds: [product.id],
-          scope: "descriptions",
+          scope: "full",
         }),
       });
 
