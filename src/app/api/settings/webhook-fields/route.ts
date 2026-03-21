@@ -29,7 +29,7 @@ function parseWebhookType(value: string | null): WebhookType {
 
 export async function GET(req: NextRequest) {
   try {
-    const { user, role, permissions, isDevBypass } = await getAuthContext();
+    const { user, role, permissions, isDevBypass, workspaceId } = await getAuthContext();
     if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -39,10 +39,22 @@ export async function GET(req: NextRequest) {
 
     const type = parseWebhookType(req.nextUrl.searchParams.get("type"));
     const requestedProductId = req.nextUrl.searchParams.get("productId");
-    const dbKey = SETTINGS_KEYS[type];
-    const defaults = DEFAULTS[type];
 
     const supabase = createAdminClient();
+
+    // Get workspace store IDs for scoping preview queries.
+    // Prevents admins from seeing products/stores from other workspaces.
+    let wsStoreIds: string[] = [];
+    if (workspaceId) {
+      const { data: storeRows } = await supabase
+        .from("stores")
+        .select("id")
+        .eq("workspace_id", workspaceId)
+        .is("deleted_at", null);
+      wsStoreIds = (storeRows ?? []).map((s: { id: string }) => s.id);
+    }
+    const dbKey = SETTINGS_KEYS[type];
+    const defaults = DEFAULTS[type];
     const { data } = await supabase
       .from("app_settings")
       .select("value")
@@ -84,12 +96,13 @@ export async function GET(req: NextRequest) {
     }
 
     if (requestedProductId) {
-      // User selected a specific product via the product picker
-      const { data: products } = await supabase
+      // User selected a specific product — verify it belongs to workspace
+      let productQuery = supabase
         .from("products")
         .select("*")
-        .eq("id", requestedProductId)
-        .limit(1);
+        .eq("id", requestedProductId);
+      if (wsStoreIds.length > 0) productQuery = productQuery.in("store_id", wsStoreIds);
+      const { data: products } = await productQuery.limit(1);
 
       if (products?.[0]) {
         sampleProduct = products[0];
@@ -100,12 +113,13 @@ export async function GET(req: NextRequest) {
         }
       }
     } else if (type === "send") {
-      // Send tab without specific product: pick one that has AI content
-      const { data: contentRows } = await supabase
+      // Send tab without specific product: pick one that has AI content (workspace-scoped)
+      let contentQuery = supabase
         .from("ai_content")
         .select("product_id, content, content_type, status, created_at")
-        .order("created_at", { ascending: false })
-        .limit(20);
+        .order("created_at", { ascending: false });
+      if (wsStoreIds.length > 0) contentQuery = contentQuery.in("store_id", wsStoreIds);
+      const { data: contentRows } = await contentQuery.limit(20);
 
       if (contentRows && contentRows.length > 0) {
         const randomRow = contentRows[Math.floor(Math.random() * contentRows.length)];
@@ -129,20 +143,23 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Fallback: pick any random product
+    // Fallback: pick any random product (workspace-scoped)
     if (!sampleProduct) {
-      const { count } = await supabase
+      let countQuery = supabase
         .from("products")
         .select("id", { count: "exact", head: true })
         .is("deleted_at", null);
+      if (wsStoreIds.length > 0) countQuery = countQuery.in("store_id", wsStoreIds);
+      const { count } = await countQuery;
 
       if (count && count > 0) {
         const randomOffset = Math.floor(Math.random() * count);
-        const { data: products } = await supabase
+        let randQuery = supabase
           .from("products")
           .select("*")
-          .is("deleted_at", null)
-          .range(randomOffset, randomOffset);
+          .is("deleted_at", null);
+        if (wsStoreIds.length > 0) randQuery = randQuery.in("store_id", wsStoreIds);
+        const { data: products } = await randQuery.range(randomOffset, randomOffset);
 
         if (products?.[0]) {
           sampleProduct = products[0];
