@@ -13,6 +13,7 @@ import type { ContentEntry } from "./utils";
 import { CONTENT_TYPE_CONFIG, ACTIVE_CONTENT_TYPES } from "./utils";
 import { Highlight } from "./highlight";
 import { ProductImage } from "@/components/domain/product-image";
+import { getProductExternalUrl } from "@/lib/shopshout";
 
 const TYPE_ICONS: Record<string, typeof Tags> = {
   deal_post: Tags,
@@ -190,9 +191,9 @@ export function MiniProductCard({
         })}
 
         {/* Visit Product */}
-        {product.product_url && (
+        {getProductExternalUrl(product) && (
           <a
-            href={product.product_url}
+            href={getProductExternalUrl(product) || '#'}
             target="_blank"
             rel="noopener noreferrer"
             className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"

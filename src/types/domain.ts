@@ -42,6 +42,7 @@ export type StockStatus = "in_stock" | "out_of_stock";
 export interface Product {
   id: string;
   store_id: string;
+  hash_id: string | null;
   title: string;
   handle: string;
   sku: string | null;

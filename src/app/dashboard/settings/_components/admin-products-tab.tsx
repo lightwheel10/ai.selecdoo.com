@@ -54,6 +54,7 @@ import { toast } from "sonner";
 import { canDeleteProduct, canAccessAdmin } from "@/lib/auth/roles";
 import { useAuthAccess } from "@/components/domain/role-provider";
 import type { Product, Store, StockStatus } from "@/types";
+import { getProductExternalUrl } from "@/lib/shopshout";
 
 const ITEMS_PER_PAGE = 50;
 
@@ -1198,12 +1199,15 @@ export function AdminProductsTab() {
                           >
                             <Eye className="w-3 h-3" />
                           </Link>
-                          {product.product_url && (
-                            <IconButton
-                              onClick={() => window.open(product.product_url!, "_blank")}
-                              icon={ExternalLink}
-                            />
-                          )}
+                          {(() => {
+                            const extUrl = getProductExternalUrl(product);
+                            return extUrl ? (
+                              <IconButton
+                                onClick={() => window.open(extUrl, "_blank")}
+                                icon={ExternalLink}
+                              />
+                            ) : null;
+                          })()}
                           <IconButton
                             onClick={() => setEditingProduct({ ...product })}
                             icon={Pencil}

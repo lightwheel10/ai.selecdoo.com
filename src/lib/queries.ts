@@ -124,7 +124,7 @@ export async function getStoreById(id: string, workspaceId?: string): Promise<St
 // Only the columns needed by mapProduct() — excludes large JSONB columns
 // (medias, variants, options, recommend_products, categories) that are only
 // needed on the product detail page.
-const PRODUCT_LIST_COLUMNS = "id, store_id, cleaned_title, title, handle, sku, brand, price, original_price, discount_percentage, currency, in_stock, product_url, image_url, description, description_de, description_en, updated_at, is_published, is_featured, is_slider, ai_category, affiliate_link, ai_shipping_data";
+const PRODUCT_LIST_COLUMNS = "id, store_id, hash_id, cleaned_title, title, handle, sku, brand, price, original_price, discount_percentage, currency, in_stock, product_url, image_url, description, description_de, description_en, updated_at, is_published, is_featured, is_slider, ai_category, affiliate_link, ai_shipping_data";
 
 export async function getProducts(workspaceId: string): Promise<Product[]> {
   const supabase = createAdminClient();
@@ -407,6 +407,7 @@ function mapProduct(row: any): Product {
   return {
     id: row.id,
     store_id: row.store_id,
+    hash_id: row.hash_id,
     title: row.cleaned_title || row.title,
     handle: row.handle,
     sku: row.sku,

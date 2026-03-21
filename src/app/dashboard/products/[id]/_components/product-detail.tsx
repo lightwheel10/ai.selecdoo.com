@@ -15,6 +15,7 @@ import { ImageGallery } from "./image-gallery";
 import { VariantTable } from "./variant-table";
 import { ProductMetadata } from "./product-metadata";
 import type { ProductDetail, RecommendedProduct, Store } from "@/types";
+import { getProductExternalUrl } from "@/lib/shopshout";
 
 interface ProductDetailViewProps {
   product: ProductDetail;
@@ -38,8 +39,9 @@ export function ProductDetailView({ product, store }: ProductDetailViewProps) {
     product.discount_percentage != null && product.discount_percentage > 0;
 
   function handleCopyLink() {
-    if (product.product_url) {
-      navigator.clipboard.writeText(product.product_url);
+    const extUrl = getProductExternalUrl(product);
+    if (extUrl) {
+      navigator.clipboard.writeText(extUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -224,9 +226,9 @@ export function ProductDetailView({ product, store }: ProductDetailViewProps) {
 
           {/* Actions: Visit Store + Copy Link */}
           <div className="flex flex-wrap gap-2 mb-4">
-            {product.product_url && (
+            {getProductExternalUrl(product) && (
               <a
-                href={product.product_url}
+                href={getProductExternalUrl(product) || '#'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 hover:opacity-80"
@@ -240,7 +242,7 @@ export function ProductDetailView({ product, store }: ProductDetailViewProps) {
                 {t("visitStore")}
               </a>
             )}
-            {product.product_url && (
+            {getProductExternalUrl(product) && (
               <button
                 onClick={handleCopyLink}
                 className="inline-flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 hover:opacity-80"
@@ -530,10 +532,10 @@ function RecommendedProductCard({
     </div>
   );
 
-  if (product.product_url) {
+  if (getProductExternalUrl(product)) {
     return (
       <a
-        href={product.product_url}
+        href={getProductExternalUrl(product)!}
         target="_blank"
         rel="noopener noreferrer"
       >
