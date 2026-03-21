@@ -47,6 +47,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // TODO: Add per-user workspace creation limit (e.g., max 3-5 workspaces).
+    // Currently any authenticated user can create unlimited workspaces via
+    // direct API calls. Low priority since the UI only creates one on signup,
+    // but should be hardened before scaling to many users.
+
     const body = await req.json();
     const name = typeof body.name === "string" ? body.name.trim() : "";
 
