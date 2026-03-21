@@ -13,6 +13,7 @@ import {
   Trash2,
   Sparkles,
   Loader2,
+  ArrowUpDown,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductImage } from "@/components/domain/product-image";
@@ -403,6 +404,12 @@ export function AdminProductsTab() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
+  // ── Column sorting (matches stores tab pattern: click cycles asc → desc → clear) ──
+  type SortKey = "price" | "stock" | "published";
+  type SortDir = "asc" | "desc";
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
   const uniqueBrands = useMemo(
     () => [...new Set(localProducts.map((p) => p.brand).filter(Boolean) as string[])].sort(),
     [localProducts]
@@ -469,8 +476,29 @@ export function AdminProductsTab() {
       );
     }
 
+    // Column sorting — applied after all filters
+    if (sortKey) {
+      result = [...result].sort((a, b) => {
+        let cmp = 0;
+        switch (sortKey) {
+          case "price":
+            cmp = a.price - b.price;
+            break;
+          case "stock":
+            // true (in stock) before false (out of stock) in ascending
+            cmp = (a.in_stock ? 1 : 0) - (b.in_stock ? 1 : 0);
+            break;
+          case "published":
+            // true (published) before false (unpublished) in ascending
+            cmp = (a.is_published ? 1 : 0) - (b.is_published ? 1 : 0);
+            break;
+        }
+        return sortDir === "desc" ? -cmp : cmp;
+      });
+    }
+
     return result;
-  }, [localProducts, search, publishFilter, brandFilter, affiliateFilter, categoryFilter, featuredFilter]);
+  }, [localProducts, search, publishFilter, brandFilter, affiliateFilter, categoryFilter, featuredFilter, sortKey, sortDir]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -637,12 +665,30 @@ export function AdminProductsTab() {
     setShowBulkDeleteConfirm(false);
   }
 
+  // Column sort handler — 3-click cycle: asc → desc → clear (same as stores tab)
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      if (sortDir === "asc") {
+        setSortDir("desc");
+      } else {
+        // Third click: clear sort
+        setSortKey(null);
+        setSortDir("asc");
+      }
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
   function clearAll() {
     setPublishFilter(null);
     setBrandFilter(null);
     setAffiliateFilter(null);
     setCategoryFilter(null);
     setFeaturedFilter(null);
+    setSortKey(null);
+    setSortDir("asc");
     setSearch("");
   }
 
@@ -972,21 +1018,44 @@ export function AdminProductsTab() {
                     }}
                   />
                 )}
-                {[t("image"), t("title"), t("brand"), t("price"), t("stock"), t("published"), t("actions")].map(
-                  (header, i) => (
-                    <TableHead
-                      key={i}
-                      className={`text-[9px] font-bold uppercase tracking-[0.15em] h-10 ${i > 1 ? "text-center" : ""}`}
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        color: "var(--muted-foreground)",
-                        backgroundColor: "var(--table-header-bg)",
-                      }}
-                    >
-                      {header}
-                    </TableHead>
-                  )
-                )}
+                {/* Table headers — price, stock, published are sortable (clickable).
+                    Uses the same SortableHeader pattern as the stores tab. */}
+                {[
+                  { label: t("image"), sortId: null },
+                  { label: t("title"), sortId: null },
+                  { label: t("brand"), sortId: null },
+                  { label: t("price"), sortId: "price" as SortKey },
+                  { label: t("stock"), sortId: "stock" as SortKey },
+                  { label: t("published"), sortId: "published" as SortKey },
+                  { label: t("actions"), sortId: null },
+                ].map((col, i) => (
+                  <TableHead
+                    key={i}
+                    className={`text-[9px] font-bold uppercase tracking-[0.15em] h-10 ${i > 1 ? "text-center" : ""} ${col.sortId ? "cursor-pointer select-none" : ""}`}
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      color: "var(--muted-foreground)",
+                      backgroundColor: "var(--table-header-bg)",
+                    }}
+                    onClick={col.sortId ? () => handleSort(col.sortId!) : undefined}
+                  >
+                    {col.sortId ? (
+                      <span className={`flex items-center gap-1 ${i > 1 ? "justify-center" : ""}`}>
+                        {col.label}
+                        <ArrowUpDown
+                          className="w-2.5 h-2.5 transition-colors"
+                          style={{
+                            color: sortKey === col.sortId ? "var(--primary-text)" : "var(--muted-foreground)",
+                            opacity: sortKey === col.sortId ? 1 : 0.4,
+                            transform: sortKey === col.sortId && sortDir === "desc" ? "scaleY(-1)" : undefined,
+                          }}
+                        />
+                      </span>
+                    ) : (
+                      col.label
+                    )}
+                  </TableHead>
+                ))}
               </TableRow>
             </TableHeader>
             <TableBody>
