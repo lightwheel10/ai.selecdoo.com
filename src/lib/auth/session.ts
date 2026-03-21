@@ -42,22 +42,32 @@ export async function getAuthContext(
     process.env.DEV_BYPASS === "true";
 
   if (isDevBypass) {
-    // In dev bypass, try to resolve a real workspace for realistic testing.
-    // Falls back to null workspaceId if no workspaces exist yet.
+    // Dev bypass always needs a real workspace for queries and API routes
+    // to work correctly. If none exists, create one automatically.
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const supabase = createAdminClient();
+
     let devWorkspaceId: string | null = workspaceId ?? null;
+
     if (!devWorkspaceId) {
-      try {
-        const { createAdminClient } = await import("@/lib/supabase/admin");
-        const supabase = createAdminClient();
-        const { data } = await supabase
-          .from("workspaces")
-          .select("id")
-          .is("deleted_at", null)
-          .limit(1);
-        devWorkspaceId = data?.[0]?.id ?? null;
-      } catch {
-        // No workspaces yet — fine for initial setup
-      }
+      // Try to find an existing workspace
+      const { data: existing } = await supabase
+        .from("workspaces")
+        .select("id")
+        .is("deleted_at", null)
+        .limit(1);
+
+      devWorkspaceId = existing?.[0]?.id ?? null;
+    }
+
+    // If no workspace exists, log a warning. Dev bypass needs at least
+    // one workspace to function correctly — sign up via /signup first,
+    // or run the migration SQL to create one.
+    if (!devWorkspaceId) {
+      console.warn(
+        "[DEV_BYPASS] No workspace found. Sign up at /signup to create one. " +
+        "Dev bypass without a workspace will cause null workspaceId errors."
+      );
     }
 
     return {

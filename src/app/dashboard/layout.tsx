@@ -27,8 +27,10 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  // If user has no workspace, redirect to signup to create one
-  if (!workspaceId && !isDevBypass) {
+  // If user has no workspace, redirect to signup to create one.
+  // In dev bypass mode, also redirect — dev bypass needs a real
+  // workspace to function correctly (queries use workspaceId!).
+  if (!workspaceId) {
     redirect("/signup");
   }
 
