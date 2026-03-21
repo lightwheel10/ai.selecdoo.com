@@ -2,11 +2,13 @@ import { getTranslations } from "next-intl/server";
 import { JobsTable } from "./_components/jobs-table";
 import { JobStats } from "./_components/job-stats";
 import { getScrapeJobs, getStores } from "@/lib/queries";
+import { getAuthContext } from "@/lib/auth/session";
 
 export default async function JobsPage() {
+  const { workspaceId } = await getAuthContext();
   const t = await getTranslations("Jobs");
 
-  const [jobs, stores] = await Promise.all([getScrapeJobs(), getStores()]);
+  const [jobs, stores] = await Promise.all([getScrapeJobs(workspaceId!), getStores(workspaceId!)]);
   const completed = jobs.filter((j) => j.status === "completed").length;
   const failed = jobs.filter((j) => j.status === "failed").length;
   const running = jobs.filter((j) => j.status === "running").length;

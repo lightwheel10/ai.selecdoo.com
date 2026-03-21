@@ -5,7 +5,7 @@ import { getStores } from "@/lib/queries";
 
 export async function GET() {
   try {
-    const { role, permissions, user, isDevBypass } = await getAuthContext();
+    const { role, permissions, user, isDevBypass, workspaceId } = await getAuthContext();
     if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -13,7 +13,7 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const stores = await getStores();
+    const stores = await getStores(workspaceId!);
     return NextResponse.json({ stores });
   } catch (err) {
     console.error("Admin stores API error:", err);

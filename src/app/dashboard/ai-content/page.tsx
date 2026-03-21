@@ -12,7 +12,7 @@ interface Props {
 }
 
 export default async function AIContentPage({ searchParams }: Props) {
-  const { user, role, permissions, isDevBypass } = await getAuthContext();
+  const { user, workspaceId, role, permissions, isDevBypass } = await getAuthContext();
   if (!user && !isDevBypass) {
     redirect("/login");
   }
@@ -56,15 +56,15 @@ export default async function AIContentPage({ searchParams }: Props) {
       page,
       pageSize: 12,
       randomize: !sortBy,
-    }),
-    getStores(),
-    getContentStatusCounts(),
+    }, workspaceId!),
+    getStores(workspaceId!),
+    getContentStatusCounts(workspaceId!),
   ]);
 
   // Fetch AI content scoped to the current page's products only
   const productIds = result.products.map((p) => p.id);
   const aiContent = productIds.length > 0
-    ? await getAIContent(productIds)
+    ? await getAIContent(productIds, workspaceId!)
     : [];
 
   if (result.totalCount === 0 && !search && !storeIds && !discountFilter && !contentStatus) {

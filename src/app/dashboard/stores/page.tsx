@@ -4,11 +4,13 @@ import { EmptyState } from "@/components/domain/empty-state";
 import { StoreTable } from "./_components/store-table";
 import { AddStoreDialog } from "./_components/add-store-dialog";
 import { getStores } from "@/lib/queries";
+import { getAuthContext } from "@/lib/auth/session";
 
 export default async function StoresPage() {
+  const { workspaceId } = await getAuthContext();
   const t = await getTranslations("Stores");
 
-  const stores = await getStores();
+  const stores = await getStores(workspaceId!);
 
   if (stores.length === 0) {
     return (

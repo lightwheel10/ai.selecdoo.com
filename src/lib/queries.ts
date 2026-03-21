@@ -1,4 +1,3 @@
-import { cache } from "react";
 import * as Sentry from "@sentry/nextjs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type {
@@ -23,27 +22,42 @@ import type {
   PaginatedProducts,
 } from "@/types";
 
-// ─── Store name lookup (shared by queries needing store_name) ───
-// Wrapped in React cache() to deduplicate within a single server render pass.
-// Multiple query functions calling this in the same render will only hit the DB once.
+// ─── Workspace-scoped store ID lookup ───
+// Used by queries on tables that cascade via store_id (products, jobs, etc.)
+// to filter data to the current workspace.
 
-const getStoreNameMap = cache(async (): Promise<Record<string, string>> => {
+async function getWorkspaceStoreIds(workspaceId: string): Promise<string[]> {
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("stores")
+    .select("id")
+    .eq("workspace_id", workspaceId)
+    .is("deleted_at", null);
+  return (data ?? []).map((s) => s.id);
+}
+
+// ─── Store name lookup (shared by queries needing store_name) ───
+// Scoped to workspace so each workspace only sees its own store names.
+
+async function getStoreNameMap(workspaceId: string): Promise<Record<string, string>> {
   const supabase = createAdminClient();
   const { data } = await supabase
     .from("stores")
     .select("id, name")
+    .eq("workspace_id", workspaceId)
     .is("deleted_at", null);
 
   return Object.fromEntries((data ?? []).map((s) => [s.id, s.name]));
-});
+}
 
 // ─── Stores ───
 
-export async function getStores(): Promise<Store[]> {
+export async function getStores(workspaceId: string): Promise<Store[]> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("stores")
     .select("*")
+    .eq("workspace_id", workspaceId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
@@ -108,8 +122,11 @@ export async function getStoreById(id: string): Promise<Store | null> {
 // needed on the product detail page.
 const PRODUCT_LIST_COLUMNS = "id, store_id, cleaned_title, title, handle, sku, brand, price, original_price, discount_percentage, currency, in_stock, product_url, image_url, description, description_de, description_en, updated_at, is_published, is_featured, is_slider, ai_category, affiliate_link, ai_shipping_data";
 
-export async function getProducts(): Promise<Product[]> {
+export async function getProducts(workspaceId: string): Promise<Product[]> {
   const supabase = createAdminClient();
+  const storeIds = await getWorkspaceStoreIds(workspaceId);
+  if (storeIds.length === 0) return [];
+
   const PAGE_SIZE = 1000;
   const allRows: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -118,6 +135,7 @@ export async function getProducts(): Promise<Product[]> {
     const { data, error } = await supabase
       .from("products")
       .select(PRODUCT_LIST_COLUMNS)
+      .in("store_id", storeIds)
       .is("deleted_at", null)
       .order("updated_at", { ascending: false })
       .range(offset, offset + PAGE_SIZE - 1);
@@ -142,8 +160,11 @@ export async function getProducts(): Promise<Product[]> {
 
 const PRODUCT_LIGHT_COLUMNS = "id, store_id, title, cleaned_title, brand, ai_category, image_url";
 
-export async function getProductsLight(): Promise<Pick<Product, "id" | "store_id" | "title" | "brand" | "ai_category" | "image_url">[]> {
+export async function getProductsLight(workspaceId: string): Promise<Pick<Product, "id" | "store_id" | "title" | "brand" | "ai_category" | "image_url">[]> {
   const supabase = createAdminClient();
+  const storeIds = await getWorkspaceStoreIds(workspaceId);
+  if (storeIds.length === 0) return [];
+
   const PAGE_SIZE = 1000;
   const allRows: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -151,6 +172,7 @@ export async function getProductsLight(): Promise<Pick<Product, "id" | "store_id
     const { data, error } = await supabase
       .from("products")
       .select(PRODUCT_LIGHT_COLUMNS)
+      .in("store_id", storeIds)
       .is("deleted_at", null)
       .order("updated_at", { ascending: false })
       .range(offset, offset + PAGE_SIZE - 1);
@@ -247,12 +269,17 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 export async function getFilteredProducts(
-  params: ProductFilterParams
+  params: ProductFilterParams,
+  workspaceId: string
 ): Promise<PaginatedProducts> {
   const supabase = createAdminClient();
   const page = params.page ?? 1;
   const pageSize = params.pageSize ?? DEFAULT_PAGE_SIZE;
   const emptyResult = { products: [], totalCount: 0, page, pageSize, totalPages: 0 };
+
+  // Scope to workspace stores — all product queries below include this filter
+  const wsStoreIds = await getWorkspaceStoreIds(workspaceId);
+  if (wsStoreIds.length === 0) return emptyResult;
 
   // Use views when computed-column filters are active
   const needsContentStatus = !!params.contentStatus?.length;
@@ -266,10 +293,11 @@ export async function getFilteredProducts(
     : "products";
 
   if (params.randomize) {
-    // 1. Lightweight count-only query
+    // 1. Lightweight count-only query (scoped to workspace stores)
     let countQuery = supabase
       .from(table)
       .select("id", { count: "exact", head: true })
+      .in("store_id", wsStoreIds)
       .is("deleted_at", null);
     countQuery = applyProductFilters(countQuery, params);
 
@@ -287,10 +315,11 @@ export async function getFilteredProducts(
     const maxOffset = Math.max(0, totalCount - pageSize);
     const randomOffset = Math.floor(Math.random() * (maxOffset + 1));
 
-    // 3. Fetch data from the random offset
+    // 3. Fetch data from the random offset (scoped to workspace stores)
     let dataQuery = supabase
       .from(table)
       .select(PRODUCT_LIST_COLUMNS)
+      .in("store_id", wsStoreIds)
       .is("deleted_at", null);
     dataQuery = applyProductFilters(dataQuery, params);
     dataQuery = dataQuery.range(randomOffset, randomOffset + pageSize - 1);
@@ -311,12 +340,13 @@ export async function getFilteredProducts(
     };
   }
 
-  // ── Standard sorted path ──
+  // ── Standard sorted path (scoped to workspace stores) ──
   const offset = (page - 1) * pageSize;
 
   let query = supabase
     .from(table)
     .select(PRODUCT_LIST_COLUMNS, { count: "exact" })
+    .in("store_id", wsStoreIds)
     .is("deleted_at", null);
 
   query = applyProductFilters(query, params);
@@ -346,11 +376,15 @@ export async function getFilteredProducts(
 }
 
 // Lightweight version for dashboard — only fetches what the overview cards need
-export async function getRecentProducts(limit: number): Promise<Product[]> {
+export async function getRecentProducts(limit: number, workspaceId: string): Promise<Product[]> {
   const supabase = createAdminClient();
+  const storeIds = await getWorkspaceStoreIds(workspaceId);
+  if (storeIds.length === 0) return [];
+
   const { data, error } = await supabase
     .from("products")
     .select("id, store_id, title, cleaned_title, brand, price, original_price, discount_percentage, image_url, in_stock, updated_at")
+    .in("store_id", storeIds)
     .is("deleted_at", null)
     .order("updated_at", { ascending: false })
     .limit(limit);
@@ -398,11 +432,11 @@ function mapProduct(row: any): Product {
 
 // ─── Product Detail ───
 
-export async function getProductById(id: string): Promise<ProductDetail | null> {
+export async function getProductById(id: string, workspaceId: string): Promise<ProductDetail | null> {
   const supabase = createAdminClient();
   const [{ data, error }, storeNames] = await Promise.all([
     supabase.from("products").select("*").eq("id", id).single(),
-    getStoreNameMap(),
+    getStoreNameMap(workspaceId),
   ]);
 
   if (error || !data) {
@@ -551,11 +585,14 @@ function mapProductDetail(row: any, storeNames: Record<string, string>, recImage
 
 // ─── Scrape Jobs ───
 
-export async function getScrapeJobs(): Promise<ScrapeJob[]> {
+export async function getScrapeJobs(workspaceId: string): Promise<ScrapeJob[]> {
   const supabase = createAdminClient();
+  const storeIds = await getWorkspaceStoreIds(workspaceId);
+  if (storeIds.length === 0) return [];
+
   const [{ data, error }, storeNames] = await Promise.all([
-    supabase.from("scrape_jobs").select("*").order("created_at", { ascending: false }),
-    getStoreNameMap(),
+    supabase.from("scrape_jobs").select("*").in("store_id", storeIds).order("created_at", { ascending: false }),
+    getStoreNameMap(workspaceId),
   ]);
 
   if (error) {
@@ -568,15 +605,19 @@ export async function getScrapeJobs(): Promise<ScrapeJob[]> {
 }
 
 // Lightweight version for dashboard — only recent jobs
-export async function getRecentJobs(limit: number): Promise<ScrapeJob[]> {
+export async function getRecentJobs(limit: number, workspaceId: string): Promise<ScrapeJob[]> {
   const supabase = createAdminClient();
+  const storeIds = await getWorkspaceStoreIds(workspaceId);
+  if (storeIds.length === 0) return [];
+
   const [{ data, error }, storeNames] = await Promise.all([
     supabase
       .from("scrape_jobs")
       .select("id, store_id, status, products_found, products_updated, started_at, completed_at, error_message")
+      .in("store_id", storeIds)
       .order("created_at", { ascending: false })
       .limit(limit),
-    getStoreNameMap(),
+    getStoreNameMap(workspaceId),
   ]);
 
   if (error) {
@@ -605,15 +646,19 @@ function mapScrapeJob(row: any, storeNames: Record<string, string>): ScrapeJob {
 
 // ─── Product Changes ───
 
-export async function getProductChanges(limit = 500): Promise<ProductChange[]> {
+export async function getProductChanges(limit = 500, workspaceId: string): Promise<ProductChange[]> {
   const supabase = createAdminClient();
+  const storeIds = await getWorkspaceStoreIds(workspaceId);
+  if (storeIds.length === 0) return [];
+
   const [{ data, error }, storeNames] = await Promise.all([
     supabase
       .from("product_changes")
       .select("*")
+      .in("store_id", storeIds)
       .order("detected_at", { ascending: false })
       .limit(limit),
-    getStoreNameMap(),
+    getStoreNameMap(workspaceId),
   ]);
 
   if (error) {
@@ -655,15 +700,19 @@ function mapProductChange(row: any, storeNames: Record<string, string>): Product
 
 // ─── Monitoring Configs ───
 
-export async function getMonitoringConfigs(): Promise<MonitoringConfig[]> {
+export async function getMonitoringConfigs(workspaceId: string): Promise<MonitoringConfig[]> {
   const supabase = createAdminClient();
+  const storeIds = await getWorkspaceStoreIds(workspaceId);
+  if (storeIds.length === 0) return [];
+
   const [{ data, error }, storeNames] = await Promise.all([
     supabase
       .from("monitoring_configs")
       .select("*, stores!inner(deleted_at)")
+      .in("store_id", storeIds)
       .is("stores.deleted_at", null)
       .order("created_at", { ascending: false }),
-    getStoreNameMap(),
+    getStoreNameMap(workspaceId),
   ]);
 
   if (error) {
@@ -691,14 +740,18 @@ function mapMonitoringConfig(row: any, storeNames: Record<string, string>): Moni
 
 // ─── Monitoring Logs ───
 
-export async function getMonitoringLogs(): Promise<MonitoringLog[]> {
+export async function getMonitoringLogs(workspaceId: string): Promise<MonitoringLog[]> {
   const supabase = createAdminClient();
+  const storeIds = await getWorkspaceStoreIds(workspaceId);
+  if (storeIds.length === 0) return [];
+
   const [{ data, error }, storeNames] = await Promise.all([
     supabase
       .from("monitoring_logs")
       .select("*")
+      .in("store_id", storeIds)
       .order("started_at", { ascending: false }),
-    getStoreNameMap(),
+    getStoreNameMap(workspaceId),
   ]);
 
   if (error) {
@@ -727,15 +780,18 @@ function mapMonitoringLog(row: any, storeNames: Record<string, string>): Monitor
 
 // ─── AI Content ───
 
-export async function getAIContent(productIds?: string[]): Promise<AIGeneratedContent[]> {
+export async function getAIContent(productIds: string[] | undefined, workspaceId: string): Promise<AIGeneratedContent[]> {
   const supabase = createAdminClient();
-  let query = supabase.from("ai_content").select("*").order("created_at", { ascending: false });
+  const storeIds = await getWorkspaceStoreIds(workspaceId);
+  if (storeIds.length === 0) return [];
+
+  let query = supabase.from("ai_content").select("*").in("store_id", storeIds).order("created_at", { ascending: false });
   if (productIds && productIds.length > 0) {
     query = query.in("product_id", productIds);
   }
   const [{ data, error }, storeNames] = await Promise.all([
     query,
-    getStoreNameMap(),
+    getStoreNameMap(workspaceId),
   ]);
 
   if (error) {
@@ -747,17 +803,37 @@ export async function getAIContent(productIds?: string[]): Promise<AIGeneratedCo
   return (data ?? []).map((row) => mapAIContent(row, storeNames));
 }
 
-export async function getContentStatusCounts(): Promise<Record<string, number>> {
+export async function getContentStatusCounts(workspaceId: string): Promise<Record<string, number>> {
   const supabase = createAdminClient();
-  const { data, error } = await supabase.rpc("content_status_counts");
-  if (error || !data) {
-    console.error("getContentStatusCounts error:", error?.message);
-    return { no_content: 0, partial: 0, complete: 0 };
-  }
+  const storeIds = await getWorkspaceStoreIds(workspaceId);
+  if (storeIds.length === 0) return { no_content: 0, partial: 0, complete: 0 };
+
+  // Count by querying the content_status view filtered to workspace stores.
+  // More efficient than the global RPC which counted ALL products.
   const counts: Record<string, number> = { no_content: 0, partial: 0, complete: 0 };
-  for (const row of data as { status: string; count: number }[]) {
-    counts[row.status] = Number(row.count);
-  }
+
+  const results = await Promise.all([
+    supabase.from("products_with_content_status")
+      .select("id", { count: "exact", head: true })
+      .in("store_id", storeIds)
+      .is("deleted_at", null)
+      .eq("content_status", "no_content"),
+    supabase.from("products_with_content_status")
+      .select("id", { count: "exact", head: true })
+      .in("store_id", storeIds)
+      .is("deleted_at", null)
+      .eq("content_status", "partial"),
+    supabase.from("products_with_content_status")
+      .select("id", { count: "exact", head: true })
+      .in("store_id", storeIds)
+      .is("deleted_at", null)
+      .eq("content_status", "complete"),
+  ]);
+
+  counts.no_content = results[0].count ?? 0;
+  counts.partial = results[1].count ?? 0;
+  counts.complete = results[2].count ?? 0;
+
   return counts;
 }
 
@@ -785,14 +861,25 @@ function mapAIContent(row: any, storeNames: Record<string, string>): AIGenerated
 
 // ─── AI Activity Logs ───
 
-export async function getAIActivityLogs(): Promise<AIActivityLog[]> {
+export async function getAIActivityLogs(workspaceId: string): Promise<AIActivityLog[]> {
   const supabase = createAdminClient();
+  const storeIds = await getWorkspaceStoreIds(workspaceId);
+
+  // Activity logs may have null store_id (workspace-level operations).
+  // Include those + logs for workspace stores.
   const [{ data, error }, storeNames] = await Promise.all([
-    supabase
-      .from("ai_activity_logs")
-      .select("*")
-      .order("created_at", { ascending: false }),
-    getStoreNameMap(),
+    storeIds.length > 0
+      ? supabase
+          .from("ai_activity_logs")
+          .select("*")
+          .or(`store_id.in.(${storeIds.join(",")}),store_id.is.null`)
+          .order("created_at", { ascending: false })
+      : supabase
+          .from("ai_activity_logs")
+          .select("*")
+          .is("store_id", null)
+          .order("created_at", { ascending: false }),
+    getStoreNameMap(workspaceId),
   ]);
 
   if (error) {
@@ -827,8 +914,19 @@ function mapAIActivityLog(row: any, storeNames: Record<string, string>): AIActiv
 
 // ─── Dashboard Stats ───
 
-export async function getDashboardStats(): Promise<DashboardStats> {
+export async function getDashboardStats(workspaceId: string): Promise<DashboardStats> {
   const supabase = createAdminClient();
+  const storeIds = await getWorkspaceStoreIds(workspaceId);
+  // If no stores, return zeros
+  if (storeIds.length === 0) {
+    return {
+      total_products: 0, total_products_delta: 0,
+      active_stores: 0, active_stores_delta: 0,
+      total_jobs: 0, total_jobs_delta: 0,
+      alerts_today: 0, alerts_today_delta: 0,
+      ai_generated: 0, ai_generated_delta: 0,
+    };
+  }
 
   const now = new Date();
   const todayMidnight = new Date(now);
@@ -851,69 +949,81 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     alertsToday, alertsYesterday,
     aiContent, aiCurrent7d, aiPrev7d,
   ] = await Promise.all([
-    // Total products
+    // Total products (workspace-scoped)
     supabase
       .from("products")
       .select("*", { count: "exact", head: true })
+      .in("store_id", storeIds)
       .is("deleted_at", null),
     // Products created in last 7 days
     supabase
       .from("products")
       .select("*", { count: "exact", head: true })
+      .in("store_id", storeIds)
       .is("deleted_at", null)
       .gte("created_at", sevenDaysAgo.toISOString()),
-    // Active stores
+    // Active stores (workspace-scoped)
     supabase
       .from("stores")
       .select("*", { count: "exact", head: true })
+      .eq("workspace_id", workspaceId)
       .eq("status", "active")
       .is("deleted_at", null),
     // Stores created since yesterday
     supabase
       .from("stores")
       .select("*", { count: "exact", head: true })
+      .eq("workspace_id", workspaceId)
       .eq("status", "active")
       .is("deleted_at", null)
       .gte("created_at", yesterdayMidnight.toISOString()),
-    // Total jobs
+    // Total jobs (workspace-scoped)
     supabase
       .from("scrape_jobs")
-      .select("*", { count: "exact", head: true }),
+      .select("*", { count: "exact", head: true })
+      .in("store_id", storeIds),
     // Jobs in last 24h
     supabase
       .from("scrape_jobs")
       .select("*", { count: "exact", head: true })
+      .in("store_id", storeIds)
       .gte("created_at", twentyFourHoursAgo.toISOString()),
     // Jobs in previous 24h
     supabase
       .from("scrape_jobs")
       .select("*", { count: "exact", head: true })
+      .in("store_id", storeIds)
       .gte("created_at", fortyEightHoursAgo.toISOString())
       .lt("created_at", twentyFourHoursAgo.toISOString()),
-    // Alerts today
+    // Alerts today (workspace-scoped)
     supabase
       .from("product_changes")
       .select("*", { count: "exact", head: true })
+      .in("store_id", storeIds)
       .gte("detected_at", todayMidnight.toISOString()),
     // Alerts yesterday
     supabase
       .from("product_changes")
       .select("*", { count: "exact", head: true })
+      .in("store_id", storeIds)
       .gte("detected_at", yesterdayMidnight.toISOString())
       .lt("detected_at", todayMidnight.toISOString()),
-    // AI content total
+    // AI content total (workspace-scoped)
     supabase
       .from("ai_content")
-      .select("*", { count: "exact", head: true }),
+      .select("*", { count: "exact", head: true })
+      .in("store_id", storeIds),
     // AI content last 7 days
     supabase
       .from("ai_content")
       .select("*", { count: "exact", head: true })
+      .in("store_id", storeIds)
       .gte("created_at", sevenDaysAgo.toISOString()),
     // AI content previous 7 days
     supabase
       .from("ai_content")
       .select("*", { count: "exact", head: true })
+      .in("store_id", storeIds)
       .gte("created_at", fourteenDaysAgo.toISOString())
       .lt("created_at", sevenDaysAgo.toISOString()),
   ]);
@@ -934,22 +1044,26 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
 // ─── Recent Activity ───
 
-export async function getRecentActivity(): Promise<Activity[]> {
+export async function getRecentActivity(workspaceId: string): Promise<Activity[]> {
   const supabase = createAdminClient();
+  const storeIds = await getWorkspaceStoreIds(workspaceId);
+  if (storeIds.length === 0) return [];
 
   const [changesResult, jobsResult, storeNames] = await Promise.all([
     supabase
       .from("product_changes")
       .select("*")
+      .in("store_id", storeIds)
       .order("detected_at", { ascending: false })
       .limit(5),
     supabase
       .from("scrape_jobs")
       .select("*")
+      .in("store_id", storeIds)
       .eq("status", "completed")
       .order("completed_at", { ascending: false })
       .limit(5),
-    getStoreNameMap(),
+    getStoreNameMap(workspaceId),
   ]);
 
   const activities: Activity[] = [];

@@ -9,7 +9,7 @@ interface Props {
 }
 
 export default async function ProductsPage({ searchParams }: Props) {
-  const { user, role, permissions, isDevBypass } = await getAuthContext();
+  const { user, workspaceId, role, permissions, isDevBypass } = await getAuthContext();
   if (!user && !isDevBypass) {
     redirect("/login");
   }
@@ -50,8 +50,8 @@ export default async function ProductsPage({ searchParams }: Props) {
       page,
       pageSize: 24,
       randomize: true,
-    }),
-    getStores(),
+    }, workspaceId!),
+    getStores(workspaceId!),
   ]);
 
   return (

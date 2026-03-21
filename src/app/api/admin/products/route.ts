@@ -5,7 +5,7 @@ import { getProducts, getProductsLight } from "@/lib/queries";
 
 export async function GET(req: NextRequest) {
   try {
-    const { role, permissions, user, isDevBypass } = await getAuthContext();
+    const { role, permissions, user, isDevBypass, workspaceId } = await getAuthContext();
     if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -15,8 +15,8 @@ export async function GET(req: NextRequest) {
 
     const columns = req.nextUrl.searchParams.get("columns");
     const products = columns === "light"
-      ? await getProductsLight()
-      : await getProducts();
+      ? await getProductsLight(workspaceId!)
+      : await getProducts(workspaceId!);
 
     return NextResponse.json({ products });
   } catch (err) {

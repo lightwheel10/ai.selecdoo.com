@@ -22,6 +22,7 @@ import {
   getRecentProducts,
   getStores,
 } from "@/lib/queries";
+import { getAuthContext } from "@/lib/auth/session";
 import type { ActivityType } from "@/types";
 
 const activityIcons: Record<ActivityType, { icon: typeof TrendingDown; color: string }> = {
@@ -75,16 +76,17 @@ function formatDelta(
 }
 
 export default async function DashboardPage() {
+  const { workspaceId } = await getAuthContext();
   const t = await getTranslations("Overview");
   const tt = await getTranslations("Time");
 
   const [stats, recentJobs, latestProducts, recentActivity, allStores] =
     await Promise.all([
-      getDashboardStats(),
-      getRecentJobs(5),
-      getRecentProducts(3),
-      getRecentActivity(),
-      getStores(),
+      getDashboardStats(workspaceId!),
+      getRecentJobs(5, workspaceId!),
+      getRecentProducts(3, workspaceId!),
+      getRecentActivity(workspaceId!),
+      getStores(workspaceId!),
     ]);
   const storeMap = Object.fromEntries(allStores.map((s) => [s.id, s]));
 
