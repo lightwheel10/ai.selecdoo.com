@@ -41,7 +41,8 @@ export async function PATCH(
       return NextResponse.json({ error: "Content not found" }, { status: 404 });
     }
 
-    if (workspaceId && !(await verifyStoreInWorkspace(existing.store_id, workspaceId))) {
+    // Workspace isolation: reject if no workspace context or resource doesn't belong
+    if (!workspaceId || !(await verifyStoreInWorkspace(existing.store_id, workspaceId))) {
       return NextResponse.json({ error: "Content not found" }, { status: 404 });
     }
 

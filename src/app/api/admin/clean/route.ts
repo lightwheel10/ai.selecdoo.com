@@ -80,7 +80,9 @@ export async function POST(req: Request) {
       .from("stores")
       .select("id, name, url, platform, affiliate_link_base, program_id, coupon_code")
       .in("id", storeIds);
-    if (workspaceId) storeQuery.eq("workspace_id", workspaceId);
+    // Workspace isolation: always filter stores by workspace.
+    // If workspaceId is null, no stores will match — preventing cross-workspace access.
+    storeQuery.eq("workspace_id", workspaceId);
     const { data: stores } = await storeQuery;
 
     const storeMap = new Map(

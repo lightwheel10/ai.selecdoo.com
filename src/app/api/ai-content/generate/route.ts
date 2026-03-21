@@ -121,7 +121,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    if (workspaceId && !(await verifyStoreInWorkspace(product.store_id, workspaceId))) {
+    // Workspace isolation: reject if no workspace context or resource doesn't belong
+    if (!workspaceId || !(await verifyStoreInWorkspace(product.store_id, workspaceId))) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 

@@ -37,7 +37,8 @@ export async function GET(
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
-    if (workspaceId && !(await verifyStoreInWorkspace(job.store_id, workspaceId))) {
+    // Workspace isolation: reject if no workspace context or resource doesn't belong
+    if (!workspaceId || !(await verifyStoreInWorkspace(job.store_id, workspaceId))) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
