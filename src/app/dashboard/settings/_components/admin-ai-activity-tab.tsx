@@ -507,7 +507,9 @@ export function AdminAIActivityTab() {
             items_skipped: totalErrors,
             message: `Product cleaning: ${totalUpdated} updated, ${totalErrors} errors`,
             results: logResults,
-            elapsed_ms: elapsed * 1000,
+            // Use the ref directly instead of the elapsed React state —
+            // state may be stale since setElapsed is async.
+            elapsed_ms: Date.now() - startTimeRef.current,
           }),
         });
 
@@ -593,7 +595,9 @@ export function AdminAIActivityTab() {
             items_skipped: totalErrors,
             message: `Shop cleaning: ${totalUpdated} updated, ${totalErrors} errors`,
             results: logResults,
-            elapsed_ms: elapsed * 1000,
+            // Use the ref directly instead of the elapsed React state —
+            // state may be stale since setElapsed is async.
+            elapsed_ms: Date.now() - startTimeRef.current,
           }),
         });
 
