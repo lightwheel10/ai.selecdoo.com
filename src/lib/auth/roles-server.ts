@@ -1,38 +1,36 @@
+/**
+ * Server-side role utilities.
+ *
+ * Multi-tenant: roles are now resolved from workspace_members table
+ * via getAuthContext(), NOT from app_metadata or bootstrap emails.
+ *
+ * The bootstrap admin mechanism (BOOTSTRAP_ADMIN_EMAILS) has been
+ * removed. Admins are determined purely by their workspace_members.role.
+ *
+ * This file is kept for backward compatibility with any code that
+ * imports from it, but the core role resolution has moved to
+ * workspace.ts -> getWorkspaceMembership().
+ */
+
 import { normalizeAppRole, type AppRole } from "@/lib/auth/roles";
 
-interface RoleIdentity {
-  email?: string | null;
-  app_metadata?: Record<string, unknown> | null;
-}
-
-function getBootstrapAdminEmails(): Set<string> {
-  const raw = process.env.BOOTSTRAP_ADMIN_EMAILS ?? "";
-  if (!raw.trim()) return new Set();
-  return new Set(
-    raw
-      .split(",")
-      .map((v) => v.trim().toLowerCase())
-      .filter(Boolean)
-  );
-}
-
-export function isBootstrapAdminEmail(email?: string | null): boolean {
-  if (!email) return false;
-  return getBootstrapAdminEmails().has(email.toLowerCase());
-}
-
-export function resolveAppRole(identity: RoleIdentity | null): AppRole {
+/**
+ * @deprecated Role resolution now happens in workspace.ts.
+ * Kept for backward compatibility — returns role from metadata
+ * or defaults to "viewer". Will be removed in Step 7 cleanup.
+ */
+export function resolveAppRole(
+  identity: { email?: string | null; app_metadata?: Record<string, unknown> | null } | null
+): AppRole {
   if (!identity) return "viewer";
-
-  const explicitRole = normalizeAppRole(identity.app_metadata?.role);
-  if (explicitRole === "admin" || explicitRole === "operator") {
-    return explicitRole;
-  }
-
-  if (isBootstrapAdminEmail(identity.email)) {
-    return "admin";
-  }
-
-  return explicitRole;
+  return normalizeAppRole(identity.app_metadata?.role);
 }
 
+/**
+ * @deprecated Bootstrap admin emails are no longer used.
+ * Admin status is now per-workspace via workspace_members.role.
+ * Returns false always. Will be removed in Step 7 cleanup.
+ */
+export function isBootstrapAdminEmail(_email?: string | null): boolean {
+  return false;
+}

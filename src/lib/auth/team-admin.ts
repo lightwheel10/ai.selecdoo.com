@@ -1,63 +1,152 @@
-import type { User } from "@supabase/supabase-js";
+/**
+ * Team admin utilities for workspace-scoped team management.
+ *
+ * Multi-tenant: team operations are scoped to a single workspace.
+ * The old listAllAuthUsers() is removed — team members are now
+ * queried from workspace_members, not the global auth.users table.
+ */
+
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   canManageTeamRoles,
   getDefaultRolePermissionMatrix,
+  normalizeRolePermissionMatrix,
   type RolePermissionMatrix,
 } from "@/lib/auth/roles";
 import { getAuthContext } from "@/lib/auth/session";
-import { getWorkspaceMatrixFromUser } from "@/lib/auth/team-access";
-
-const PAGE_SIZE = 200;
-const MAX_PAGES = 20;
 
 export interface TeamAdminActor {
   id: string;
   email: string | null;
+  workspaceId: string;
   workspaceMatrix: RolePermissionMatrix;
 }
 
-export async function authenticateTeamAdmin(): Promise<TeamAdminActor | null> {
-  const { user, role, permissions, isDevBypass } = await getAuthContext();
+/**
+ * Authenticate the current user as a team admin for a workspace.
+ * Returns null if the user is not authenticated, not a member, or
+ * lacks team:manage_roles permission in the workspace.
+ */
+export async function authenticateTeamAdmin(
+  workspaceId?: string | null
+): Promise<TeamAdminActor | null> {
+  const { user, workspaceId: resolvedWorkspaceId, role, permissions, isDevBypass } =
+    await getAuthContext(workspaceId);
 
-  if (isDevBypass) {
+  const activeWorkspaceId = workspaceId ?? resolvedWorkspaceId;
+
+  if (isDevBypass && activeWorkspaceId) {
+    // Dev bypass: look up workspace matrix from DB for realistic testing
+    let matrix = getDefaultRolePermissionMatrix();
+    try {
+      const supabase = createAdminClient();
+      const { data } = await supabase
+        .from("workspaces")
+        .select("role_permissions")
+        .eq("id", activeWorkspaceId)
+        .single();
+      if (data?.role_permissions) {
+        matrix = normalizeRolePermissionMatrix(data.role_permissions);
+      }
+    } catch {
+      // Fall back to defaults
+    }
+
     return {
       id: "dev-bypass",
       email: null,
-      workspaceMatrix: getDefaultRolePermissionMatrix(),
+      workspaceId: activeWorkspaceId,
+      workspaceMatrix: matrix,
     };
   }
 
-  if (!user) return null;
+  if (!user || !activeWorkspaceId) return null;
   if (!canManageTeamRoles({ role, permissions })) return null;
+
+  // Look up the workspace's permission matrix
+  const supabase = createAdminClient();
+  const { data: workspace } = await supabase
+    .from("workspaces")
+    .select("role_permissions")
+    .eq("id", activeWorkspaceId)
+    .single();
+
+  const matrix = workspace?.role_permissions
+    ? normalizeRolePermissionMatrix(workspace.role_permissions)
+    : getDefaultRolePermissionMatrix();
 
   return {
     id: user.id,
     email: user.email ?? null,
-    workspaceMatrix: getWorkspaceMatrixFromUser(user),
+    workspaceId: activeWorkspaceId,
+    workspaceMatrix: matrix,
   };
 }
 
-export async function listAllAuthUsers(): Promise<User[]> {
+/**
+ * @deprecated Use listWorkspaceMembers() instead.
+ * Kept temporarily for backward compatibility with team routes
+ * until they are rewritten in Step 4. Will be removed in Step 7.
+ */
+export async function listAllAuthUsers() {
   const supabase = createAdminClient();
-  const users: User[] = [];
+  const users: import("@supabase/supabase-js").User[] = [];
+  const PAGE_SIZE = 200;
+  const MAX_PAGES = 20;
 
   for (let page = 1; page <= MAX_PAGES; page += 1) {
     const { data, error } = await supabase.auth.admin.listUsers({
       page,
       perPage: PAGE_SIZE,
     });
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
+    if (error) throw new Error(error.message);
     const batch = data.users ?? [];
     users.push(...batch);
-
     if (batch.length < PAGE_SIZE) break;
   }
 
   return users;
 }
 
+/**
+ * List members of a specific workspace.
+ * Returns workspace_members rows with user email looked up from auth.
+ */
+export async function listWorkspaceMembers(workspaceId: string) {
+  const supabase = createAdminClient();
+
+  // Get workspace members
+  const { data: members, error } = await supabase
+    .from("workspace_members")
+    .select("id, user_id, role, permissions, created_at, updated_at")
+    .eq("workspace_id", workspaceId);
+
+  if (error || !members) return [];
+
+  // Batch lookup user emails from auth (we need admin API for this)
+  const userIds = members.map((m) => m.user_id);
+  const { data: authData } = await supabase.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000,
+  });
+
+  // Build a lookup map of user_id -> email
+  const emailMap = new Map<string, string>();
+  const lastSignInMap = new Map<string, string | null>();
+  for (const u of authData?.users ?? []) {
+    if (userIds.includes(u.id)) {
+      emailMap.set(u.id, u.email ?? "");
+      lastSignInMap.set(u.id, u.last_sign_in_at ?? null);
+    }
+  }
+
+  return members.map((m) => ({
+    id: m.id,
+    user_id: m.user_id,
+    email: emailMap.get(m.user_id) ?? "",
+    role: m.role,
+    permissions: m.permissions,
+    created_at: m.created_at,
+    last_sign_in_at: lastSignInMap.get(m.user_id) ?? null,
+  }));
+}
