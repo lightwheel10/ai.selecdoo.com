@@ -83,30 +83,9 @@ export async function authenticateTeamAdmin(
   };
 }
 
-/**
- * @deprecated Use listWorkspaceMembers() instead.
- * Kept temporarily for backward compatibility with team routes
- * until they are rewritten in Step 4. Will be removed in Step 7.
- */
-export async function listAllAuthUsers() {
-  const supabase = createAdminClient();
-  const users: import("@supabase/supabase-js").User[] = [];
-  const PAGE_SIZE = 200;
-  const MAX_PAGES = 20;
-
-  for (let page = 1; page <= MAX_PAGES; page += 1) {
-    const { data, error } = await supabase.auth.admin.listUsers({
-      page,
-      perPage: PAGE_SIZE,
-    });
-    if (error) throw new Error(error.message);
-    const batch = data.users ?? [];
-    users.push(...batch);
-    if (batch.length < PAGE_SIZE) break;
-  }
-
-  return users;
-}
+// listAllAuthUsers() has been removed — it listed ALL Supabase users
+// globally which is a multi-tenant data leak. Use listWorkspaceMembers()
+// to list members of a specific workspace instead.
 
 /**
  * List members of a specific workspace.

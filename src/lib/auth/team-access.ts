@@ -1,10 +1,19 @@
-import type { User } from "@supabase/supabase-js";
+/**
+ * Permission computation utilities.
+ *
+ * Multi-tenant: these functions compute effective permissions from
+ * a role + workspace permission matrix + per-member overrides.
+ * Used by workspace.ts and team API routes.
+ *
+ * The old app_metadata-based functions (getWorkspaceMatrixFromUser,
+ * mergeWorkspaceMatrixIntoMetadata, applyRoleAndPermissionsToMetadata,
+ * etc.) have been removed — permission data now lives in the
+ * workspace_members and workspaces tables, not in JWT metadata.
+ */
+
 import {
   APP_PERMISSIONS,
-  getDefaultRolePermissionMatrix,
   normalizePermissionList,
-  normalizeRolePermissionMatrix,
-  normalizeAppRole,
   type AppPermission,
   type AppRole,
   type RolePermissionMatrix,
@@ -29,38 +38,6 @@ function toRecord(value: unknown): LooseRecord {
   return { ...(value as LooseRecord) };
 }
 
-export function getWorkspaceMatrixFromMetadata(metadata: unknown): RolePermissionMatrix {
-  const record = toRecord(metadata);
-  if (!("role_permissions" in record)) {
-    return getDefaultRolePermissionMatrix();
-  }
-  return normalizeRolePermissionMatrix(record.role_permissions);
-}
-
-export function getWorkspaceMatrixFromUser(
-  user: Pick<User, "app_metadata"> | null | undefined
-): RolePermissionMatrix {
-  return getWorkspaceMatrixFromMetadata(user?.app_metadata);
-}
-
-export function mergeWorkspaceMatrixIntoMetadata(
-  metadata: unknown,
-  matrix: RolePermissionMatrix
-): LooseRecord {
-  const record = toRecord(metadata);
-  return {
-    ...record,
-    role_permissions: {
-      admin: [...matrix.admin],
-      operator: [...matrix.operator],
-      viewer: [...matrix.viewer],
-    },
-  };
-}
-
-export function getUserRoleFromMetadata(metadata: unknown): AppRole {
-  return normalizeAppRole(toRecord(metadata).role);
-}
 
 export function normalizePermissionOverrides(value: unknown): PermissionOverrides {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -75,16 +52,6 @@ export function normalizePermissionOverrides(value: unknown): PermissionOverride
   );
 
   return { allow, deny };
-}
-
-export function getPermissionOverridesFromMetadata(
-  metadata: unknown
-): PermissionOverrides {
-  const record = toRecord(metadata);
-  if (!("permission_overrides" in record)) {
-    return EMPTY_OVERRIDES;
-  }
-  return normalizePermissionOverrides(record.permission_overrides);
 }
 
 export function hasPermissionOverrides(overrides: PermissionOverrides): boolean {
@@ -136,49 +103,7 @@ export function computeEffectivePermissions(
   );
 }
 
-export function applyRoleAndPermissionsToMetadata(
-  metadata: unknown,
-  role: AppRole,
-  matrix: RolePermissionMatrix
-): LooseRecord {
-  const merged = mergeWorkspaceMatrixIntoMetadata(metadata, matrix);
-  const overrides = getPermissionOverridesFromMetadata(metadata);
-  const permissions = computeEffectivePermissions(role, matrix, overrides);
-
-  return {
-    ...merged,
-    role,
-    permission_overrides: {
-      allow: [...overrides.allow],
-      deny: [...overrides.deny],
-    },
-    permissions,
-  };
-}
-
-export function applyExplicitPermissionsToMetadata(
-  metadata: unknown,
-  role: AppRole,
-  matrix: RolePermissionMatrix,
-  requestedPermissions: unknown
-): LooseRecord {
-  const merged = mergeWorkspaceMatrixIntoMetadata(metadata, matrix);
-  // Store user-specific differences from role defaults so matrix updates can
-  // still re-compute the final permission set consistently.
-  const overrides = deriveOverridesFromPermissions(
-    role,
-    matrix,
-    requestedPermissions
-  );
-  const permissions = computeEffectivePermissions(role, matrix, overrides);
-
-  return {
-    ...merged,
-    role,
-    permission_overrides: {
-      allow: [...overrides.allow],
-      deny: [...overrides.deny],
-    },
-    permissions,
-  };
-}
+// applyRoleAndPermissionsToMetadata() and applyExplicitPermissionsToMetadata()
+// have been removed — they wrote to app_metadata which is no longer used.
+// Permissions are now stored in workspace_members.permissions and
+// workspaces.role_permissions.

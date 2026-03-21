@@ -22,7 +22,6 @@ interface TeamMember {
   is_customized: boolean;
   created_at: string | null;
   last_sign_in_at: string | null;
-  is_bootstrap_admin: boolean;
 }
 
 interface PermissionDefinition {
@@ -236,7 +235,7 @@ export function TeamAccessManager() {
   const canCustomizeSelectedMember =
     !!selectedMember &&
     selectedMember.role !== "admin" &&
-    !selectedMember.is_bootstrap_admin;
+    true;
 
   const loadMembers = useCallback(async () => {
     setLoading(true);
@@ -506,27 +505,14 @@ export function TeamAccessManager() {
               </TableRow>
             ) : (
               members.map((member) => {
-                const canCustomize = member.role !== "admin" && !member.is_bootstrap_admin;
+                const canCustomize = member.role !== "admin";
                 const isSelected = member.id === selectedMemberId;
 
                 return (
                   <TableRow key={member.id}>
                     <TableCell className="text-[11px]">{member.email}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <RoleBadge role={member.role} />
-                        {member.is_bootstrap_admin && (
-                          <span
-                            className="text-[9px] font-bold uppercase tracking-[0.15em]"
-                            style={{
-                              fontFamily: "var(--font-mono)",
-                              color: "var(--muted-foreground)",
-                            }}
-                          >
-                            {t("bootstrap")}
-                          </span>
-                        )}
-                      </div>
+                      <RoleBadge role={member.role} />
                     </TableCell>
                     <TableCell>
                       {canCustomize ? (
