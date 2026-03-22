@@ -271,6 +271,8 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
   const t = useTranslations("Jobs");
   const locale = useLocale();
   const router = useRouter();
+  // Local copy of jobs so we can remove deleted ones without a full page refresh
+  const [localJobs, setLocalJobs] = useState(jobs);
 
   const storeUrlMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -281,8 +283,8 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
   }, [stores]);
 
   const storeNames = useMemo(
-    () => [...new Set(jobs.map((j) => j.store_name))].filter(Boolean).sort(),
-    [jobs]
+    () => [...new Set(localJobs.map((j) => j.store_name))].filter(Boolean).sort(),
+    [localJobs]
   );
 
   const [search, setSearch] = useState("");
@@ -298,7 +300,7 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
   const hasAnyFilter = statusFilter || storeFilter || dateFilter;
 
   const filtered = useMemo(() => {
-    let result = jobs;
+    let result = localJobs;
 
     // Search
     if (search.trim()) {
@@ -381,7 +383,7 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
     }
 
     return result;
-  }, [jobs, search, locale, statusFilter, storeFilter, dateFilter, sortKey, sortDir]);
+  }, [localJobs, search, locale, statusFilter, storeFilter, dateFilter, sortKey, sortDir]);
 
   function clearAll() {
     setStatusFilter(null);
@@ -433,12 +435,24 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
     setPendingDelete(job.id);
   }
 
-  function confirmDelete(jobId: string) {
-    // TODO: real Supabase delete
+  // Hard-delete a scrape job via the API. Jobs are historical logs
+  // with no soft-delete — once deleted, they're gone permanently.
+  async function confirmDelete(jobId: string) {
+    try {
+      const res = await fetch(`/api/scrape/${jobId}/status`, { method: "DELETE" });
+      if (!res.ok) {
+        toast.error(t("deleteFailed"));
+        setPendingDelete(null);
+        return;
+      }
+      setLocalJobs((prev) => prev.filter((j) => j.id !== jobId));
+      toast(t("jobDeleted"), {
+        description: t("jobDeletedDescription", { id: jobId.slice(0, 8) }),
+      });
+    } catch {
+      toast.error(t("deleteFailed"));
+    }
     setPendingDelete(null);
-    toast(t("jobDeleted"), {
-      description: t("jobDeletedDescription", { id: jobId.slice(0, 8) }),
-    });
   }
 
   const statusOptions = [
@@ -538,14 +552,14 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
             ? search.trim()
               ? t("jobsFiltered", {
                   filtered: filtered.length,
-                  total: jobs.length,
+                  total: localJobs.length,
                   query: search,
                 })
               : t("jobsFilteredOnly", {
                   filtered: filtered.length,
-                  total: jobs.length,
+                  total: localJobs.length,
                 })
-            : t("jobsFound", { count: jobs.length })}
+            : t("jobsFound", { count: localJobs.length })}
         </p>
       </div>
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { canViewScrape } from "@/lib/auth/roles";
+import { canViewScrape, canAccessAdmin } from "@/lib/auth/roles";
 import { getAuthContext } from "@/lib/auth/session";
 import { verifyStoreInWorkspace } from "@/lib/auth/workspace";
 import {
@@ -100,6 +100,59 @@ export async function GET(
   } catch (err) {
     console.error("Status API error:", err);
     Sentry.captureException(err, { tags: { route: "scrape/status" } });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+/**
+ * Hard-delete a scrape job. Admin-only.
+ * Jobs are historical logs with no soft-delete column — once deleted, they're gone.
+ */
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ jobId: string }> }
+) {
+  try {
+    const { user, role, permissions, isDevBypass, workspaceId } = await getAuthContext();
+    if (!user && !isDevBypass) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!canAccessAdmin({ role, permissions })) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const { jobId } = await params;
+    const supabase = createAdminClient();
+
+    // Verify the job exists and belongs to the user's workspace
+    const { data: job, error: lookupErr } = await supabase
+      .from("scrape_jobs")
+      .select("id, store_id")
+      .eq("id", jobId)
+      .single();
+
+    if (lookupErr || !job) {
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    }
+
+    // Workspace isolation
+    if (!workspaceId || !(await verifyStoreInWorkspace(job.store_id, workspaceId))) {
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    }
+
+    const { error: deleteErr } = await supabase
+      .from("scrape_jobs")
+      .delete()
+      .eq("id", jobId);
+
+    if (deleteErr) {
+      console.error("Job delete error:", deleteErr);
+      return NextResponse.json({ error: "Failed to delete job" }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("Job DELETE error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
