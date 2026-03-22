@@ -478,7 +478,7 @@ export default async function DashboardPage() {
               opacity: 0.5,
             }}
           >
-            &copy; 2023-2024 MarketForce One. All rights reserved.
+            &copy; 2023-{new Date().getFullYear()} MarketForce One. All rights reserved.
           </p>
           <p
             className="text-[10px] tracking-wider"

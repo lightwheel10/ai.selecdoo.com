@@ -9,6 +9,7 @@ import { signOut } from "@/app/actions/auth";
 import { setLocale } from "@/app/actions/locale";
 import { NAV_BOTTOM, NAV_ITEMS } from "@/lib/constants";
 import { ThemeToggle } from "@/components/domain/theme-toggle";
+import { useWorkspace } from "@/components/domain/workspace-provider";
 import {
   type AppPermission,
   canAccessAIContent,
@@ -41,6 +42,7 @@ export function AppSidebar({ user, role, permissions }: AppSidebarProps) {
   const router = useRouter();
   const t = useTranslations("Sidebar");
   const locale = useLocale();
+  const { workspaceName } = useWorkspace();
   const [signOutOpen, setSignOutOpen] = useState(false);
 
   const visibleMainItems = NAV_ITEMS.filter((item) => {
@@ -218,6 +220,19 @@ export function AppSidebar({ user, role, permissions }: AppSidebarProps) {
                 </div>
                 <ThemeToggle />
               </div>
+
+              {/* Workspace name — shows which workspace the user is in */}
+              {workspaceName && (
+                <p
+                  className="text-[10px] font-bold truncate mb-0.5"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--primary-text)",
+                  }}
+                >
+                  {workspaceName}
+                </p>
+              )}
 
               {/* User email */}
               <p
