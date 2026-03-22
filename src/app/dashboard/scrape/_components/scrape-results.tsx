@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Eye, Tags, PenSquare } from "lucide-react";
+import { Eye } from "lucide-react";
 import { ProductImage } from "@/components/domain/product-image";
 import { useTranslations } from "next-intl";
 import { StatusBadge } from "@/components/domain/status-badge";
@@ -128,34 +128,8 @@ export function ScrapeResults({ products }: ScrapeResultsProps) {
                     <Eye className="w-3 h-3" />
                     {t("viewProduct")}
                   </Link>
-                  {/* Success semantic — Deals */}
-                  <button
-                    onClick={() => {/* TODO: deal workflow */}}
-                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      backgroundColor: "#22C55E12",
-                      border: "1.5px solid #22C55E40",
-                      color: "#22C55E",
-                    }}
-                  >
-                    <Tags className="w-3 h-3" />
-                    {t("deals")}
-                  </button>
-                  {/* Info semantic — Posts */}
-                  <button
-                    onClick={() => {/* TODO: post workflow */}}
-                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      backgroundColor: "#5AC8FA12",
-                      border: "1.5px solid #5AC8FA40",
-                      color: "#5AC8FA",
-                    }}
-                  >
-                    <PenSquare className="w-3 h-3" />
-                    {t("posts")}
-                  </button>
+                  {/* Deal and post generation is handled in the AI Content page,
+                      not here. Removed placeholder buttons that did nothing. */}
                 </div>
               </div>
             </div>
