@@ -14,7 +14,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   if (!product) notFound();
 
-  const store = await getStoreById(product.store_id);
+  // Pass workspaceId to ensure the store belongs to the user's workspace
+  const store = await getStoreById(product.store_id, workspaceId!);
 
   return <ProductDetailView product={product} store={store} />;
 }
