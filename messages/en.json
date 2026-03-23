@@ -465,6 +465,8 @@
     "updateFailed": "Failed to update role",
     "roleUpdated": "Role updated",
     "roleUpdatedDescription": "{email} is now {role}.",
+    "inviteSent": "Invitation sent",
+    "inviteSentDescription": "{email} has been invited as {role}. They will receive an email to join.",
     "adminRole": "Admin",
     "operatorRole": "Operator",
     "viewerRole": "Viewer",

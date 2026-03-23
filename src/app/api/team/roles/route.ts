@@ -98,15 +98,41 @@ export async function POST(req: Request) {
       page: 1,
       perPage: 1000,
     });
-    const target = (authData?.users ?? []).find(
+    let target = (authData?.users ?? []).find(
       (u) => (u.email ?? "").toLowerCase() === email
     );
 
+    let invited = false;
+
     if (!target) {
-      return NextResponse.json(
-        { error: "User not found. Ask the user to log in once first." },
-        { status: 404 }
-      );
+      // User doesn't exist yet — invite them via Supabase (sends email)
+      const { data: workspaceData } = await supabase
+        .from("workspaces")
+        .select("name")
+        .eq("id", actor.workspaceId)
+        .single();
+
+      const workspaceName = workspaceData?.name ?? "your team";
+
+      const { data: inviteData, error: inviteError } =
+        await supabase.auth.admin.inviteUserByEmail(email, {
+          data: {
+            invited_to_workspace: actor.workspaceId,
+            invited_role: roleInput,
+            workspace_name: workspaceName,
+          },
+        });
+
+      if (inviteError || !inviteData.user) {
+        console.error("Invite error:", inviteError);
+        return NextResponse.json(
+          { error: inviteError?.message ?? "Failed to send invitation" },
+          { status: 500 }
+        );
+      }
+
+      target = inviteData.user;
+      invited = true;
     }
 
     // Check if user is already a member of this workspace
@@ -171,6 +197,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
+      invited,
       member: {
         id: target.id,
         email: target.email,

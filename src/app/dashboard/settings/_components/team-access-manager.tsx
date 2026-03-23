@@ -361,12 +361,21 @@ export function TeamAccessManager() {
         throw new Error(data?.error ?? t("updateFailed"));
       }
 
-      toast.success(t("roleUpdated"), {
-        description: t("roleUpdatedDescription", {
-          email: normalizedEmail,
-          role,
-        }),
-      });
+      if (data?.invited) {
+        toast.success(t("inviteSent"), {
+          description: t("inviteSentDescription", {
+            email: normalizedEmail,
+            role,
+          }),
+        });
+      } else {
+        toast.success(t("roleUpdated"), {
+          description: t("roleUpdatedDescription", {
+            email: normalizedEmail,
+            role,
+          }),
+        });
+      }
       setEmail("");
       await loadMembers();
     } catch (err) {
