@@ -793,5 +793,11 @@
     "ctaButton": "Get Started Free",
     "footerRights": "© 2025-2026 MarketForce One. All rights reserved.",
     "footerMadeWith": "Made with <heart>♥</heart> by <link>Spectrum AI Labs</link>"
+  },
+  "WorkspaceSelect": {
+    "label": "Workspace",
+    "title": "Choose a workspace",
+    "description": "You belong to multiple workspaces. Select the one you want to work in.",
+    "selecting": "Opening..."
   }
 }

@@ -7,6 +7,7 @@
  * redirects to /signup.
  */
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/domain/app-sidebar";
@@ -15,6 +16,7 @@ import { getAuthContext } from "@/lib/auth/session";
 import { RoleProvider } from "@/components/domain/role-provider";
 import { WorkspaceProvider } from "@/components/domain/workspace-provider";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getUserWorkspaces } from "@/lib/auth/workspace";
 
 export default async function DashboardLayout({
   children,
@@ -32,6 +34,19 @@ export default async function DashboardLayout({
   // workspace to function correctly (queries use workspaceId!).
   if (!workspaceId) {
     redirect("/signup");
+  }
+
+  // If user has multiple workspaces and hasn't picked one yet,
+  // redirect to workspace selector. Single-workspace users skip this.
+  if (user && !isDevBypass) {
+    const cookieStore = await cookies();
+    const hasPreference = !!cookieStore.get("mf_workspace_id")?.value;
+    if (!hasPreference) {
+      const workspaces = await getUserWorkspaces(user.id);
+      if (workspaces.length > 1) {
+        redirect("/workspace-select");
+      }
+    }
   }
 
   // Fetch workspace name + public site URL for the provider

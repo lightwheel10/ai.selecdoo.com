@@ -10,6 +10,7 @@
  */
 
 import type { User } from "@supabase/supabase-js";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { APP_PERMISSIONS, type AppPermission, type AppRole } from "@/lib/auth/roles";
 import {
@@ -96,14 +97,22 @@ export async function getAuthContext(
   }
 
   // ── Resolve workspace membership ──
-  // If workspaceId provided, check membership in that workspace.
-  // Otherwise, auto-resolve the user's first workspace.
+  // Priority: explicit param > cookie preference > default (first workspace).
   let membership: WorkspaceMembership | null = null;
 
   if (workspaceId) {
     membership = await getWorkspaceMembership(user.id, workspaceId);
   } else {
-    membership = await getDefaultWorkspaceMembership(user.id);
+    // Check for workspace preference cookie
+    const cookieStore = await cookies();
+    const preferred = cookieStore.get("mf_workspace_id")?.value;
+    if (preferred) {
+      membership = await getWorkspaceMembership(user.id, preferred);
+    }
+    // Fall back to default (first workspace) if cookie is unset or invalid
+    if (!membership) {
+      membership = await getDefaultWorkspaceMembership(user.id);
+    }
   }
 
   // User exists but has no workspace membership — new user who hasn't

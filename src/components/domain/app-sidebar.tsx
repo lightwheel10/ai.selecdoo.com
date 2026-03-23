@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { LogOut } from "lucide-react";
+import { ArrowLeftRight, LogOut } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { signOut } from "@/app/actions/auth";
 import { setLocale } from "@/app/actions/locale";
@@ -221,17 +221,29 @@ export function AppSidebar({ user, role, permissions }: AppSidebarProps) {
                 <ThemeToggle />
               </div>
 
-              {/* Workspace name — shows which workspace the user is in */}
+              {/* Workspace name + switch */}
               {workspaceName && (
-                <p
-                  className="text-[10px] font-bold truncate mb-0.5"
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    color: "var(--primary-text)",
-                  }}
-                >
-                  {workspaceName}
-                </p>
+                <div className="flex items-center justify-between mb-0.5">
+                  <p
+                    className="text-[10px] font-bold truncate"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      color: "var(--primary-text)",
+                    }}
+                  >
+                    {workspaceName}
+                  </p>
+                  <Link
+                    href="/workspace-select"
+                    className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80 shrink-0"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      color: "var(--muted-foreground)",
+                    }}
+                  >
+                    <ArrowLeftRight className="w-3 h-3" />
+                  </Link>
+                </div>
               )}
 
               {/* User email */}
