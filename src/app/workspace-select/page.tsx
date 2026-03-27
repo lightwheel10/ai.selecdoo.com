@@ -19,34 +19,36 @@ export default async function WorkspaceSelectPage() {
   const t = await getTranslations("WorkspaceSelect");
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
+    /* .landing-page scopes the Neo-Industrial CSS variable overrides
+       (gold #FFD700 primary, #F9F9F9/#000 backgrounds, hard shadows) */
+    <div className="landing-page min-h-screen bg-background flex items-center justify-center">
+      {/* 20px blueprint grid — DESIGN.md §2 signature texture */}
       <div
         className="fixed inset-0 pointer-events-none"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(202,255,4,0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(202,255,4,0.02) 1px, transparent 1px)
+            linear-gradient(rgba(128,128,128,0.06) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(128,128,128,0.06) 1px, transparent 1px)
           `,
-          backgroundSize: "48px 48px",
+          backgroundSize: "20px 20px",
         }}
       />
 
       <div className="relative z-10 w-full max-w-lg px-6 py-16">
-        {/* Logo */}
-        <div className="flex items-center gap-2.5 mb-10">
+        {/* Branding — Epilogue display font, border-strong on logo */}
+        <div className="flex items-center gap-3 mb-10">
           <div
-            className="w-7 h-7 flex items-center justify-center text-[9px] font-bold"
+            className="w-8 h-8 flex items-center justify-center text-[9px] font-bold bg-primary text-primary-foreground"
             style={{
               fontFamily: "var(--font-mono)",
-              backgroundColor: "var(--primary)",
-              color: "var(--primary-foreground)",
+              border: "2px solid var(--border-strong)",
             }}
           >
             MF
           </div>
           <span
-            className="text-sm font-bold tracking-tight"
-            style={{ fontFamily: "var(--font-display)" }}
+            className="text-sm font-black tracking-tight"
+            style={{ fontFamily: "var(--font-display-landing)" }}
           >
             MarketForce One
           </span>
@@ -63,14 +65,20 @@ export default async function WorkspaceSelectPage() {
           {t("label")}
         </p>
         <h1
-          className="text-2xl font-bold tracking-tight mb-2"
-          style={{ fontFamily: "var(--font-display)" }}
+          className="text-2xl font-extrabold tracking-tight mb-2"
+          style={{
+            fontFamily: "var(--font-display-landing)",
+            letterSpacing: "-0.02em",
+          }}
         >
           {t("title")}
         </h1>
         <p
           className="text-sm mb-8"
-          style={{ color: "var(--muted-foreground)" }}
+          style={{
+            color: "var(--muted-foreground)",
+            fontFamily: "var(--font-body-landing)",
+          }}
         >
           {t("description")}
         </p>

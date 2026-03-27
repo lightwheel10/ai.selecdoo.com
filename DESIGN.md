@@ -142,4 +142,5 @@ The landing page alternates between main background and contrasting "alt" sectio
 | Landing (`/`) | `.landing-page` | Implemented |
 | Login (`/login`) | `.landing-page` | Implemented |
 | Signup (`/signup`) | `.landing-page` | Implemented |
+| Workspace Select (`/workspace-select`) | `.landing-page` | Implemented |
 | Dashboard (`/dashboard/*`) | None (uses original palette) | Not planned |
