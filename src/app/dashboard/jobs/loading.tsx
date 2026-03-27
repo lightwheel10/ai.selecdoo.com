@@ -3,15 +3,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function JobsLoading() {
   return (
     <>
-      {/* Stat cards */}
+      {/* Stat card skeletons — matches JobStats: border-strong + hard-shadow */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="border-2 px-4 py-3"
+            className="px-4 py-3"
             style={{
               backgroundColor: "var(--card)",
-              borderColor: "var(--border)",
+              border: "2px solid var(--border-strong)",
+              boxShadow: "var(--hard-shadow)",
             }}
           >
             <Skeleton className="h-2 w-16 mb-2" />
@@ -20,12 +21,13 @@ export default function JobsLoading() {
         ))}
       </div>
 
-      {/* Table card */}
+      {/* Table skeleton — matches JobsTable: border-strong + hard-shadow.
+          Internal dividers use soft --border for hierarchy. */}
       <div
-        className="border-2"
         style={{
           backgroundColor: "var(--card)",
-          borderColor: "var(--border)",
+          border: "2px solid var(--border-strong)",
+          boxShadow: "var(--hard-shadow)",
         }}
       >
         {/* Search bar + count */}

@@ -61,7 +61,7 @@ function SimpleFilter({
       <PopoverTrigger asChild>
         <button
           suppressHydrationWarning
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100"
           style={{
             fontFamily: "var(--font-mono)",
             backgroundColor: value ? "var(--primary-muted)" : "transparent",
@@ -147,7 +147,7 @@ function SearchableFilter({
       <PopoverTrigger asChild>
         <button
           suppressHydrationWarning
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100"
           style={{
             fontFamily: "var(--font-mono)",
             backgroundColor: value ? "var(--primary-muted)" : "transparent",
@@ -484,7 +484,7 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("searchJobs")}
-            className="pl-8 pr-3 py-2 text-xs border-2 outline-none transition-colors duration-150 focus:border-primary"
+            className="pl-8 pr-3 py-2 text-xs border-2 outline-none transition-colors duration-100 focus:border-primary"
             style={{
               backgroundColor: "var(--input)",
               borderColor: "var(--border)",
@@ -564,12 +564,14 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
       </div>
 
       {/* Table */}
+      {/* Table / empty state — DESIGN.md §5: border-strong + hard-shadow */}
       {filtered.length === 0 ? (
         <div
-          className="border-2 py-16 text-center"
+          className="py-16 text-center"
           style={{
             backgroundColor: "var(--card)",
-            borderColor: "var(--border)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
           }}
         >
           <p
@@ -584,10 +586,11 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
         </div>
       ) : (
         <div
-          className="border-2 overflow-auto scrollbar-none"
+          className="overflow-auto scrollbar-none"
           style={{
             backgroundColor: "var(--card)",
-            borderColor: "var(--border)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
             maxHeight: "70vh",
           }}
         >
@@ -804,7 +807,7 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
                       <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => confirmDelete(job.id)}
-                          className="flex items-center gap-1 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
+                          className="flex items-center gap-1 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80"
                           style={{
                             fontFamily: "var(--font-mono)",
                             backgroundColor: "#FF453A12",
@@ -816,7 +819,7 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
                         </button>
                         <button
                           onClick={() => setPendingDelete(null)}
-                          className="flex items-center gap-1 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 hover:opacity-80"
+                          className="flex items-center gap-1 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
                           style={{
                             fontFamily: "var(--font-mono)",
                             borderColor: "var(--border)",
@@ -831,7 +834,7 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
                         {/* View — Ghost button */}
                         <button
                           onClick={() => handleView(job.id)}
-                          className="flex items-center gap-1 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 hover:opacity-80"
+                          className="flex items-center gap-1 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
                           style={{
                             fontFamily: "var(--font-mono)",
                             borderColor: "var(--border)",
@@ -844,7 +847,7 @@ export function JobsTable({ jobs, stores }: JobsTableProps) {
                         {/* Delete — Danger button */}
                         <button
                           onClick={() => handleDelete(job)}
-                          className="flex items-center gap-1 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
+                          className="flex items-center gap-1 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80"
                           style={{
                             fontFamily: "var(--font-mono)",
                             backgroundColor: "#FF453A12",

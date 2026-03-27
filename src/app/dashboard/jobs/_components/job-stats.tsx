@@ -1,3 +1,11 @@
+/**
+ * JobStats — summary stat cards for the jobs page.
+ *
+ * DESIGN.md §5: Cards use border-strong + hard-shadow.
+ * Values use semantic status colors (green/blue/red) — NOT primary.
+ * Total uses --foreground for neutral emphasis.
+ */
+
 interface JobStatsLabels {
   totalJobs: string;
   completed: string;
@@ -26,10 +34,11 @@ export function JobStats({ total, completed, failed, running, labels }: JobStats
       {stats.map((stat) => (
         <div
           key={stat.label}
-          className="border-2 px-4 py-3"
+          className="px-4 py-3"
           style={{
             backgroundColor: "var(--card)",
-            borderColor: "var(--border)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
           }}
         >
           <p
@@ -41,8 +50,9 @@ export function JobStats({ total, completed, failed, running, labels }: JobStats
           >
             {stat.label}
           </p>
+          {/* Value — font-extrabold for extreme scale per DESIGN.md §6 */}
           <p
-            className="text-2xl font-bold"
+            className="text-2xl font-extrabold"
             style={{
               fontFamily: "var(--font-display)",
               color: stat.color,
