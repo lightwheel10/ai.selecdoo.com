@@ -3,12 +3,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function ScrapeLoading() {
   return (
     <div className="space-y-6">
-      {/* Form card */}
+      {/* Form card skeleton — matches real form card: border-strong + hard-shadow */}
       <div
-        className="border-2 p-6"
+        className="p-6"
         style={{
           backgroundColor: "var(--card)",
-          borderColor: "var(--border)",
+          border: "2px solid var(--border-strong)",
+          boxShadow: "var(--hard-shadow)",
         }}
       >
         {/* Header */}

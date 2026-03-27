@@ -57,11 +57,13 @@ export function JobStatusCard({
   const dateLocale = locale === "de" ? "de-DE" : "en-US";
 
   return (
+    /* Job status card — DESIGN.md §5: border-strong + hard-shadow */
     <div
-      className="border-2 p-6"
+      className="p-6"
       style={{
         backgroundColor: "var(--card)",
-        borderColor: "var(--border)",
+        border: "2px solid var(--border-strong)",
+        boxShadow: "var(--hard-shadow)",
       }}
     >
       {/* Header */}
@@ -163,7 +165,7 @@ export function JobStatusCard({
             {t("productsFound")}
           </p>
           <p
-            className="text-xl font-bold"
+            className="text-xl font-extrabold"
             style={{
               fontFamily: "var(--font-display)",
               color: statusColor,

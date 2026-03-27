@@ -42,12 +42,14 @@ export function ScrapeResults({ products }: ScrapeResultsProps) {
             product.discount_percentage && product.discount_percentage > 0;
 
           return (
+            /* Product card — DESIGN.md §5: border-strong + hard-shadow */
             <div
               key={product.id}
-              className="border-2 flex flex-col"
+              className="flex flex-col"
               style={{
                 backgroundColor: "var(--card)",
-                borderColor: "var(--border)",
+                border: "2px solid var(--border-strong)",
+                boxShadow: "var(--hard-shadow)",
               }}
             >
               {/* Image */}
@@ -117,7 +119,7 @@ export function ScrapeResults({ products }: ScrapeResultsProps) {
                   {/* Ghost — View */}
                   <Link
                     href={`/dashboard/products/${product.id}`}
-                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 hover:opacity-80"
+                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
                     style={{
                       fontFamily: "var(--font-mono)",
                       backgroundColor: "transparent",
