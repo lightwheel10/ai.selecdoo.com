@@ -75,21 +75,20 @@ export function AppSidebar({ user, role, permissions }: AppSidebarProps) {
       className="border-r-2"
       style={{ borderColor: "var(--border)" }}
     >
-      {/* Logo */}
+      {/* Logo — DESIGN.md §5: border-strong on logo box, heavy weight */}
       <SidebarHeader className="px-4 py-4">
         <Link href="/dashboard" className="flex items-center gap-2.5">
           <div
-            className="w-7 h-7 flex items-center justify-center text-[9px] font-bold"
+            className="w-7 h-7 flex items-center justify-center text-[9px] font-bold bg-primary text-primary-foreground"
             style={{
               fontFamily: "var(--font-mono)",
-              backgroundColor: "var(--primary)",
-              color: "var(--primary-foreground)",
+              border: "2px solid var(--border-strong)",
             }}
           >
             MF
           </div>
           <span
-            className="text-sm font-bold tracking-tight"
+            className="text-sm font-black tracking-tight"
             style={{ fontFamily: "var(--font-display)" }}
           >
             MarketForce One
@@ -189,7 +188,7 @@ export function AppSidebar({ user, role, permissions }: AppSidebarProps) {
                 <div className="flex gap-0">
                   <button
                     onClick={() => switchLocale("en")}
-                    className="px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors"
+                    className="px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100"
                     style={{
                       fontFamily: "var(--font-mono)",
                       backgroundColor: locale === "en" ? "var(--primary)" : "transparent",
@@ -204,7 +203,7 @@ export function AppSidebar({ user, role, permissions }: AppSidebarProps) {
                   </button>
                   <button
                     onClick={() => switchLocale("de")}
-                    className="px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors"
+                    className="px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100"
                     style={{
                       fontFamily: "var(--font-mono)",
                       backgroundColor: locale === "de" ? "var(--primary)" : "transparent",
@@ -261,7 +260,7 @@ export function AppSidebar({ user, role, permissions }: AppSidebarProps) {
               <button
                 type="button"
                 onClick={() => setSignOutOpen(true)}
-                className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
+                className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80"
                 style={{
                   fontFamily: "var(--font-mono)",
                   color: "var(--destructive)",
@@ -275,11 +274,13 @@ export function AppSidebar({ user, role, permissions }: AppSidebarProps) {
         </SidebarMenu>
       </SidebarFooter>
 
+      {/* Sign-out confirmation — DESIGN.md §5: border-strong, hard-shadow */}
       <Dialog open={signOutOpen} onOpenChange={setSignOutOpen}>
         <DialogContent
-          className="border-2 p-0 gap-0"
+          className="p-0 gap-0"
           style={{
-            borderColor: "var(--border)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
             backgroundColor: "var(--card)",
             borderRadius: 0,
           }}
@@ -299,13 +300,14 @@ export function AppSidebar({ user, role, permissions }: AppSidebarProps) {
             </p>
           </DialogHeader>
           <div className="px-6 pb-6 flex items-center justify-end gap-2">
+            {/* Cancel — secondary button: no shadow per DESIGN.md §5 */}
             <button
               type="button"
               onClick={() => setSignOutOpen(false)}
-              className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
+              className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80"
               style={{
                 fontFamily: "var(--font-mono)",
-                borderColor: "var(--border)",
+                border: "2px solid var(--border)",
                 color: "var(--muted-foreground)",
                 backgroundColor: "transparent",
               }}
@@ -313,17 +315,19 @@ export function AppSidebar({ user, role, permissions }: AppSidebarProps) {
               {t("cancel")}
             </button>
 
-            {/* Using onClick instead of <form action> because Radix Dialog
+            {/* Confirm sign-out — destructive action button.
+                Uses onClick instead of <form action> because Radix Dialog
                 portals content outside the React tree, which can break
                 Next.js server action form bindings in some environments. */}
             <button
               type="button"
               onClick={() => signOut()}
-              className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all"
+              className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100"
               style={{
                 fontFamily: "var(--font-mono)",
                 backgroundColor: "var(--destructive)",
                 color: "var(--destructive-foreground)",
+                border: "2px solid var(--destructive)",
               }}
             >
               {t("signOutConfirmAction")}
