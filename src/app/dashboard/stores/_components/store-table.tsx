@@ -102,7 +102,7 @@ function SimpleFilter({
       <PopoverTrigger asChild>
         <button
           suppressHydrationWarning
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100"
           style={{
             fontFamily: "var(--font-mono)",
             backgroundColor: value ? "var(--primary-muted)" : "transparent",
@@ -192,7 +192,7 @@ function IconButton({
     <button
       onClick={onClick}
       title={title}
-      className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"
+      className="w-7 h-7 flex items-center justify-center transition-all duration-100 hover:opacity-80"
       style={styles}
     >
       <Icon className="w-3 h-3" />
@@ -511,7 +511,7 @@ export function StoreTable({ stores }: StoreTableProps) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("searchStores")}
-            className="pl-8 pr-3 py-2 text-xs border-2 outline-none transition-colors duration-150 focus:border-primary"
+            className="pl-8 pr-3 py-2 text-xs border-2 outline-none transition-all duration-100 focus:border-primary"
             style={{
               backgroundColor: "var(--input)",
               borderColor: "var(--border)",
@@ -603,12 +603,14 @@ export function StoreTable({ stores }: StoreTableProps) {
       </div>
 
       {/* Table */}
+      {/* Table / empty state — DESIGN.md §5: border-strong + hard-shadow */}
       {filtered.length === 0 ? (
         <div
-          className="border-2 py-16 text-center"
+          className="py-16 text-center"
           style={{
             backgroundColor: "var(--card)",
-            borderColor: "var(--border)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
           }}
         >
           <p
@@ -623,10 +625,11 @@ export function StoreTable({ stores }: StoreTableProps) {
         </div>
       ) : (
         <div
-          className="border-2 overflow-auto scrollbar-none"
+          className="overflow-auto scrollbar-none"
           style={{
             backgroundColor: "var(--card)",
-            borderColor: "var(--border)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
             maxHeight: "85vh",
           }}
         >
@@ -814,7 +817,7 @@ export function StoreTable({ stores }: StoreTableProps) {
                             <button
                               disabled
                               title={t("scraping")}
-                              className="w-7 h-7 flex items-center justify-center transition-all duration-150"
+                              className="w-7 h-7 flex items-center justify-center transition-all duration-100"
                               style={{
                                 backgroundColor: "var(--primary-muted)",
                                 border: "1.5px solid var(--primary-muted)",

@@ -14,12 +14,14 @@ export default function StoresLoading() {
         </div>
       </div>
 
-      {/* Table */}
+      {/* Table skeleton — matches StoreTable: border-strong + hard-shadow.
+          Internal dividers use soft --border for hierarchy. */}
       <div
-        className="border-2 overflow-hidden"
+        className="overflow-hidden"
         style={{
           backgroundColor: "var(--card)",
-          borderColor: "var(--border)",
+          border: "2px solid var(--border-strong)",
+          boxShadow: "var(--hard-shadow)",
         }}
       >
         {/* Header */}

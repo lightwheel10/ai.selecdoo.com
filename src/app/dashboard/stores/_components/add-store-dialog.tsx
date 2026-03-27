@@ -60,19 +60,26 @@ export function AddStoreDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
+      {/* Trigger — DESIGN.md §5: primary bg, border-strong, hard-shadow */}
       <DialogTrigger asChild>
         <button
-          className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none bg-primary text-primary-foreground border-primary shadow-[3px_3px_0px] shadow-primary"
-          style={{ fontFamily: "var(--font-mono)" }}
+          className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider bg-primary text-primary-foreground transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+          style={{
+            fontFamily: "var(--font-mono)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
+          }}
         >
           <Plus className="w-3.5 h-3.5" />
           {t("addStore")}
         </button>
       </DialogTrigger>
+      {/* Dialog — DESIGN.md §5: border-strong + hard-shadow */}
       <DialogContent
-        className="border-2 p-0 gap-0"
+        className="p-0 gap-0"
         style={{
-          borderColor: "var(--border)",
+          border: "2px solid var(--border-strong)",
+          boxShadow: "var(--hard-shadow)",
           backgroundColor: "var(--card)",
           borderRadius: 0,
         }}
@@ -110,7 +117,7 @@ export function AddStoreDialog() {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder={t("placeholder")}
-              className="w-full px-3 py-2.5 text-xs border-2 outline-none transition-colors duration-150 focus:border-primary"
+              className="w-full px-3 py-2.5 text-xs border-2 outline-none transition-all duration-100 focus:border-primary"
               style={{
                 backgroundColor: "var(--input)",
                 borderColor: "var(--border)",
@@ -120,11 +127,16 @@ export function AddStoreDialog() {
               autoFocus
             />
           </div>
+          {/* Submit — DESIGN.md §5: primary button with hard-shadow */}
           <button
             type="submit"
             disabled={!url.trim() || loading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-40 disabled:pointer-events-none bg-primary text-primary-foreground border-primary shadow-[3px_3px_0px] shadow-primary"
-            style={{ fontFamily: "var(--font-mono)" }}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider bg-primary text-primary-foreground transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-40 disabled:pointer-events-none"
+            style={{
+              fontFamily: "var(--font-mono)",
+              border: "2px solid var(--border-strong)",
+              boxShadow: "var(--hard-shadow)",
+            }}
           >
             <Plus className="w-3.5 h-3.5" />
             {t("startMonitoring")}
