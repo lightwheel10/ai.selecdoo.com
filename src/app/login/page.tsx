@@ -100,16 +100,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      {/* Grid texture */}
+    /* .landing-page scopes the Neo-Industrial CSS variable overrides
+       (gold #FFD700 primary, #F9F9F9/#000 backgrounds, hard shadows) */
+    <div className="landing-page min-h-screen bg-background flex items-center justify-center px-4">
+      {/* 20px blueprint grid — DESIGN.md §2 signature texture */}
       <div
         className="fixed inset-0 pointer-events-none"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(202,255,4,0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(202,255,4,0.02) 1px, transparent 1px)
+            linear-gradient(rgba(128,128,128,0.06) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(128,128,128,0.06) 1px, transparent 1px)
           `,
-          backgroundSize: "48px 48px",
+          backgroundSize: "20px 20px",
         }}
       />
 
@@ -117,7 +119,7 @@ export default function LoginPage() {
         {/* Back to home */}
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 mb-6 text-[10px] font-bold uppercase tracking-[0.15em] transition-opacity hover:opacity-100"
+          className="inline-flex items-center gap-1.5 mb-6 text-[10px] font-bold uppercase tracking-[0.15em] transition-opacity duration-100 hover:opacity-100"
           style={{
             fontFamily: "var(--font-mono)",
             color: "var(--muted-foreground)",
@@ -128,22 +130,21 @@ export default function LoginPage() {
           Back to Home
         </Link>
 
-        {/* Branding */}
+        {/* Branding — Epilogue display font, border-strong on logo */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-3">
             <div
-              className="w-8 h-8 flex items-center justify-center text-[10px] font-bold"
+              className="w-8 h-8 flex items-center justify-center text-[10px] font-bold bg-primary text-primary-foreground"
               style={{
                 fontFamily: "var(--font-mono)",
-                backgroundColor: "var(--primary)",
-                color: "var(--primary-foreground)",
+                border: "2px solid var(--border-strong)",
               }}
             >
               MF
             </div>
             <span
-              className="text-lg font-bold tracking-tight"
-              style={{ fontFamily: "var(--font-display)" }}
+              className="text-lg font-black tracking-tight"
+              style={{ fontFamily: "var(--font-display-landing)" }}
             >
               MarketForce One
             </span>
@@ -159,12 +160,13 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Card */}
+        {/* Card — DESIGN.md §5: 2px border-strong border, hard shadow */}
         <div
-          className="p-6 border-2"
+          className="p-6"
           style={{
             backgroundColor: "var(--card)",
-            borderColor: "var(--border)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
           }}
         >
           {/* ─── IDLE: Email Entry ─── */}
@@ -180,12 +182,20 @@ export default function LoginPage() {
                 >
                   Sign In
                 </h1>
-                <p className="text-sm" style={{ color: "var(--foreground)", opacity: 0.6 }}>
+                <p
+                  className="text-sm"
+                  style={{
+                    color: "var(--foreground)",
+                    opacity: 0.6,
+                    fontFamily: "var(--font-body-landing)",
+                  }}
+                >
                   Enter your email to receive a sign-in code.
                 </p>
               </div>
 
-              {/* Email input */}
+              {/* Email input — DESIGN.md §5: 2px border, monospaced input,
+                  focus state uses primary yellow glow (0-blur solid offset) */}
               <div className="mb-5">
                 <label
                   className="block text-[10px] font-bold uppercase tracking-[0.15em] mb-1.5"
@@ -202,11 +212,21 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full px-3 py-2.5 text-xs border-2 outline-none transition-colors duration-150 focus:border-primary"
+                  className="w-full px-3 py-2.5 text-xs outline-none transition-all duration-100"
                   style={{
+                    fontFamily: "var(--font-mono)",
                     backgroundColor: "var(--input)",
-                    borderColor: "var(--border)",
+                    border: "2px solid var(--border)",
                     color: "var(--foreground)",
+                  }}
+                  onFocus={(e) => {
+                    /* DESIGN.md §5: Focus = border increases to 4px + primary glow */
+                    e.currentTarget.style.border = "4px solid var(--primary)";
+                    e.currentTarget.style.padding = "8px 10px";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.border = "2px solid var(--border)";
+                    e.currentTarget.style.padding = "10px 12px";
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleSendCode();
@@ -217,11 +237,17 @@ export default function LoginPage() {
 
               {/* Buttons */}
               <div className="space-y-2.5">
+                {/* Primary button — DESIGN.md §5: primary bg, 2px black border,
+                    4px hard shadow, retracts on active */}
                 <button
                   onClick={handleSendCode}
                   disabled={!email || loading}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-40 disabled:pointer-events-none bg-primary text-primary-foreground border-primary shadow-[3px_3px_0px] shadow-primary"
-                  style={{ fontFamily: "var(--font-mono)" }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider bg-primary text-primary-foreground transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-40 disabled:pointer-events-none"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    border: "2px solid var(--border-strong)",
+                    boxShadow: "var(--hard-shadow)",
+                  }}
                 >
                   {loading ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -231,11 +257,11 @@ export default function LoginPage() {
                   Continue
                 </button>
 
-                {/* TODO: Remove dev bypass once Supabase dashboard access is granted */}
+                {/* Dev bypass — development only */}
                 {process.env.NODE_ENV === "development" && (
                   <button
                     onClick={() => router.push("/dashboard")}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider border-2 transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
                     style={{
                       fontFamily: "var(--font-mono)",
                       backgroundColor: "rgba(255,69,58,0.08)",
@@ -247,6 +273,7 @@ export default function LoginPage() {
                     Dev Skip
                   </button>
                 )}
+
                 {/* Link to signup */}
                 <p
                   className="text-center mt-5 text-[10px] font-bold uppercase tracking-[0.15em]"
@@ -258,7 +285,7 @@ export default function LoginPage() {
                   Don&apos;t have an account?{" "}
                   <Link
                     href="/signup"
-                    className="transition-colors hover:opacity-80"
+                    className="transition-colors duration-100 hover:opacity-80"
                     style={{ color: "var(--primary-text)" }}
                   >
                     Sign Up
@@ -268,12 +295,12 @@ export default function LoginPage() {
             </>
           )}
 
-          {/* ─── CODE SENT: Code Entry ─── */}
+          {/* ─── CODE SENT: OTP Verification ─── */}
           {step === "code_sent" && (
             <>
               <button
                 onClick={goBack}
-                className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.15em] mb-5 transition-opacity hover:opacity-100"
+                className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.15em] mb-5 transition-opacity duration-100 hover:opacity-100"
                 style={{
                   fontFamily: "var(--font-mono)",
                   color: "var(--muted-foreground)",
@@ -294,7 +321,14 @@ export default function LoginPage() {
                 >
                   Check Your Email
                 </h1>
-                <p className="text-sm" style={{ color: "var(--foreground)", opacity: 0.6 }}>
+                <p
+                  className="text-sm"
+                  style={{
+                    color: "var(--foreground)",
+                    opacity: 0.6,
+                    fontFamily: "var(--font-body-landing)",
+                  }}
+                >
                   Enter the 6-digit code or click the link we sent to{" "}
                   <span className="font-semibold" style={{ opacity: 1 }}>
                     {email}
@@ -302,7 +336,8 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              {/* OTP input */}
+              {/* OTP input — DESIGN.md §5: monospaced, 2px border,
+                  focus = primary yellow glow */}
               <div className="mb-5">
                 <label
                   className="block text-[10px] font-bold uppercase tracking-[0.15em] mb-1.5"
@@ -324,13 +359,22 @@ export default function LoginPage() {
                   placeholder="000000"
                   inputMode="numeric"
                   maxLength={6}
-                  className="w-full px-3 py-3 text-2xl font-bold text-center border-2 outline-none transition-colors duration-150 focus:border-primary"
+                  className="w-full px-3 py-3 text-2xl font-bold text-center outline-none transition-all duration-100"
                   style={{
                     fontFamily: "var(--font-mono)",
                     letterSpacing: "0.5em",
                     backgroundColor: "var(--input)",
-                    borderColor: "var(--border)",
+                    border: "2px solid var(--border)",
                     color: "var(--foreground)",
+                  }}
+                  onFocus={(e) => {
+                    /* DESIGN.md §5: Focus = border increases to 4px + primary glow */
+                    e.currentTarget.style.border = "4px solid var(--primary)";
+                    e.currentTarget.style.padding = "8px 10px";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.border = "2px solid var(--border)";
+                    e.currentTarget.style.padding = "10px 12px";
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && otpCode.length === 6) handleVerifyOtp();
@@ -341,16 +385,15 @@ export default function LoginPage() {
 
               {/* Buttons */}
               <div className="space-y-2.5">
+                {/* Verify — primary button with hard shadow */}
                 <button
                   onClick={handleVerifyOtp}
                   disabled={otpCode.length !== 6 || loading}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-40 disabled:pointer-events-none"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider bg-primary text-primary-foreground transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-40 disabled:pointer-events-none"
                   style={{
                     fontFamily: "var(--font-mono)",
-                    backgroundColor: "var(--primary)",
-                    color: "var(--primary-foreground)",
-                    borderColor: "var(--primary)",
-                    boxShadow: "3px 3px 0px var(--primary)",
+                    border: "2px solid var(--border-strong)",
+                    boxShadow: "var(--hard-shadow)",
                   }}
                 >
                   {loading ? (
@@ -361,15 +404,16 @@ export default function LoginPage() {
                   Verify Code
                 </button>
 
+                {/* Resend — secondary button, no shadow per DESIGN.md §5 */}
                 <button
                   onClick={handleResend}
                   disabled={cooldown > 0 || loading}
-                  className="w-full px-4 py-2.5 text-xs font-bold uppercase tracking-wider border-2 transition-all duration-150 disabled:opacity-30 disabled:pointer-events-none"
+                  className="w-full px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-all duration-100 disabled:opacity-30 disabled:pointer-events-none"
                   style={{
                     fontFamily: "var(--font-mono)",
                     backgroundColor: "transparent",
                     color: "var(--muted-foreground)",
-                    borderColor: "var(--border)",
+                    border: "2px solid var(--border)",
                   }}
                 >
                   {cooldown > 0 ? `Resend Code (${cooldown}s)` : "Resend Code"}
@@ -381,14 +425,14 @@ export default function LoginPage() {
           {/* Error message */}
           {error && (
             <div
-              className="mt-4 p-3 text-[10px] font-bold uppercase tracking-wider border-2"
+              className="mt-4 p-3 text-[10px] font-bold uppercase tracking-wider"
               style={{
                 fontFamily: "var(--font-mono)",
                 backgroundColor: "rgba(255,69,58,0.08)",
-                borderColor: "rgba(255,69,58,0.3)",
-                color: "#FF453A",
+                border: "2px solid rgba(255,69,58,0.3)",
                 borderLeftWidth: "4px",
                 borderLeftColor: "#FF453A",
+                color: "#FF453A",
               }}
             >
               {error}

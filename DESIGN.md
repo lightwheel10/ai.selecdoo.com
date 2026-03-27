@@ -22,6 +22,23 @@ The palette is anchored by the tension between absolute black and high-energy ye
 *   **Surface Hierarchy & Nesting:** Use `surface-container` tiers to create "cut-out" effects. A `surface-container-high` card should feel like it has been physically placed onto the `surface` background.
 *   **Signature Textures:** Incorporate a subtle 20px x 20px light-grey grid on white backgrounds to mimic architectural blueprints. For main CTAs, use a sharp 45-degree linear gradient from `primary` to `primary-container` to add a metallic "industrial" sheen.
 
+### Semantic Colors (not in original spec — added during implementation)
+
+*   **Error / Destructive (#FF453A):** Used for error messages, validation feedback, and destructive dev-only actions. Background tint: `rgba(255,69,58,0.08)`, border: `rgba(255,69,58,0.3)`.
+*   **Primary Text:** Light mode `#9E7C00` (dark gold), dark mode `#FFD700` (gold). Used for accent labels and links.
+*   **Primary Muted:** Light `rgba(255,215,0,0.12)`, dark `rgba(255,215,0,0.08)`. Background tint for badges/chips.
+*   **Primary Border:** Light `rgba(255,215,0,0.35)`, dark `rgba(255,215,0,0.25)`. Subtle border for secondary containers.
+
+### Implementation: Scoped CSS Variable Overrides
+
+The Neo-Industrial palette is applied **only** to public-facing pages (landing, login, signup) via a `.landing-page` CSS class on the root `<div>`. This class overrides core CSS variables (`--primary`, `--background`, `--foreground`, `--border`, etc.) so standard Tailwind utilities (`bg-primary`, `text-foreground`, `border-border`) resolve to the new palette automatically.
+
+The **dashboard** retains the original palette (`--primary: #CAFF04`, `--background: #F5F5F0` / `#0A0A0A`) and is **not affected** by the `.landing-page` scope.
+
+**Two border tiers within `.landing-page`:**
+*   `--border` (soft): `#D8D8D2` light / `#2A2A2A` dark — for separators, internal dividers, and components that render inside both light and dark sections (e.g., the ProductDemoVideo component).
+*   `--border-strong`: `#000000` light / `#FFD700` dark — for neo-brutalist card/button borders per §5.
+
 ---
 
 ## 3. Typography
@@ -30,7 +47,17 @@ The typography strategy is a dialogue between **Epilogue** (Headings) and **Inte
 
 *   **Display & Headline (Epilogue):** Set with tight letter-spacing (-2% to -4%) and heavy weights. These function as structural anchors. Use "All Caps" for sub-headlines to evoke a sense of urgency and command.
 *   **Body (Inter):** Clean, highly legible sans-serif. Used for long-form explanation where clarity is paramount.
-*   **Labels & Data (Space Grotesk / Fira Code):** Use monospaced or high-tech sans-serif for "system status," timestamps, and code-based data. This reinforces the "automation" personality.
+*   **Labels & Data (Space Mono):** Monospaced font for "system status," timestamps, code-based data, and all user input fields. This reinforces the "automation" personality.
+
+### Implementation: Font Variables
+
+| Variable | Font | Used On |
+|---|---|---|
+| `--font-display-landing` | Epilogue | Headlines on landing/login/signup |
+| `--font-body-landing` | Inter | Body text on landing/login/signup |
+| `--font-mono` | Space Mono | Labels, inputs, data everywhere |
+| `--font-display` | Sora | Dashboard headlines (unchanged) |
+| `--font-body` | DM Sans | Dashboard body text (unchanged) |
 
 ---
 
@@ -43,31 +70,38 @@ In this system, depth is not an illusion of light—it is an illusion of **stack
 *   **The "Ghost Border" Fallback:** For secondary information containers, use the `outline-variant` at 20% opacity. This provides a structural hint without competing with the primary 4px black borders.
 *   **Glassmorphism for Overlays:** When modals or tooltips appear over the grid, use a semi-transparent `surface` with a heavy `backdrop-filter: blur(10px)`. Frame this with a solid 2px black border to maintain the brutalist aesthetic.
 
+### Implementation: Shadow Variables
+
+| Variable | Light Mode | Dark Mode |
+|---|---|---|
+| `--hard-shadow` | `4px 4px 0px #000000` | `4px 4px 0px #FFD700` |
+| `--section-alt-shadow` | `4px 4px 0px #FFD700` | `4px 4px 0px #FFD700` |
+
 ---
 
 ## 5. Components
 
 ### Buttons
-*   **Primary:** `primary` background, 2px solid black border, 4px hard black shadow. Text in `on-primary-fixed` (Black).
-*   **Secondary:** Black background, white text, no shadow.
-*   **States:** On hover, the hard shadow should "retract" (0px offset) to simulate the button being physically pressed into the page.
+*   **Primary:** `primary` background, 2px solid `border-strong` border, 4px hard shadow. Text in black.
+*   **Secondary:** Transparent background, muted text, 2px soft border, no shadow.
+*   **States:** On active, the element translates 2px right + 2px down and the shadow is removed (simulates pressing into the page). All transitions `0.1s`.
 
 ### Cards
 *   **Rule:** No rounded corners (`0px`).
-*   **Style:** Use a 2px black border and a solid yellow or black shadow offset. 
-*   **Separation:** Forbid dividers. Use `surface-container-low` backgrounds for card headers and `surface-container-lowest` for card bodies to create internal hierarchy.
+*   **Style:** Use a 2px `border-strong` border and a `--hard-shadow` offset.
+*   **Separation:** Forbid dividers. Use background color differences for internal hierarchy.
 
 ### Input Fields
-*   **Default:** `surface-container-lowest` background, 2px black border.
-*   **Focus:** Border increases to 4px with a primary yellow "glow" (a 0-blur solid offset).
-*   **Monospaced Input:** All user input should use `Fira Code` or `Space Grotesk` to feel like "data entry" into an AI engine.
+*   **Default:** `--input` background, 2px `--border` (soft) border.
+*   **Focus:** Border increases to 4px with `--primary` color. Padding adjusts inward by 2px to prevent layout shift.
+*   **Monospaced Input:** All user input uses `--font-mono` (Space Mono).
 
 ### Chips & Tags
-*   **Action Chips:** High contrast black-on-yellow. 
+*   **Action Chips:** High contrast black-on-yellow.
 *   **Status Chips:** Use `secondary-container` with monospaced labels. Sharp corners only.
 
 ### Additional Component: "The Status Bar"
-A dedicated thin strip (24px height) at the top or bottom of containers using `primary` or black background with scrolling monospaced text for real-time "system logs" or "automation counts."
+A dedicated thin strip (28px height) at the top of the landing page using `primary` background with infinitely scrolling monospaced text showing real-time system metrics. Uses bracket notation: `[ SYS ] Stores monitored: 63`.
 
 ---
 
@@ -81,5 +115,31 @@ A dedicated thin strip (24px height) at the top or bottom of containers using `p
 ### Don't
 *   **Don't** use border-radius. Even a 2px radius breaks the mechanical precision of the system.
 *   **Don't** use soft transitions. Interactions should be "snappy" (0.1s duration or instant) rather than "graceful."
-*   **Don't** use centered layouts for everything. Use left-aligned "Editorial" layouts with wide margins to create a high-end magazine feel.
+*   **Don't** use centered layouts for everything. Use left-aligned "Editorial" layouts with wide margins to create a high-end magazine feel. Exception: login/signup forms are centered (standard auth UX pattern).
 *   **Don't** use generic iconography. Use thick-stroke (2pt minimum) geometric icons that match the border weight of the UI.
+
+---
+
+## 7. Section Color Blocks (Landing Page)
+
+The landing page alternates between main background and contrasting "alt" sections per the No-Line Rule:
+
+| Section | Background | Text |
+|---|---|---|
+| Hero | `--background` (#F9F9F9 / #000) | `--foreground` |
+| Video Demo | `--section-alt-bg` (#0A0A0A / #0A0A0A) | `--section-alt-fg` |
+| Features | `--background` | `--foreground` |
+| How It Works | `--section-alt-bg` | `--section-alt-fg` |
+| CTA | 45° gold gradient | Black |
+| Footer | `--background` | `--muted-foreground` |
+
+---
+
+## 8. Pages Using This Design System
+
+| Page | Class | Status |
+|---|---|---|
+| Landing (`/`) | `.landing-page` | Implemented |
+| Login (`/login`) | `.landing-page` | Implemented |
+| Signup (`/signup`) | `.landing-page` | Implemented |
+| Dashboard (`/dashboard/*`) | None (uses original palette) | Not planned |
