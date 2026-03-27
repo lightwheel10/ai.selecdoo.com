@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Sora, DM_Sans, Space_Mono } from "next/font/google";
+import { Sora, DM_Sans, Space_Mono, Epilogue, Inter } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { ThemeProvider } from "next-themes";
@@ -21,6 +21,18 @@ const spaceMono = Space_Mono({
   subsets: ["latin"],
   weight: ["400", "700"],
   variable: "--font-mono",
+  display: "swap",
+});
+
+const epilogue = Epilogue({
+  subsets: ["latin"],
+  variable: "--font-display-landing",
+  display: "swap",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-body-landing",
   display: "swap",
 });
 
@@ -48,7 +60,7 @@ export default async function RootLayout({
         <link rel="dns-prefetch" href="https://cdn.shopify.com" />
       </head>
       <body
-        className={`${sora.variable} ${dmSans.variable} ${spaceMono.variable} antialiased`}
+        className={`${sora.variable} ${dmSans.variable} ${spaceMono.variable} ${epilogue.variable} ${inter.variable} antialiased`}
       >
         <ThemeProvider
           attribute="class"

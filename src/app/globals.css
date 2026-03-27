@@ -138,6 +138,81 @@
   --status-neutral-border: rgba(85,85,85,0.25);
 }
 
+/* ═══ Landing page: Neo-Industrial Automation overrides ═══
+   Overrides core CSS vars so Tailwind utilities (bg-background,
+   text-foreground, bg-primary, etc.) resolve to DESIGN.md colors.
+   Scoped to .landing-page — dashboard is untouched. */
+
+/* Light mode landing — DESIGN.md "Neo-Industrial" palette
+   --border stays SOFT (for separators, video component internals).
+   Use --border-strong (#000) explicitly on cards/buttons that need
+   the thick black border per DESIGN.md §5. */
+.landing-page {
+  --background: #F9F9F9;
+  --foreground: #000000;
+  --card: #FFFFFF;
+  --card-foreground: #000000;
+  --primary: #FFD700;
+  --primary-foreground: #000000;
+  --secondary: #F0F0EA;
+  --secondary-foreground: #000000;
+  --muted: #EEEEEE;
+  --muted-foreground: #666666;
+  --accent: #FFD700;
+  --accent-foreground: #000000;
+  --border: #D8D8D2;
+  --ring: #FFD700;
+  --primary-text: #9E7C00;
+  --primary-muted: rgba(255, 215, 0, 0.12);
+  --primary-border: rgba(255, 215, 0, 0.35);
+  --hard-shadow: 4px 4px 0px #000000;
+  --surface: #FFFFFF;
+  --border-strong: #000000;
+  /* Alt section: black color-block per DESIGN.md §2 "No-Line Rule" */
+  --section-alt-bg: #0A0A0A;
+  --section-alt-fg: #F0F0F0;
+  --section-alt-muted: #AAAAAA;
+  --section-alt-border: #3A3A3A;
+  --section-alt-card: #181818;
+  --section-alt-shadow: 4px 4px 0px #FFD700;
+}
+
+/* Dark mode landing */
+.dark .landing-page {
+  --background: #000000;
+  --foreground: #F9F9F9;
+  --card: #0D0D0D;
+  --card-foreground: #F9F9F9;
+  --primary: #FFD700;
+  --primary-foreground: #000000;
+  --secondary: #1A1A1A;
+  --secondary-foreground: #F9F9F9;
+  --muted: #1A1A1A;
+  --muted-foreground: #777777;
+  --accent: #FFD700;
+  --accent-foreground: #000000;
+  --border: #2A2A2A;
+  --ring: #FFD700;
+  --primary-text: #FFD700;
+  --primary-muted: rgba(255, 215, 0, 0.08);
+  --primary-border: rgba(255, 215, 0, 0.25);
+  --hard-shadow: 4px 4px 0px #FFD700;
+  --surface: #0D0D0D;
+  --border-strong: #FFD700;
+  /* Alt section: slightly elevated surface in dark mode */
+  --section-alt-bg: #0A0A0A;
+  --section-alt-fg: #F0F0F0;
+  --section-alt-muted: #888888;
+  --section-alt-border: #2A2A2A;
+  --section-alt-card: #151515;
+  --section-alt-shadow: 4px 4px 0px #FFD700;
+}
+
+@keyframes scroll-status {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
