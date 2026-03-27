@@ -104,7 +104,7 @@ export default async function LandingPage() {
             </div>
             <span
               className="text-[15px] font-black tracking-tight"
-              style={{ fontFamily: "var(--font-display-landing)" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               MarketForce One
             </span>
@@ -152,7 +152,7 @@ export default async function LandingPage() {
           <h1
             className="text-5xl sm:text-7xl lg:text-[88px] font-black leading-[0.95] mb-7 max-w-[800px]"
             style={{
-              fontFamily: "var(--font-display-landing)",
+              fontFamily: "var(--font-display)",
               letterSpacing: "-0.04em",
             }}
           >
@@ -166,7 +166,7 @@ export default async function LandingPage() {
           {/* Body — Inter */}
           <p
             className="text-base max-w-md leading-relaxed mb-10 text-muted-foreground"
-            style={{ fontFamily: "var(--font-body-landing)" }}
+            style={{ fontFamily: "var(--font-body)" }}
           >
             {t("heroDescription")}
           </p>
@@ -200,7 +200,7 @@ export default async function LandingPage() {
                   <p
                     className="text-lg font-extrabold leading-none"
                     style={{
-                      fontFamily: "var(--font-display-landing)",
+                      fontFamily: "var(--font-display)",
                       letterSpacing: "-0.02em",
                     }}
                   >
@@ -239,7 +239,7 @@ export default async function LandingPage() {
             <h2
               className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-8"
               style={{
-                fontFamily: "var(--font-display-landing)",
+                fontFamily: "var(--font-display)",
                 letterSpacing: "-0.03em",
               }}
             >
@@ -280,7 +280,7 @@ export default async function LandingPage() {
               <h2
                 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-[1.1] max-w-xl"
                 style={{
-                  fontFamily: "var(--font-display-landing)",
+                  fontFamily: "var(--font-display)",
                   letterSpacing: "-0.03em",
                 }}
               >
@@ -318,7 +318,7 @@ export default async function LandingPage() {
                   </p>
                   <p
                     className="text-[13px] leading-relaxed text-muted-foreground"
-                    style={{ fontFamily: "var(--font-body-landing)" }}
+                    style={{ fontFamily: "var(--font-body)" }}
                   >
                     {f.desc}
                   </p>
@@ -350,7 +350,7 @@ export default async function LandingPage() {
               <h2
                 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold"
                 style={{
-                  fontFamily: "var(--font-display-landing)",
+                  fontFamily: "var(--font-display)",
                   letterSpacing: "-0.03em",
                 }}
               >
@@ -399,7 +399,7 @@ export default async function LandingPage() {
                     className="text-[13px] leading-relaxed"
                     style={{
                       color: "var(--section-alt-muted)",
-                      fontFamily: "var(--font-body-landing)",
+                      fontFamily: "var(--font-body)",
                     }}
                   >
                     {s.desc}
@@ -423,7 +423,7 @@ export default async function LandingPage() {
             <h2
               className="text-3xl sm:text-4xl font-extrabold leading-[1.1] mb-4"
               style={{
-                fontFamily: "var(--font-display-landing)",
+                fontFamily: "var(--font-display)",
                 letterSpacing: "-0.03em",
               }}
             >
@@ -431,7 +431,7 @@ export default async function LandingPage() {
             </h2>
             <p
               className="text-[15px] leading-relaxed mb-8 opacity-65"
-              style={{ fontFamily: "var(--font-body-landing)" }}
+              style={{ fontFamily: "var(--font-body)" }}
             >
               {t("ctaDescription")}
             </p>

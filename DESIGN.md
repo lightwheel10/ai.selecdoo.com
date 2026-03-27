@@ -53,11 +53,9 @@ The typography strategy is a dialogue between **Epilogue** (Headings) and **Inte
 
 | Variable | Font | Used On |
 |---|---|---|
-| `--font-display-landing` | Epilogue | Headlines on landing/login/signup |
-| `--font-body-landing` | Inter | Body text on landing/login/signup |
+| `--font-display` | Epilogue | Headlines everywhere (previously Sora, migrated 2026-03-27) |
+| `--font-body` | Inter | Body text everywhere (previously DM Sans, migrated 2026-03-27) |
 | `--font-mono` | Space Mono | Labels, inputs, data everywhere |
-| `--font-display` | Sora | Dashboard headlines (unchanged) |
-| `--font-body` | DM Sans | Dashboard body text (unchanged) |
 
 ---
 

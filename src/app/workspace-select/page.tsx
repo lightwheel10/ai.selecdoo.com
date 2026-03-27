@@ -48,7 +48,7 @@ export default async function WorkspaceSelectPage() {
           </div>
           <span
             className="text-sm font-black tracking-tight"
-            style={{ fontFamily: "var(--font-display-landing)" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             MarketForce One
           </span>
@@ -67,7 +67,7 @@ export default async function WorkspaceSelectPage() {
         <h1
           className="text-2xl font-extrabold tracking-tight mb-2"
           style={{
-            fontFamily: "var(--font-display-landing)",
+            fontFamily: "var(--font-display)",
             letterSpacing: "-0.02em",
           }}
         >
@@ -77,7 +77,7 @@ export default async function WorkspaceSelectPage() {
           className="text-sm mb-8"
           style={{
             color: "var(--muted-foreground)",
-            fontFamily: "var(--font-body-landing)",
+            fontFamily: "var(--font-body)",
           }}
         >
           {t("description")}

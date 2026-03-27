@@ -1,17 +1,22 @@
 import type { Metadata } from "next";
-import { Sora, DM_Sans, Space_Mono, Epilogue, Inter } from "next/font/google";
+import { Space_Mono, Epilogue, Inter } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
-const sora = Sora({
+/* Typography — DESIGN.md §3
+   Epilogue: Display/headlines, tight letter-spacing, heavy weights.
+   Inter: Body text, clean and legible.
+   Space Mono: Labels, data, inputs — reinforces "automation" personality.
+   Previously used Sora (display) and DM Sans (body). Migrated 2026-03-27. */
+const epilogue = Epilogue({
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
 });
 
-const dmSans = DM_Sans({
+const inter = Inter({
   subsets: ["latin"],
   variable: "--font-body",
   display: "swap",
@@ -21,18 +26,6 @@ const spaceMono = Space_Mono({
   subsets: ["latin"],
   weight: ["400", "700"],
   variable: "--font-mono",
-  display: "swap",
-});
-
-const epilogue = Epilogue({
-  subsets: ["latin"],
-  variable: "--font-display-landing",
-  display: "swap",
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-body-landing",
   display: "swap",
 });
 
@@ -60,7 +53,7 @@ export default async function RootLayout({
         <link rel="dns-prefetch" href="https://cdn.shopify.com" />
       </head>
       <body
-        className={`${sora.variable} ${dmSans.variable} ${spaceMono.variable} ${epilogue.variable} ${inter.variable} antialiased`}
+        className={`${epilogue.variable} ${inter.variable} ${spaceMono.variable} antialiased`}
       >
         <ThemeProvider
           attribute="class"

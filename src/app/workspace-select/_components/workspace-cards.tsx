@@ -51,7 +51,7 @@ export function WorkspaceCards({ workspaces }: { workspaces: Workspace[] }) {
                 <p
                   className="text-sm font-extrabold mb-1"
                   style={{
-                    fontFamily: "var(--font-display-landing)",
+                    fontFamily: "var(--font-display)",
                     letterSpacing: "-0.01em",
                   }}
                 >

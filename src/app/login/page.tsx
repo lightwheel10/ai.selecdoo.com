@@ -144,7 +144,7 @@ export default function LoginPage() {
             </div>
             <span
               className="text-lg font-black tracking-tight"
-              style={{ fontFamily: "var(--font-display-landing)" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               MarketForce One
             </span>
@@ -187,7 +187,7 @@ export default function LoginPage() {
                   style={{
                     color: "var(--foreground)",
                     opacity: 0.6,
-                    fontFamily: "var(--font-body-landing)",
+                    fontFamily: "var(--font-body)",
                   }}
                 >
                   Enter your email to receive a sign-in code.
@@ -326,7 +326,7 @@ export default function LoginPage() {
                   style={{
                     color: "var(--foreground)",
                     opacity: 0.6,
-                    fontFamily: "var(--font-body-landing)",
+                    fontFamily: "var(--font-body)",
                   }}
                 >
                   Enter the 6-digit code or click the link we sent to{" "}

@@ -178,7 +178,7 @@ export default function SignupPage() {
             </div>
             <span
               className="text-lg font-black tracking-tight"
-              style={{ fontFamily: "var(--font-display-landing)" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               MarketForce One
             </span>
@@ -221,7 +221,7 @@ export default function SignupPage() {
                   style={{
                     color: "var(--foreground)",
                     opacity: 0.6,
-                    fontFamily: "var(--font-body-landing)",
+                    fontFamily: "var(--font-body)",
                   }}
                 >
                   Name your workspace and enter your email to get started.
@@ -375,7 +375,7 @@ export default function SignupPage() {
                   style={{
                     color: "var(--foreground)",
                     opacity: 0.6,
-                    fontFamily: "var(--font-body-landing)",
+                    fontFamily: "var(--font-body)",
                   }}
                 >
                   Enter the 6-digit code we sent to{" "}
