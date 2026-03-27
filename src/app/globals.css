@@ -101,7 +101,7 @@
   --text-secondary: #5A5A5A;
   --input-bg: #F0F0EA;
   --primary-border: rgba(255,215,0,0.35);
-  --hard-shadow: 4px 4px 0px #000000;
+  --hard-shadow: 4px 4px 0px #000000;  /* light mode keeps hard shadows */
   --table-header-bg: rgba(0,0,0,0.02);
   --subtle-overlay: rgba(0,0,0,0.04);
   --status-neutral-bg: rgba(153,153,153,0.07);
@@ -147,7 +147,7 @@
   --text-secondary: #A0A0A0;
   --input-bg: #111111;
   --primary-border: rgba(255,215,0,0.25);
-  --hard-shadow: 4px 4px 0px #FFD700;
+  --hard-shadow: none;  /* dark mode: no shadows — clean flat aesthetic */
   --table-header-bg: rgba(255,255,255,0.02);
   --subtle-overlay: rgba(255,255,255,0.04);
   --status-neutral-bg: rgba(85,85,85,0.07);
@@ -164,7 +164,7 @@
   --section-alt-muted: #AAAAAA;
   --section-alt-border: #3A3A3A;
   --section-alt-card: #181818;
-  --section-alt-shadow: 4px 4px 0px #FFD700;
+  --section-alt-shadow: 4px 4px 0px #FFD700;  /* light: gold shadow on dark sections */
 }
 
 .dark .landing-page {
@@ -173,7 +173,7 @@
   --section-alt-muted: #888888;
   --section-alt-border: #2A2A2A;
   --section-alt-card: #151515;
-  --section-alt-shadow: 4px 4px 0px #FFD700;
+  --section-alt-shadow: none;  /* dark: no shadows */
 }
 
 @keyframes scroll-status {

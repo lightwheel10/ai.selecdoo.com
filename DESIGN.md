@@ -70,10 +70,12 @@ In this system, depth is not an illusion of light—it is an illusion of **stack
 
 ### Implementation: Shadow Variables
 
+**Dark mode uses no shadows** — clean flat aesthetic. Shadows are light-mode only.
+
 | Variable | Light Mode | Dark Mode |
 |---|---|---|
-| `--hard-shadow` | `4px 4px 0px #000000` | `4px 4px 0px #FFD700` |
-| `--section-alt-shadow` | `4px 4px 0px #FFD700` | `4px 4px 0px #FFD700` |
+| `--hard-shadow` | `4px 4px 0px #000000` | `none` |
+| `--section-alt-shadow` | `4px 4px 0px #FFD700` | `none` |
 
 ---
 

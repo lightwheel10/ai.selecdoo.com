@@ -1,3 +1,13 @@
+/**
+ * Pagination — page navigation controls.
+ *
+ * DESIGN.md §6: Snappy 0.1s transitions on all interactive elements.
+ * Active page uses --primary-muted highlight. Prev/next arrows use
+ * soft --border (small controls don't need border-strong).
+ *
+ * Shared component — used on products, jobs, and other paginated pages.
+ */
+
 "use client";
 
 import { ChevronsLeft, ChevronsRight } from "lucide-react";
@@ -35,7 +45,7 @@ export function Pagination({
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="w-7 h-7 flex items-center justify-center border-2 transition-colors disabled:opacity-30"
+        className="w-7 h-7 flex items-center justify-center border-2 transition-all duration-100 disabled:opacity-30"
         style={{
           borderColor: "var(--border)",
           color: "var(--muted-foreground)",
@@ -59,7 +69,7 @@ export function Pagination({
           <button
             key={page}
             onClick={() => onPageChange(page)}
-            className="w-7 h-7 flex items-center justify-center text-[10px] font-bold border-2 transition-colors"
+            className="w-7 h-7 flex items-center justify-center text-[10px] font-bold border-2 transition-all duration-100"
             style={{
               fontFamily: "var(--font-mono)",
               backgroundColor:
@@ -79,7 +89,7 @@ export function Pagination({
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="w-7 h-7 flex items-center justify-center border-2 transition-colors disabled:opacity-30"
+        className="w-7 h-7 flex items-center justify-center border-2 transition-all duration-100 disabled:opacity-30"
         style={{
           borderColor: "var(--border)",
           color: "var(--muted-foreground)",

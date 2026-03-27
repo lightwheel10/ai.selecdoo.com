@@ -1,3 +1,13 @@
+/**
+ * Loading skeletons — placeholder UI while data loads.
+ *
+ * These must visually match the real components they replace
+ * (StatCard, tables) so the transition from loading → loaded
+ * feels seamless. Border and shadow styles mirror DESIGN.md §5.
+ *
+ * Shared component — used across dashboard loading states.
+ */
+
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function PageHeaderSkeleton() {
@@ -9,13 +19,15 @@ export function PageHeaderSkeleton() {
   );
 }
 
+/* Matches StatCard: border-strong + hard-shadow */
 export function StatCardSkeleton() {
   return (
     <div
-      className="p-5 border-2"
+      className="p-5"
       style={{
         backgroundColor: "var(--card)",
-        borderColor: "var(--border)",
+        border: "2px solid var(--border-strong)",
+        boxShadow: "var(--hard-shadow)",
       }}
     >
       <Skeleton className="h-3 w-24 mb-3" />
@@ -25,19 +37,21 @@ export function StatCardSkeleton() {
   );
 }
 
+/* Matches table containers: border-strong + hard-shadow on outer,
+   soft --border on internal dividers */
 export function TableSkeleton({ rows = 5 }: { rows?: number }) {
   return (
     <div
-      className="border-2"
       style={{
         backgroundColor: "var(--card)",
-        borderColor: "var(--border)",
+        border: "2px solid var(--border-strong)",
+        boxShadow: "var(--hard-shadow)",
       }}
     >
       {/* Header */}
       <div
-        className="flex items-center gap-4 px-4 py-3 border-b-2"
-        style={{ borderColor: "var(--border)" }}
+        className="flex items-center gap-4 px-4 py-3"
+        style={{ borderBottom: "2px solid var(--border)" }}
       >
         <Skeleton className="h-3 w-32" />
         <Skeleton className="h-3 w-24" />
@@ -45,12 +59,12 @@ export function TableSkeleton({ rows = 5 }: { rows?: number }) {
         <Skeleton className="h-3 w-16" />
         <Skeleton className="h-3 w-16" />
       </div>
-      {/* Rows */}
+      {/* Rows — soft border dividers for internal hierarchy */}
       {Array.from({ length: rows }).map((_, i) => (
         <div
           key={i}
-          className="flex items-center gap-4 px-4 py-3 border-b"
-          style={{ borderColor: "var(--border)" }}
+          className="flex items-center gap-4 px-4 py-3"
+          style={{ borderBottom: i < rows - 1 ? "1px solid var(--border)" : "none" }}
         >
           <div className="flex items-center gap-3 flex-1">
             <Skeleton className="h-7 w-7" />
