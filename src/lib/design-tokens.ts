@@ -1,7 +1,19 @@
+/**
+ * Design tokens — Neo-Industrial palette (DESIGN.md).
+ *
+ * NOTE: This file is currently UNUSED (no imports). The app resolves
+ * colors via CSS custom properties in globals.css. This file exists
+ * as a typed reference for any future JS-side color logic (e.g.,
+ * canvas rendering, chart configs, email templates).
+ *
+ * If you update globals.css palette, update this file to match.
+ * Last synced: 2026-03-27 (lime #CAFF04 → gold #FFD700 migration).
+ */
+
 export const colors = {
-  primary: "#CAFF04",
-  primaryHover: "#B8E600",
-  primaryDim: "#9ABF03",
+  primary: "#FFD700",
+  primaryHover: "#E5C200",
+  primaryDim: "#C4A500",
   success: "#22C55E",
   warning: "#FF9F0A",
   danger: "#FF453A",
@@ -9,34 +21,33 @@ export const colors = {
 } as const;
 
 export const dark = {
-  bg: "#0A0A0A",
-  surface: "#141414",
+  bg: "#000000",
+  surface: "#0D0D0D",
   surfaceRaised: "#1A1A1A",
   border: "#2A2A2A",
-  borderStrong: "#404040",
-  text: "#FAFAFA",
+  borderStrong: "#FFD700",
+  text: "#F9F9F9",
   textSec: "#A0A0A0",
-  textMuted: "#555555",
+  textMuted: "#777777",
   inputBg: "#111111",
   shadow: "none",
-  hardShadow: "4px 4px 0px #CAFF04",
-  primaryText: "#CAFF04",
-  primaryMuted: "rgba(202,255,4,0.10)",
+  hardShadow: "4px 4px 0px #FFD700",
+  primaryText: "#FFD700",
+  primaryMuted: "rgba(255,215,0,0.08)",
 } as const;
 
 export const light = {
-  bg: "#F5F5F0",
+  bg: "#F9F9F9",
   surface: "#FFFFFF",
-  surfaceRaised: "#FAFAF5",
-  border: "#E0E0DA",
-  borderStrong: "#1A1A1A",
-  text: "#0A0A0A",
+  surfaceRaised: "#FFFFFF",
+  border: "#D8D8D2",
+  borderStrong: "#000000",
+  text: "#000000",
   textSec: "#5A5A5A",
-  textMuted: "#999999",
-  inputBg: "#F0F0EB",
-  shadow: "0 1px 3px rgba(0,0,0,0.06)",
-  hardShadow: "4px 4px 0px #1A1A1A",
-  primaryText: "#7A9900",
-  primaryMuted: "rgba(202,255,4,0.15)",
+  textMuted: "#666666",
+  inputBg: "#F0F0EA",
+  shadow: "none",
+  hardShadow: "4px 4px 0px #000000",
+  primaryText: "#9E7C00",
+  primaryMuted: "rgba(255,215,0,0.12)",
 } as const;
-

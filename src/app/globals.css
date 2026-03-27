@@ -48,110 +48,25 @@
   --radius-4xl: 0px;
 }
 
-/* Light mode (default) */
+/* ═══ Light mode (default) ═══
+   Neo-Industrial palette — DESIGN.md §2
+   Primary: #FFD700 (gold "Action Signal")
+   Background: #F9F9F9 (off-white) / #000000 (dark)
+
+   Previously used #CAFF04 (lime). Migrated globally on 2026-03-27.
+   See DESIGN.md for full color rationale.
+
+   Two border tiers:
+   - --border (soft #D8D8D2): separators, table dividers, input defaults
+   - --border-strong (#000000): neo-brutalist card/button borders per §5 */
 :root {
   --radius: 0;
-  --background: #F5F5F0;
-  --foreground: #0A0A0A;
-  --card: #FFFFFF;
-  --card-foreground: #0A0A0A;
-  --popover: #FAFAF5;
-  --popover-foreground: #0A0A0A;
-  --primary: #CAFF04;
-  --primary-foreground: #0A0A0A;
-  --secondary: #F0F0EB;
-  --secondary-foreground: #0A0A0A;
-  --muted: #F0F0EB;
-  --muted-foreground: #999999;
-  --accent: #CAFF04;
-  --accent-foreground: #0A0A0A;
-  --destructive: #FF453A;
-  --border: #E0E0DA;
-  --input: #F0F0EB;
-  --ring: #CAFF04;
-  --chart-1: #22C55E;
-  --chart-2: #FF9F0A;
-  --chart-3: #FF453A;
-  --chart-4: #5AC8FA;
-  --chart-5: #9ABF03;
-  --sidebar: #FFFFFF;
-  --sidebar-foreground: #0A0A0A;
-  --sidebar-primary: #CAFF04;
-  --sidebar-primary-foreground: #0A0A0A;
-  --sidebar-accent: #F0F0EB;
-  --sidebar-accent-foreground: #0A0A0A;
-  --sidebar-border: #E0E0DA;
-  --sidebar-ring: #CAFF04;
-  --primary-text: #7A9900;
-  --primary-muted: rgba(202,255,4,0.15);
-  --surface: #FFFFFF;
-  --border-strong: #1A1A1A;
-  --text-secondary: #5A5A5A;
-  --input-bg: #F0F0EB;
-  --primary-border: rgba(122,153,0,0.35);
-  --hard-shadow: 4px 4px 0px #1A1A1A;
-  --table-header-bg: rgba(0,0,0,0.02);
-  --subtle-overlay: rgba(0,0,0,0.04);
-  --status-neutral-bg: rgba(153,153,153,0.07);
-  --status-neutral-border: rgba(153,153,153,0.25);
-}
-
-/* Dark mode */
-.dark {
-  --background: #0A0A0A;
-  --foreground: #FAFAFA;
-  --card: #141414;
-  --card-foreground: #FAFAFA;
-  --popover: #141414;
-  --popover-foreground: #FAFAFA;
-  --primary: #CAFF04;
-  --primary-foreground: #0A0A0A;
-  --secondary: #1A1A1A;
-  --secondary-foreground: #FAFAFA;
-  --muted: #1A1A1A;
-  --muted-foreground: #555555;
-  --accent: #CAFF04;
-  --accent-foreground: #0A0A0A;
-  --destructive: #FF453A;
-  --border: #2A2A2A;
-  --input: #111111;
-  --ring: #CAFF04;
-  --sidebar: #141414;
-  --sidebar-foreground: #FAFAFA;
-  --sidebar-primary: #CAFF04;
-  --sidebar-primary-foreground: #0A0A0A;
-  --sidebar-accent: #1A1A1A;
-  --sidebar-accent-foreground: #FAFAFA;
-  --sidebar-border: #2A2A2A;
-  --sidebar-ring: #CAFF04;
-  --primary-text: #CAFF04;
-  --primary-muted: rgba(202,255,4,0.10);
-  --surface: #141414;
-  --border-strong: #404040;
-  --text-secondary: #A0A0A0;
-  --input-bg: #111111;
-  --primary-border: rgba(202,255,4,0.3);
-  --hard-shadow: 4px 4px 0px #CAFF04;
-  --table-header-bg: rgba(255,255,255,0.02);
-  --subtle-overlay: rgba(255,255,255,0.04);
-  --status-neutral-bg: rgba(85,85,85,0.07);
-  --status-neutral-border: rgba(85,85,85,0.25);
-}
-
-/* ═══ Landing page: Neo-Industrial Automation overrides ═══
-   Overrides core CSS vars so Tailwind utilities (bg-background,
-   text-foreground, bg-primary, etc.) resolve to DESIGN.md colors.
-   Scoped to .landing-page — dashboard is untouched. */
-
-/* Light mode landing — DESIGN.md "Neo-Industrial" palette
-   --border stays SOFT (for separators, video component internals).
-   Use --border-strong (#000) explicitly on cards/buttons that need
-   the thick black border per DESIGN.md §5. */
-.landing-page {
   --background: #F9F9F9;
   --foreground: #000000;
   --card: #FFFFFF;
   --card-foreground: #000000;
+  --popover: #FFFFFF;
+  --popover-foreground: #000000;
   --primary: #FFD700;
   --primary-foreground: #000000;
   --secondary: #F0F0EA;
@@ -160,29 +75,48 @@
   --muted-foreground: #666666;
   --accent: #FFD700;
   --accent-foreground: #000000;
+  --destructive: #FF453A;
   --border: #D8D8D2;
+  --input: #F0F0EA;
   --ring: #FFD700;
+  --chart-1: #22C55E;
+  --chart-2: #FF9F0A;
+  --chart-3: #FF453A;
+  --chart-4: #5AC8FA;
+  --chart-5: #C4A500;  /* gold-tinted (was lime #9ABF03) */
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #000000;
+  --sidebar-primary: #FFD700;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #F0F0EA;
+  --sidebar-accent-foreground: #000000;
+  --sidebar-border: #D8D8D2;
+  --sidebar-ring: #FFD700;
   --primary-text: #9E7C00;
-  --primary-muted: rgba(255, 215, 0, 0.12);
-  --primary-border: rgba(255, 215, 0, 0.35);
-  --hard-shadow: 4px 4px 0px #000000;
+  --primary-muted: rgba(255,215,0,0.12);
   --surface: #FFFFFF;
   --border-strong: #000000;
-  /* Alt section: black color-block per DESIGN.md §2 "No-Line Rule" */
-  --section-alt-bg: #0A0A0A;
-  --section-alt-fg: #F0F0F0;
-  --section-alt-muted: #AAAAAA;
-  --section-alt-border: #3A3A3A;
-  --section-alt-card: #181818;
-  --section-alt-shadow: 4px 4px 0px #FFD700;
+  --text-secondary: #5A5A5A;
+  --input-bg: #F0F0EA;
+  --primary-border: rgba(255,215,0,0.35);
+  --hard-shadow: 4px 4px 0px #000000;
+  --table-header-bg: rgba(0,0,0,0.02);
+  --subtle-overlay: rgba(0,0,0,0.04);
+  --status-neutral-bg: rgba(153,153,153,0.07);
+  --status-neutral-border: rgba(153,153,153,0.25);
 }
 
-/* Dark mode landing */
-.dark .landing-page {
+/* ═══ Dark mode ═══
+   Same Neo-Industrial palette, inverted surfaces.
+   Hard shadows use gold (#FFD700) for sticker-on-dark effect.
+   --border-strong also uses gold in dark mode for visible card edges. */
+.dark {
   --background: #000000;
   --foreground: #F9F9F9;
   --card: #0D0D0D;
   --card-foreground: #F9F9F9;
+  --popover: #0D0D0D;
+  --popover-foreground: #F9F9F9;
   --primary: #FFD700;
   --primary-foreground: #000000;
   --secondary: #1A1A1A;
@@ -191,15 +125,46 @@
   --muted-foreground: #777777;
   --accent: #FFD700;
   --accent-foreground: #000000;
+  --destructive: #FF453A;
   --border: #2A2A2A;
+  --input: #111111;
   --ring: #FFD700;
+  --sidebar: #0D0D0D;
+  --sidebar-foreground: #F9F9F9;
+  --sidebar-primary: #FFD700;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #1A1A1A;
+  --sidebar-accent-foreground: #F9F9F9;
+  --sidebar-border: #2A2A2A;
+  --sidebar-ring: #FFD700;
   --primary-text: #FFD700;
-  --primary-muted: rgba(255, 215, 0, 0.08);
-  --primary-border: rgba(255, 215, 0, 0.25);
-  --hard-shadow: 4px 4px 0px #FFD700;
+  --primary-muted: rgba(255,215,0,0.08);
   --surface: #0D0D0D;
   --border-strong: #FFD700;
-  /* Alt section: slightly elevated surface in dark mode */
+  --text-secondary: #A0A0A0;
+  --input-bg: #111111;
+  --primary-border: rgba(255,215,0,0.25);
+  --hard-shadow: 4px 4px 0px #FFD700;
+  --table-header-bg: rgba(255,255,255,0.02);
+  --subtle-overlay: rgba(255,255,255,0.04);
+  --status-neutral-bg: rgba(85,85,85,0.07);
+  --status-neutral-border: rgba(85,85,85,0.25);
+}
+
+/* ═══ Landing page: section-alt color block vars ═══
+   These are ONLY used on the landing page (page.tsx) for the
+   alternating dark/light section pattern per DESIGN.md §2 "No-Line Rule".
+   Core palette vars are now global — .landing-page no longer overrides them. */
+.landing-page {
+  --section-alt-bg: #0A0A0A;
+  --section-alt-fg: #F0F0F0;
+  --section-alt-muted: #AAAAAA;
+  --section-alt-border: #3A3A3A;
+  --section-alt-card: #181818;
+  --section-alt-shadow: 4px 4px 0px #FFD700;
+}
+
+.dark .landing-page {
   --section-alt-bg: #0A0A0A;
   --section-alt-fg: #F0F0F0;
   --section-alt-muted: #888888;

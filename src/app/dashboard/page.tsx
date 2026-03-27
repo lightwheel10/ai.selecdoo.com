@@ -32,7 +32,7 @@ const activityIcons: Record<ActivityType, { icon: typeof TrendingDown; color: st
   new_product: { icon: PackagePlus, color: "#22C55E" },
   product_removed: { icon: PackageMinus, color: "#FF6961" },
   store_added: { icon: Store, color: "#5AC8FA" },
-  scrape_complete: { icon: Scan, color: "#9ABF03" },
+  scrape_complete: { icon: Scan, color: "#C4A500" },  /* gold-dim — matches --chart-5 */
   monitoring_alert: { icon: Bell, color: "#FF9F0A" },
   ai_content_generated: { icon: Sparkles, color: "var(--primary-text)" },
 };

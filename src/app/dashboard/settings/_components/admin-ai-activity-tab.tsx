@@ -950,7 +950,7 @@ export function AdminAIActivityTab() {
                               className="text-[8px] font-bold uppercase tracking-[0.15em] px-1.5 py-0.5 shrink-0"
                               style={{
                                 fontFamily: "var(--font-mono)",
-                                backgroundColor: item.source === "firecrawl" ? "#CAFF0420" : "var(--muted-foreground)12",
+                                backgroundColor: item.source === "firecrawl" ? "var(--primary-muted)" : "var(--status-neutral-bg)",
                                 color: item.source === "firecrawl" ? "var(--primary-text)" : "var(--muted-foreground)",
                                 border: `1px solid ${item.source === "firecrawl" ? "var(--primary)" : "var(--border)"}`,
                               }}

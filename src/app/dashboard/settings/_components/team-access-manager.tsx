@@ -169,8 +169,8 @@ function PermissionToggle({
 function RoleBadge({ role }: { role: AppRole }) {
   const styles: Record<AppRole, { bg: string; border: string; color: string }> = {
     admin: {
-      bg: "rgba(202,255,4,0.12)",
-      border: "1.5px solid rgba(202,255,4,0.35)",
+      bg: "var(--primary-muted)",          /* gold tint — uses CSS var for theme consistency */
+      border: "1.5px solid var(--primary-border)",
       color: "var(--primary-text)",
     },
     operator: {
