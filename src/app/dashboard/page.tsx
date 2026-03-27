@@ -153,7 +153,7 @@ export default async function DashboardPage() {
             </p>
             <Link
               href="/dashboard/jobs"
-              className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
+              className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80"
               style={{
                 fontFamily: "var(--font-mono)",
                 color: "var(--primary-text)",
@@ -164,17 +164,20 @@ export default async function DashboardPage() {
             </Link>
           </div>
 
+          {/* Recent Jobs card — DESIGN.md §5: border-strong + hard-shadow.
+              Internal row dividers use soft --border for hierarchy. */}
           <div
-            className="border-2 flex-1 flex flex-col"
+            className="flex-1 flex flex-col"
             style={{
               backgroundColor: "var(--card)",
-              borderColor: "var(--border)",
+              border: "2px solid var(--border-strong)",
+              boxShadow: "var(--hard-shadow)",
             }}
           >
             {recentJobs.map((job, i) => (
               <div
                 key={job.id}
-                className="flex items-center gap-3 px-4 py-3 flex-1"
+                className="flex items-center gap-3 px-4 py-3"
                 style={{
                   borderBottom:
                     i < recentJobs.length - 1
@@ -276,7 +279,7 @@ export default async function DashboardPage() {
             </p>
             <Link
               href="/dashboard/products"
-              className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
+              className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80"
               style={{
                 fontFamily: "var(--font-mono)",
                 color: "var(--primary-text)",
@@ -294,12 +297,14 @@ export default async function DashboardPage() {
                 product.discount_percentage && product.discount_percentage > 0;
 
               return (
+                /* Product card — DESIGN.md §5: border-strong + hard-shadow */
                 <div
                   key={product.id}
-                  className="border-2 flex flex-col"
+                  className="flex flex-col"
                   style={{
                     backgroundColor: "var(--card)",
-                    borderColor: "var(--border)",
+                    border: "2px solid var(--border-strong)",
+                    boxShadow: "var(--hard-shadow)",
                   }}
                 >
                   {/* Product Image */}
@@ -398,11 +403,13 @@ export default async function DashboardPage() {
           {t("recentActivity")}
         </p>
 
+        {/* Activity feed card — DESIGN.md §5: border-strong + hard-shadow.
+            Internal row dividers use soft --border for hierarchy. */}
         <div
-          className="border-2"
           style={{
             backgroundColor: "var(--card)",
-            borderColor: "var(--border)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
           }}
         >
           {recentActivity.map((item, i) => {
@@ -468,7 +475,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Footer */}
-      <div className="mt-12 pt-6" style={{ borderTop: "1px solid var(--border)" }}>
+      <div className="mt-12 pt-6" style={{ borderTop: "2px solid var(--border)" }}>
         <div className="flex flex-col items-center gap-1 text-center">
           <p
             className="text-[10px] font-bold tracking-wider"
