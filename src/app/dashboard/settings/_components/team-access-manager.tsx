@@ -387,11 +387,14 @@ export function TeamAccessManager() {
   }
 
   return (
+    /* Team access manager — DESIGN.md §5: border-strong + hard-shadow on outer card.
+       Inner tables and dividers use soft --border for hierarchy. */
     <div
-      className="border-2 p-6"
+      className="p-6"
       style={{
         backgroundColor: "var(--card)",
-        borderColor: "var(--border)",
+        border: "2px solid var(--border-strong)",
+        boxShadow: "var(--hard-shadow)",
       }}
     >
       <div className="mb-4">
@@ -440,15 +443,15 @@ export function TeamAccessManager() {
             </option>
           ))}
         </select>
+        {/* Assign Role — DESIGN.md §5: primary button with border-strong + hard-shadow */}
         <button
           type="submit"
           disabled={!email.trim() || submitting}
-          className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-all disabled:opacity-40 disabled:pointer-events-none"
+          className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] bg-primary text-primary-foreground transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-40 disabled:pointer-events-none"
           style={{
             fontFamily: "var(--font-mono)",
-            backgroundColor: "var(--primary)",
-            color: "var(--primary-foreground)",
-            borderRadius: 0,
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
           }}
         >
           {submitting ? t("assigning") : t("assignRole")}
@@ -465,7 +468,7 @@ export function TeamAccessManager() {
         <button
           type="button"
           onClick={loadMembers}
-          className="text-[10px] font-bold uppercase tracking-[0.15em] hover:opacity-80"
+          className="text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80"
           style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
         >
           {t("refresh")}
@@ -529,7 +532,7 @@ export function TeamAccessManager() {
                           <button
                             type="button"
                             onClick={() => openMemberAccess(member)}
-                            className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
+                            className="px-2 py-1 text-[9px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
                             style={{
                               fontFamily: "var(--font-mono)",
                               borderColor: "var(--border)",
@@ -639,7 +642,7 @@ export function TeamAccessManager() {
               <button
                 type="button"
                 onClick={closeMemberAccess}
-                className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
+                className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
                 style={{
                   fontFamily: "var(--font-mono)",
                   borderColor: "var(--border)",
@@ -650,15 +653,16 @@ export function TeamAccessManager() {
                 {t("closeMemberAccess")}
               </button>
 
+              {/* Save — DESIGN.md §5: primary button with border-strong + hard-shadow */}
               <button
                 type="button"
                 onClick={saveSelectedMemberPermissions}
                 disabled={!memberPermissionsDirty || savingMemberPermissions}
-                className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all disabled:opacity-40 disabled:pointer-events-none"
+                className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] bg-primary text-primary-foreground transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-40 disabled:pointer-events-none"
                 style={{
                   fontFamily: "var(--font-mono)",
-                  backgroundColor: "var(--primary)",
-                  color: "var(--primary-foreground)",
+                  border: "2px solid var(--border-strong)",
+                  boxShadow: "var(--hard-shadow)",
                 }}
               >
                 {savingMemberPermissions

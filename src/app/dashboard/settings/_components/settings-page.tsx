@@ -66,11 +66,13 @@ export function SettingsPage({ isAdmin, canManageTeam }: SettingsPageProps) {
   // No tabs visible — limited access
   if (!canManageTeam && !isAdmin) {
     return (
+      /* Limited access card — DESIGN.md §5: border-strong + hard-shadow */
       <div
-        className="border-2 p-6"
+        className="p-6"
         style={{
           backgroundColor: "var(--card)",
-          borderColor: "var(--border)",
+          border: "2px solid var(--border-strong)",
+          boxShadow: "var(--hard-shadow)",
         }}
       >
         <p
