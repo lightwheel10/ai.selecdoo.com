@@ -176,7 +176,7 @@ export function MiniProductCard({
               key={type}
               onClick={() => onOpenModal(product, type)}
               disabled={!canOpen}
-              className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"
+              className="w-7 h-7 flex items-center justify-center transition-all duration-100 hover:opacity-80"
               style={{
                 backgroundColor: hasContent ? cfg.color : `${cfg.color}12`,
                 border: hasContent
@@ -198,7 +198,7 @@ export function MiniProductCard({
             href={getProductExternalUrl(product, publicSiteUrl) || '#'}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"
+            className="w-7 h-7 flex items-center justify-center transition-all duration-100 hover:opacity-80"
             style={{
               backgroundColor: "var(--input)",
               border: "1.5px solid var(--border)",

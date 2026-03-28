@@ -104,12 +104,14 @@ export function StoreGroupView({
         </div>
       )}
 
+      {/* Empty state — DESIGN.md §5: border-strong + hard-shadow */}
       {storeGroups.length === 0 ? (
         <div
-          className="border-2 py-16 text-center"
+          className="py-16 text-center"
           style={{
             backgroundColor: "var(--card)",
-            borderColor: "var(--border)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
           }}
         >
           <p
@@ -135,12 +137,13 @@ export function StoreGroupView({
               storeProductIds.every((id) => selectedProducts.has(id));
 
             return (
+              /* Store group card — DESIGN.md §5: border-strong + hard-shadow */
               <div
                 key={group.store.id}
-                className="border-2"
                 style={{
                   backgroundColor: "var(--card)",
-                  borderColor: "var(--border)",
+                  border: "2px solid var(--border-strong)",
+                  boxShadow: "var(--hard-shadow)",
                 }}
               >
                 {/* ── Store Header ── */}
@@ -151,7 +154,7 @@ export function StoreGroupView({
                   {/* Row 1: Name + Stats */}
                   <div className="flex items-center gap-3">
                     <ChevronRight
-                      className="w-4 h-4 flex-shrink-0 transition-transform duration-150"
+                      className="w-4 h-4 flex-shrink-0 transition-transform duration-100"
                       style={{
                         color: "var(--primary-text)",
                         transform: isExpanded
@@ -291,7 +294,7 @@ export function StoreGroupView({
                                 );
                               }}
                               disabled={!!bulkGenerating}
-                              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
                               style={{
                                 fontFamily: "var(--font-mono)",
                                 backgroundColor: `${cfg.color}12`,

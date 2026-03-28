@@ -60,11 +60,16 @@ export function ProductCard({
   }));
 
   return (
+    /* Product card — DESIGN.md §5: border-strong + hard-shadow.
+       When selected, border switches to --primary-text for visual emphasis. */
     <div
-      className="border-2 flex flex-col relative group"
+      className="flex flex-col relative group"
       style={{
         backgroundColor: "var(--card)",
-        borderColor: isSelected ? "var(--primary-text)" : "var(--border)",
+        border: isSelected
+          ? "2px solid var(--primary-text)"
+          : "2px solid var(--border-strong)",
+        boxShadow: isSelected ? "none" : "var(--hard-shadow)",
       }}
     >
       {canSelect && (
@@ -213,7 +218,7 @@ export function ProductCard({
                 key={type}
                 onClick={() => onOpenModal(product, type)}
                 disabled={!canOpen}
-                className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[8px] font-bold uppercase tracking-[0.1em] transition-all duration-150 hover:opacity-80"
+                className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[8px] font-bold uppercase tracking-[0.1em] transition-all duration-100 hover:opacity-80"
                 style={{
                   fontFamily: "var(--font-mono)",
                   backgroundColor: hasContent ? cfg.color : `${cfg.color}12`,
@@ -237,7 +242,7 @@ export function ProductCard({
             href={getProductExternalUrl(product, publicSiteUrl) || '#'}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-1.5 w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
+            className="mt-1.5 w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80"
             style={{
               fontFamily: "var(--font-mono)",
               backgroundColor: "var(--input)",

@@ -657,7 +657,7 @@ export function AIContentWorkstation({
             value={searchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
             placeholder={t("searchProducts")}
-            className="pl-8 pr-3 py-2 text-xs border-2 outline-none transition-colors duration-150 focus:border-primary"
+            className="pl-8 pr-3 py-2 text-xs border-2 outline-none transition-colors duration-100 focus:border-primary"
             style={{
               backgroundColor: "var(--input)",
               borderColor: "var(--border)",
@@ -765,7 +765,7 @@ export function AIContentWorkstation({
             </span>
             <button
               onClick={() => setShowBulkDeleteConfirm(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80"
               style={{
                 fontFamily: "var(--font-mono)",
                 backgroundColor: "#FF453A12",
@@ -872,16 +872,18 @@ export function AIContentWorkstation({
 
       {/* ── ALL PRODUCTS VIEW ── */}
       <div
-        style={{ opacity: isPending ? 0.6 : 1, transition: "opacity 150ms" }}
+        style={{ opacity: isPending ? 0.6 : 1, transition: "opacity 100ms" }}
       >
         {viewMode === "all" && (
           <>
+            {/* Empty state — DESIGN.md §5: border-strong + hard-shadow */}
             {filtered.length === 0 ? (
               <div
-                className="border-2 py-16 text-center"
+                className="py-16 text-center"
                 style={{
                   backgroundColor: "var(--card)",
-                  borderColor: "var(--border)",
+                  border: "2px solid var(--border-strong)",
+                  boxShadow: "var(--hard-shadow)",
                 }}
               >
                 <p
@@ -989,10 +991,12 @@ export function AIContentWorkstation({
             if (!open) setShowBulkDeleteConfirm(false);
           }}
         >
+          {/* Bulk delete dialog — DESIGN.md §5: border-strong + hard-shadow */}
           <DialogContent
-            className="border-2 p-0 gap-0 sm:max-w-md"
+            className="p-0 gap-0 sm:max-w-md"
             style={{
-              borderColor: "var(--border)",
+              border: "2px solid var(--border-strong)",
+              boxShadow: "var(--hard-shadow)",
               backgroundColor: "var(--card)",
               borderRadius: 0,
             }}
@@ -1032,15 +1036,16 @@ export function AIContentWorkstation({
               >
                 {t("cancel")}
               </button>
+              {/* Destructive confirm — uses #FF453A instead of --hard-shadow */}
               <button
                 onClick={handleBulkDelete}
-                className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none shadow-[3px_3px_0px]"
+                className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
                 style={{
                   fontFamily: "var(--font-mono)",
                   backgroundColor: "#FF453A",
-                  borderColor: "#FF453A",
+                  border: "2px solid #FF453A",
                   color: "#fff",
-                  boxShadow: "3px 3px 0px #FF453A",
+                  boxShadow: "none",
                 }}
               >
                 <Trash2 className="w-3 h-3" />

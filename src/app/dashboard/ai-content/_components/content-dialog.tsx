@@ -126,10 +126,12 @@ export function ContentDialog({
         if (!open) onClose();
       }}
     >
+      {/* Content dialog — DESIGN.md §5: border-strong + hard-shadow */}
       <DialogContent
-        className="border-2 p-0 gap-0 sm:max-w-2xl"
+        className="p-0 gap-0 sm:max-w-2xl"
         style={{
-          borderColor: "var(--border)",
+          border: "2px solid var(--border-strong)",
+          boxShadow: "var(--hard-shadow)",
           backgroundColor: "var(--card)",
           borderRadius: 0,
         }}
@@ -403,8 +405,12 @@ function ContentView({
             <button
               onClick={() => onSaveEdit(product.id, contentType)}
               disabled={!canEditContent}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none bg-primary text-primary-foreground border-primary shadow-[3px_3px_0px] shadow-primary"
-              style={{ fontFamily: "var(--font-mono)" }}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] bg-primary text-primary-foreground transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+              style={{
+                fontFamily: "var(--font-mono)",
+                border: "2px solid var(--border-strong)",
+                boxShadow: "var(--hard-shadow)",
+              }}
             >
               <Check className="w-3 h-3" />
               {t("save")}
@@ -641,7 +647,7 @@ function WebhookButton({
     return (
       <button
         onClick={onSend}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
+        className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80"
         suppressHydrationWarning
         style={{
           fontFamily: "var(--font-mono)",
@@ -681,7 +687,7 @@ function WebhookButton({
     return (
       <button
         onClick={onSend}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
+        className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80"
         style={{
           fontFamily: "var(--font-mono)",
           backgroundColor: "#FF453A12",
@@ -699,7 +705,7 @@ function WebhookButton({
   return (
     <button
       onClick={onSend}
-      className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
+      className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80"
       style={{
         fontFamily: "var(--font-mono)",
         backgroundColor: "#FF9F0A12",
@@ -786,11 +792,11 @@ function GenerateFailedView({
         </p>
         <button
           onClick={() => onRetry(product, contentType)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none shadow-[3px_3px_0px] hover:opacity-80"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:opacity-80"
           style={{
             fontFamily: "var(--font-mono)",
             backgroundColor: accentColor,
-            borderColor: accentColor,
+            border: `2px solid ${accentColor}`,
             color: "#fff",
             boxShadow: `3px 3px 0px ${accentColor}`,
           }}

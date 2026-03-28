@@ -3,13 +3,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function AIContentLoading() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Card skeletons — match product cards: border-strong + hard-shadow */}
       {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={i}
-          className="border-2 p-5"
+          className="p-5"
           style={{
             backgroundColor: "var(--card)",
-            borderColor: "var(--border)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
           }}
         >
           <div className="flex items-center gap-2 mb-3">
