@@ -13,15 +13,16 @@ export default function MonitoringLoading() {
         <TableSkeleton rows={6} />
       </div>
 
-      {/* Metric cards skeleton */}
+      {/* Metric card skeletons — matches metric cards: border-strong + hard-shadow */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="border-2 px-4 py-3"
+            className="px-4 py-3"
             style={{
               backgroundColor: "var(--card)",
-              borderColor: "var(--border)",
+              border: "2px solid var(--border-strong)",
+              boxShadow: "var(--hard-shadow)",
             }}
           >
             <div className="flex items-center gap-2 mb-2">
@@ -37,12 +38,13 @@ export default function MonitoringLoading() {
       <div>
         <Skeleton className="h-3 w-28 mb-3" />
 
-        {/* Filter bar skeleton */}
+        {/* Filter bar skeleton — matches filter bar: border-strong + hard-shadow */}
         <div
-          className="flex items-center gap-2 px-4 py-3 mb-3 border-2"
+          className="flex items-center gap-2 px-4 py-3 mb-3"
           style={{
             backgroundColor: "var(--card)",
-            borderColor: "var(--border)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
           }}
         >
           <Skeleton className="h-7 w-28" />
@@ -52,12 +54,13 @@ export default function MonitoringLoading() {
           <Skeleton className="h-6 w-14" />
         </div>
 
-        {/* Timeline items skeleton */}
+        {/* Timeline skeleton — matches change sections: border-strong + hard-shadow.
+            Internal dividers use soft --border for hierarchy. */}
         <div
-          className="border-2"
           style={{
             backgroundColor: "var(--card)",
-            borderColor: "var(--border)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
           }}
         >
           {Array.from({ length: 5 }).map((_, i) => (

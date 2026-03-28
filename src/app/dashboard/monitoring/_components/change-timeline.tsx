@@ -457,19 +457,20 @@ export function ChangeTimeline({ changes }: ChangeTimelineProps) {
 
   return (
     <div>
-      {/* ── Filter Bar ── */}
+      {/* ── Filter Bar — DESIGN.md §5: border-strong + hard-shadow ── */}
       <div
-        className="flex flex-wrap items-center gap-2 px-4 py-3 mb-3 border-2"
+        className="flex flex-wrap items-center gap-2 px-4 py-3 mb-3"
         style={{
           backgroundColor: "var(--card)",
-          borderColor: "var(--border)",
+          border: "2px solid var(--border-strong)",
+          boxShadow: "var(--hard-shadow)",
         }}
       >
         {/* Store filter dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setStoreDropdownOpen(!storeDropdownOpen)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border transition-colors hover:border-primary/50"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
             style={{
               fontFamily: "var(--font-mono)",
               backgroundColor: storeFilter ? "var(--primary-muted)" : "transparent",
@@ -580,10 +581,15 @@ export function ChangeTimeline({ changes }: ChangeTimelineProps) {
       </div>
 
       {/* ── Grouped Sections ── */}
+      {/* Empty state + change sections — DESIGN.md §5: border-strong + hard-shadow */}
       {totalCount === 0 ? (
         <div
-          className="border-2 py-16 text-center"
-          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+          className="py-16 text-center"
+          style={{
+            backgroundColor: "var(--card)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
+          }}
         >
           <p
             className="text-[11px] font-bold uppercase tracking-[0.15em]"
@@ -607,8 +613,11 @@ export function ChangeTimeline({ changes }: ChangeTimelineProps) {
             return (
               <div
                 key={type}
-                className="border-2"
-                style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+                style={{
+                  backgroundColor: "var(--card)",
+                  border: "2px solid var(--border-strong)",
+                  boxShadow: "var(--hard-shadow)",
+                }}
               >
                 {/* Section header */}
                 <div

@@ -145,14 +145,16 @@ export function MonitoringDashboard({
 
   return (
     <div className="space-y-6">
-      {/* ── 1. Store Schedules Table (full-width, collapsible) ── */}
+      {/* ── 1. Store Schedules Table (full-width, collapsible)
+              DESIGN.md §5: border-strong + hard-shadow on container ── */}
       <div>
         <button
           onClick={() => setTableCollapsed(!tableCollapsed)}
-          className="w-full flex items-center gap-2.5 px-4 py-3 border-2 transition-colors hover:bg-[var(--table-header-bg)] group"
+          className="w-full flex items-center gap-2.5 px-4 py-3 transition-all duration-100 hover:bg-[var(--table-header-bg)] group"
           style={{
             backgroundColor: "var(--card)",
-            borderColor: "var(--border)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
             marginBottom: tableCollapsed ? 0 : "-2px",
           }}
         >
@@ -202,12 +204,13 @@ export function MonitoringDashboard({
         )}
       </div>
 
-      {/* ── 2. Monitoring Status Panel ── */}
+      {/* ── 2. Monitoring Status Panel — DESIGN.md §5: border-strong + hard-shadow ── */}
       <div
-        className="border-2 grid grid-cols-1 md:grid-cols-2"
+        className="grid grid-cols-1 md:grid-cols-2"
         style={{
           backgroundColor: "var(--card)",
-          borderColor: "var(--border)",
+          border: "2px solid var(--border-strong)",
+          boxShadow: "var(--hard-shadow)",
         }}
       >
         {/* Left: Status + Next Check */}
@@ -308,12 +311,14 @@ export function MonitoringDashboard({
         {metricCards.map((card) => {
           const Icon = card.icon;
           return (
+            /* Metric card — DESIGN.md §5: border-strong + hard-shadow */
             <div
               key={card.label}
-              className="border-2 px-4 py-3"
+              className="px-4 py-3"
               style={{
                 backgroundColor: "var(--card)",
-                borderColor: "var(--border)",
+                border: "2px solid var(--border-strong)",
+                boxShadow: "var(--hard-shadow)",
               }}
             >
               <div className="flex items-center gap-2 mb-2">
@@ -340,7 +345,7 @@ export function MonitoringDashboard({
                 </span>
               </div>
               <p
-                className="text-2xl font-bold"
+                className="text-2xl font-extrabold"
                 style={{ color: card.color }}
               >
                 {card.value}

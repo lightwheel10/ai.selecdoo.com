@@ -136,11 +136,14 @@ export function MonitoringTable({ configs, logs }: MonitoringTableProps) {
   ];
 
   return (
+    /* Monitoring table — DESIGN.md §5: border-strong + hard-shadow on outer.
+       Internal row dividers use soft --border for hierarchy. */
     <div
-      className="border-2 overflow-x-auto"
+      className="overflow-x-auto"
       style={{
         backgroundColor: "var(--card)",
-        borderColor: "var(--border)",
+        border: "2px solid var(--border-strong)",
+        boxShadow: "var(--hard-shadow)",
       }}
     >
       <Table>
@@ -309,7 +312,7 @@ export function MonitoringTable({ configs, logs }: MonitoringTableProps) {
                             handleRunNow(config.store_id, config.store_name)
                           }
                           disabled={isRunning || !config.enabled}
-                          className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
+                          className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
                           style={{
                             fontFamily: "var(--font-mono)",
                             backgroundColor: "var(--primary-muted)",
@@ -344,7 +347,7 @@ export function MonitoringTable({ configs, logs }: MonitoringTableProps) {
                               router.refresh();
                             }
                           }}
-                          className="px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] border transition-colors hover:border-primary/50"
+                          className="px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
                           style={{
                             fontFamily: "var(--font-mono)",
                             backgroundColor: "transparent",
