@@ -22,7 +22,7 @@ function ToggleRow({
   return (
     <button
       onClick={() => onChange(!checked)}
-      className="w-full flex items-center justify-between px-3 py-2 border-2 transition-all duration-150"
+      className="w-full flex items-center justify-between px-3 py-2 border-2 transition-all duration-100"
       style={{
         backgroundColor: checked
           ? "rgba(34,197,94,0.06)"
@@ -42,7 +42,7 @@ function ToggleRow({
         {label}
       </span>
       <div
-        className="w-6 h-6 flex items-center justify-center transition-all duration-150"
+        className="w-6 h-6 flex items-center justify-center transition-all duration-100"
         style={{
           backgroundColor: checked
             ? "rgba(34,197,94,0.20)"
@@ -270,12 +270,13 @@ export function AdminWebhookTab() {
 
   return (
     <div className="space-y-4">
-      {/* Header with title + tabs */}
+      {/* Header — DESIGN.md §5: border-strong + hard-shadow */}
       <div
-        className="border-2 p-4"
+        className="p-4"
         style={{
           backgroundColor: "var(--card)",
-          borderColor: "var(--border)",
+          border: "2px solid var(--border-strong)",
+          boxShadow: "var(--hard-shadow)",
         }}
       >
         <h2
@@ -297,7 +298,7 @@ export function AdminWebhookTab() {
               <button
                 key={type}
                 onClick={() => setActiveTab(type)}
-                className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors -mb-[2px]"
+                className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 -mb-[2px]"
                 style={{
                   fontFamily: "var(--font-mono)",
                   color: isActive ? "var(--primary-text)" : "var(--muted-foreground)",
@@ -640,10 +641,14 @@ function WebhookFieldEditor({
   if (loading) {
     return (
       <>
-        {/* Description skeleton */}
+        {/* Description skeleton — matches real card: border-strong + hard-shadow */}
         <div
-          className="border-2 p-4"
-          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+          className="p-4"
+          style={{
+            backgroundColor: "var(--card)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
+          }}
         >
           <Skeleton className="h-3 w-3/4" />
         </div>
@@ -652,10 +657,14 @@ function WebhookFieldEditor({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Left: Field toggles skeleton */}
           <div className="space-y-4">
-            {/* Product fields card */}
+            {/* Product fields skeleton — border-strong + hard-shadow */}
             <div
-              className="border-2 p-4"
-              style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+              className="p-4"
+              style={{
+                backgroundColor: "var(--card)",
+                border: "2px solid var(--border-strong)",
+                boxShadow: "var(--hard-shadow)",
+              }}
             >
               <div className="flex items-center justify-between mb-3">
                 <Skeleton className="h-2.5 w-24" />
@@ -686,10 +695,14 @@ function WebhookFieldEditor({
               ))}
             </div>
 
-            {/* Store fields card */}
+            {/* Store fields skeleton — border-strong + hard-shadow */}
             <div
-              className="border-2 p-4"
-              style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+              className="p-4"
+              style={{
+                backgroundColor: "var(--card)",
+                border: "2px solid var(--border-strong)",
+                boxShadow: "var(--hard-shadow)",
+              }}
             >
               <div className="flex items-center justify-between mb-3">
                 <Skeleton className="h-2.5 w-20" />
@@ -709,11 +722,15 @@ function WebhookFieldEditor({
             </div>
           </div>
 
-          {/* Right: Preview skeleton */}
+          {/* Right: Preview skeleton — border-strong + hard-shadow */}
           <div className="space-y-4">
             <div
-              className="border-2 p-4"
-              style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+              className="p-4"
+              style={{
+                backgroundColor: "var(--card)",
+                border: "2px solid var(--border-strong)",
+                boxShadow: "var(--hard-shadow)",
+              }}
             >
               <Skeleton className="h-2.5 w-24 mb-3" />
               <Skeleton className="h-2.5 w-48 mb-3" />
@@ -734,10 +751,14 @@ function WebhookFieldEditor({
           </div>
         </div>
 
-        {/* Action buttons skeleton */}
+        {/* Action buttons skeleton — border-strong + hard-shadow */}
         <div
-          className="border-2 p-4 flex items-center justify-between"
-          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+          className="p-4 flex items-center justify-between"
+          style={{
+            backgroundColor: "var(--card)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
+          }}
         >
           <Skeleton className="h-9 w-[140px]" />
           <Skeleton className="h-9 w-[130px]" />
@@ -748,14 +769,16 @@ function WebhookFieldEditor({
 
   if (error) {
     return (
+      /* Error state — DESIGN.md §5: border-strong + hard-shadow */
       <div
-        className="border-2 p-6 text-center"
+        className="p-6 text-center"
         style={{
           backgroundColor: "var(--card)",
-          borderColor: "var(--border)",
+          border: "2px solid var(--border-strong)",
+          boxShadow: "var(--hard-shadow)",
         }}
       >
-        <p className="text-sm mb-3" style={{ color: "var(--danger, #EF4444)" }}>
+        <p className="text-sm mb-3" style={{ color: "var(--destructive)" }}>
           {error}
         </p>
         <button
@@ -777,12 +800,13 @@ function WebhookFieldEditor({
 
   return (
     <>
-      {/* Description */}
+      {/* Description — DESIGN.md §5: border-strong + hard-shadow */}
       <div
-        className="border-2 p-4"
+        className="p-4"
         style={{
           backgroundColor: "var(--card)",
-          borderColor: "var(--border)",
+          border: "2px solid var(--border-strong)",
+          boxShadow: "var(--hard-shadow)",
         }}
       >
         <p
@@ -800,12 +824,13 @@ function WebhookFieldEditor({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Left: Field toggles */}
         <div className="space-y-4">
-          {/* Product Fields */}
+          {/* Product Fields — DESIGN.md §5: border-strong + hard-shadow */}
           <div
-            className="border-2 p-4"
+            className="p-4"
             style={{
               backgroundColor: "var(--card)",
-              borderColor: "var(--border)",
+              border: "2px solid var(--border-strong)",
+              boxShadow: "var(--hard-shadow)",
             }}
           >
             <div className="flex items-center justify-between mb-2">
@@ -851,12 +876,13 @@ function WebhookFieldEditor({
             ))}
           </div>
 
-          {/* Store Fields */}
+          {/* Store Fields — DESIGN.md §5: border-strong + hard-shadow */}
           <div
-            className="border-2 p-4"
+            className="p-4"
             style={{
               backgroundColor: "var(--card)",
-              borderColor: "var(--border)",
+              border: "2px solid var(--border-strong)",
+              boxShadow: "var(--hard-shadow)",
             }}
           >
             <div className="flex items-center justify-between mb-2">
@@ -917,20 +943,26 @@ function WebhookFieldEditor({
             />
           ) : (
             <div
-              className="border-2 p-4"
-              style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+              className="p-4"
+              style={{
+                backgroundColor: "var(--card)",
+                border: "2px solid var(--border-strong)",
+                boxShadow: "var(--hard-shadow)",
+              }}
             >
               <Skeleton className="h-2.5 w-24 mb-3" />
               <Skeleton className="h-9 w-full" />
             </div>
           )}
 
-          {/* Live preview */}
+          {/* Live preview — DESIGN.md §5: border-strong + hard-shadow.
+              Inner code block border stays soft for hierarchy. */}
           <div
-            className="border-2 p-4"
+            className="p-4"
             style={{
               backgroundColor: "var(--card)",
-              borderColor: "var(--border)",
+              border: "2px solid var(--border-strong)",
+              boxShadow: "var(--hard-shadow)",
             }}
           >
             <h3
@@ -983,17 +1015,18 @@ function WebhookFieldEditor({
         </div>
       </div>
 
-      {/* Action buttons */}
+      {/* Action buttons — DESIGN.md §5: border-strong + hard-shadow */}
       <div
-        className="border-2 p-4 flex items-center justify-between"
+        className="p-4 flex items-center justify-between"
         style={{
           backgroundColor: "var(--card)",
-          borderColor: "var(--border)",
+          border: "2px solid var(--border-strong)",
+          boxShadow: "var(--hard-shadow)",
         }}
       >
         <button
           onClick={handleReset}
-          className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.15em] px-4 py-2 border-2 transition-colors"
+          className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.15em] px-4 py-2 border-2 transition-all duration-100"
           style={{
             fontFamily: "var(--font-mono)",
             borderColor: "var(--border)",
@@ -1004,16 +1037,20 @@ function WebhookFieldEditor({
           {t("webhookResetDefaults")}
         </button>
 
+        {/* Save — DESIGN.md §5: primary button when dirty, muted when clean */}
         <button
           onClick={handleSave}
           disabled={!isDirty || saving}
-          className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.15em] px-6 py-2 border-2 transition-all disabled:opacity-40"
+          className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.15em] px-6 py-2 transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-40"
           style={{
             fontFamily: "var(--font-mono)",
             backgroundColor: isDirty ? "var(--primary)" : "transparent",
-            borderColor: isDirty ? "var(--primary)" : "var(--border)",
+            border: isDirty
+              ? "2px solid var(--border-strong)"
+              : "2px solid var(--border)",
+            boxShadow: isDirty ? "var(--hard-shadow)" : "none",
             color: isDirty
-              ? "var(--primary-foreground, #0A0A0A)"
+              ? "var(--primary-foreground)"
               : "var(--muted-foreground)",
           }}
         >
@@ -1081,10 +1118,12 @@ function ProductPicker({
   return (
     <div
       ref={containerRef}
-      className="border-2 p-4 relative"
+      /* Product picker — DESIGN.md §5: border-strong + hard-shadow */
+      className="p-4 relative"
       style={{
         backgroundColor: "var(--card)",
-        borderColor: "var(--border)",
+        border: "2px solid var(--border-strong)",
+        boxShadow: "var(--hard-shadow)",
       }}
     >
       <div className="flex items-center justify-between mb-2">
@@ -1103,7 +1142,7 @@ function ProductPicker({
               onSelect(null);
               setSearch("");
             }}
-            className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
+            className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80"
             style={{
               fontFamily: "var(--font-mono)",
               color: "var(--muted-foreground)",
@@ -1135,7 +1174,7 @@ function ProductPicker({
               ? selectedProduct.title
               : t("webhookSearchProduct")
           }
-          className="w-full pl-8 pr-3 py-2 text-[11px] border-2 outline-none transition-colors duration-150 focus:border-[var(--primary-text)]"
+          className="w-full pl-8 pr-3 py-2 text-[11px] border-2 outline-none transition-colors duration-100 focus:border-[var(--primary-text)]"
           style={{
             backgroundColor: "var(--input)",
             borderColor: selectedId ? "var(--primary-border)" : "var(--border)",
