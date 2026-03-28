@@ -41,7 +41,7 @@ export function SearchableFilter({
       <PopoverTrigger asChild>
         <button
           suppressHydrationWarning
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100"
           style={{
             fontFamily: "var(--font-mono)",
             backgroundColor: value ? "var(--primary-muted)" : "transparent",
@@ -166,7 +166,7 @@ export function MultiSearchableFilter({
       <PopoverTrigger asChild>
         <button
           suppressHydrationWarning
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100"
           style={{
             fontFamily: "var(--font-mono)",
             backgroundColor: hasSelection
@@ -303,7 +303,7 @@ export function SimpleFilter({
       <PopoverTrigger asChild>
         <button
           suppressHydrationWarning
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100"
           style={{
             fontFamily: "var(--font-mono)",
             backgroundColor: value ? "var(--primary-muted)" : "transparent",
@@ -415,7 +415,7 @@ export function MultiSimpleFilter({
       <PopoverTrigger asChild>
         <button
           suppressHydrationWarning
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100"
           style={{
             fontFamily: "var(--font-mono)",
             backgroundColor: hasSelection

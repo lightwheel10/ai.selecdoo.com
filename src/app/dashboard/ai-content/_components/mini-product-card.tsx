@@ -70,7 +70,7 @@ export function MiniProductCard({
 
   return (
     <div
-      className="flex items-center gap-3 px-3 py-2 border-2 group transition-colors"
+      className="flex items-center gap-3 px-3 py-2 border-2 group transition-all duration-100"
       style={{
         backgroundColor: isSelected ? "var(--primary-muted)" : "var(--card)",
         borderColor: isSelected ? "var(--primary-text)" : "var(--border)",

@@ -657,7 +657,7 @@ export function AIContentWorkstation({
             value={searchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
             placeholder={t("searchProducts")}
-            className="pl-8 pr-3 py-2 text-xs border-2 outline-none transition-colors duration-100 focus:border-primary"
+            className="pl-8 pr-3 py-2 text-xs border-2 outline-none transition-all duration-100 focus:border-primary"
             style={{
               backgroundColor: "var(--input)",
               borderColor: "var(--border)",
@@ -690,7 +690,7 @@ export function AIContentWorkstation({
         {/* Filter toggle */}
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100"
           style={{
             fontFamily: "var(--font-mono)",
             backgroundColor: showFilters
@@ -783,7 +783,7 @@ export function AIContentWorkstation({
         {(hasAnyFilter || filters.search) && (
           <button
             onClick={clearAll}
-            className="flex items-center gap-1 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
+            className="flex items-center gap-1 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80"
             style={{
               fontFamily: "var(--font-mono)",
               color: "var(--muted-foreground)",
@@ -1026,7 +1026,7 @@ export function AIContentWorkstation({
             >
               <button
                 onClick={() => setShowBulkDeleteConfirm(false)}
-                className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
+                className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
                 style={{
                   fontFamily: "var(--font-mono)",
                   backgroundColor: "transparent",

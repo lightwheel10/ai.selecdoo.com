@@ -379,7 +379,7 @@ function ContentView({
           <textarea
             value={editText}
             onChange={(e) => onEditTextChange(e.target.value)}
-            className="w-full text-[12px] leading-relaxed p-3 border-2 mb-2 resize-y outline-none transition-colors focus:border-primary"
+            className="w-full text-[12px] leading-relaxed p-3 border-2 mb-2 resize-y outline-none transition-all duration-100 focus:border-primary"
             style={{
               backgroundColor: "var(--input)",
               borderColor: "var(--border)",
@@ -417,7 +417,7 @@ function ContentView({
             </button>
             <button
               onClick={onCancelEdit}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
               style={{
                 fontFamily: "var(--font-mono)",
                 backgroundColor: "transparent",
@@ -563,7 +563,7 @@ function ContentView({
             {canEditContent && (
               <button
                 onClick={() => onStartEdit(content.id, content.content)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
                 style={{
                   fontFamily: "var(--font-mono)",
                   backgroundColor: "transparent",
@@ -590,7 +590,7 @@ function ContentView({
                   if (!isGenerating) onRegenerate(product, contentType);
                 }}
                 disabled={isGenerating}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
                 style={{
                   fontFamily: "var(--font-mono)",
                   backgroundColor: "transparent",
@@ -798,7 +798,7 @@ function GenerateFailedView({
             backgroundColor: accentColor,
             border: `2px solid ${accentColor}`,
             color: "#fff",
-            boxShadow: `3px 3px 0px ${accentColor}`,
+            boxShadow: "none",  /* dark mode: no shadow; light mode handled by --hard-shadow elsewhere */
           }}
         >
           <RefreshCw className="w-3 h-3" />

@@ -626,14 +626,14 @@ function SceneScrape({ paused, step }: { paused: boolean; step: number }) {
             />
           </div>
           <div
-            className="px-3 py-2 text-[9px] font-bold uppercase tracking-[0.1em] border-2 whitespace-nowrap transition-all duration-150"
+            className="px-3 py-2 text-[9px] font-bold uppercase tracking-[0.1em] whitespace-nowrap transition-all duration-100"
             style={{
               ...mono,
               backgroundColor: "var(--primary)",
               color: "var(--primary-foreground)",
-              borderColor: "var(--primary)",
+              border: "2px solid var(--border-strong)",
               transform: step >= 5 ? "translate(2px, 2px)" : "none",
-              boxShadow: step >= 5 ? "none" : "3px 3px 0px var(--primary-foreground)",
+              boxShadow: step >= 5 ? "none" : "var(--hard-shadow)",
               opacity: step >= 5 ? 0.85 : 1,
             }}
           >

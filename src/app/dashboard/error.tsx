@@ -36,10 +36,15 @@ export default function DashboardError({
         >
           {error.message}
         </p>
+        {/* Primary button — DESIGN.md §5: border-strong + hard-shadow */}
         <button
           onClick={reset}
-          className="px-4 py-2 text-xs font-bold uppercase tracking-wider border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none bg-primary text-primary-foreground border-primary shadow-[3px_3px_0px] shadow-primary"
-          style={{ fontFamily: "var(--font-mono)" }}
+          className="px-4 py-2 text-xs font-bold uppercase tracking-wider bg-primary text-primary-foreground transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+          style={{
+            fontFamily: "var(--font-mono)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
+          }}
         >
           Try Again
         </button>
