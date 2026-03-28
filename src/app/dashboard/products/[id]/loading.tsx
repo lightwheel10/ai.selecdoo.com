@@ -39,21 +39,23 @@ export default function ProductDetailLoading() {
         </div>
       </div>
 
-      {/* Table skeleton */}
+      {/* Table skeleton — matches variant-table: border-strong + hard-shadow */}
       <div
-        className="h-48 w-full border-2 mb-6"
+        className="h-48 w-full mb-6"
         style={{
           backgroundColor: "var(--card)",
-          borderColor: "var(--border)",
+          border: "2px solid var(--border-strong)",
+          boxShadow: "var(--hard-shadow)",
         }}
       />
 
-      {/* Metadata skeleton */}
+      {/* Metadata skeleton — matches product-metadata: border-strong + hard-shadow */}
       <div
-        className="h-64 w-full border-2"
+        className="h-64 w-full"
         style={{
           backgroundColor: "var(--card)",
-          borderColor: "var(--border)",
+          border: "2px solid var(--border-strong)",
+          boxShadow: "var(--hard-shadow)",
         }}
       />
     </div>

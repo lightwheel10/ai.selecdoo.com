@@ -105,7 +105,7 @@ export function ProductDetailView({ product, store }: ProductDetailViewProps) {
 
           {/* Title */}
           <h1
-            className="text-lg font-bold leading-tight mb-2"
+            className="text-lg font-extrabold leading-tight mb-2"
             style={{ fontFamily: "var(--font-display)" }}
           >
             {product.title}
@@ -140,7 +140,7 @@ export function ProductDetailView({ product, store }: ProductDetailViewProps) {
             style={{ borderBottom: "1px solid var(--border)" }}
           >
             <span
-              className="text-2xl font-bold"
+              className="text-2xl font-extrabold"
               style={{ fontFamily: "var(--font-display)" }}
             >
               {fmt(product.price)}
@@ -233,7 +233,7 @@ export function ProductDetailView({ product, store }: ProductDetailViewProps) {
                 href={getProductExternalUrl(product, publicSiteUrl) || '#'}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 hover:opacity-80"
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
                 style={{
                   fontFamily: "var(--font-mono)",
                   borderColor: "var(--border)",
@@ -247,7 +247,7 @@ export function ProductDetailView({ product, store }: ProductDetailViewProps) {
             {getProductExternalUrl(product, publicSiteUrl) && (
               <button
                 onClick={handleCopyLink}
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 hover:opacity-80"
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
                 style={{
                   fontFamily: "var(--font-mono)",
                   borderColor: "var(--border)",
@@ -362,7 +362,7 @@ export function ProductDetailView({ product, store }: ProductDetailViewProps) {
                   <button
                     key={lang}
                     onClick={() => setDescLang(lang)}
-                    className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-150"
+                    className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-100"
                     style={{
                       fontFamily: "var(--font-mono)",
                       backgroundColor:
@@ -386,11 +386,13 @@ export function ProductDetailView({ product, store }: ProductDetailViewProps) {
             )}
           </div>
 
+          {/* Description card — DESIGN.md §5: border-strong + hard-shadow */}
           <div
-            className="border-2 p-4"
+            className="p-4"
             style={{
               backgroundColor: "var(--card)",
-              borderColor: "var(--border)",
+              border: "2px solid var(--border-strong)",
+              boxShadow: "var(--hard-shadow)",
             }}
           >
             {descriptionHtml ? (
@@ -471,10 +473,12 @@ function RecommendedProductCard({
 
   const content = (
     <div
-      className="border-2 overflow-hidden transition-all duration-150 hover:opacity-80"
+      /* Recommendation card — DESIGN.md §5: border-strong + hard-shadow */
+      className="overflow-hidden transition-all duration-100 hover:opacity-80"
       style={{
         backgroundColor: "var(--card)",
-        borderColor: "var(--border)",
+        border: "2px solid var(--border-strong)",
+        boxShadow: "var(--hard-shadow)",
       }}
     >
       {product.image_url ? (

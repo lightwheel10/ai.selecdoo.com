@@ -28,11 +28,13 @@ export function VariantTable({ variants, currency }: VariantTableProps) {
 
   if (variants.length === 0) {
     return (
+      /* Empty state — DESIGN.md §5: border-strong + hard-shadow */
       <div
-        className="border-2 py-8 text-center"
+        className="py-8 text-center"
         style={{
           backgroundColor: "var(--card)",
-          borderColor: "var(--border)",
+          border: "2px solid var(--border-strong)",
+          boxShadow: "var(--hard-shadow)",
         }}
       >
         <p
@@ -49,11 +51,14 @@ export function VariantTable({ variants, currency }: VariantTableProps) {
   }
 
   return (
+    /* Variant table — DESIGN.md §5: border-strong + hard-shadow on outer.
+       Internal row dividers use soft --border for hierarchy. */
     <div
-      className="border-2 overflow-auto scrollbar-none"
+      className="overflow-auto scrollbar-none"
       style={{
         backgroundColor: "var(--card)",
-        borderColor: "var(--border)",
+        border: "2px solid var(--border-strong)",
+        boxShadow: "var(--hard-shadow)",
       }}
     >
       <Table>

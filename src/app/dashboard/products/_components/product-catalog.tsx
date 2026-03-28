@@ -117,7 +117,7 @@ function StoreFilter({
       <PopoverTrigger asChild>
         <button
           suppressHydrationWarning
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100"
           style={{
             fontFamily: "var(--font-mono)",
             backgroundColor: value ? "var(--primary-muted)" : "transparent",
@@ -225,7 +225,7 @@ function SimpleFilter({
       <PopoverTrigger asChild>
         <button
           suppressHydrationWarning
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100"
           style={{
             fontFamily: "var(--font-mono)",
             backgroundColor: value ? "var(--primary-muted)" : "transparent",
@@ -424,7 +424,7 @@ export function ProductCatalog({
             value={searchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
             placeholder={t("searchProducts")}
-            className="pl-8 pr-3 py-2 text-xs border-2 outline-none transition-colors duration-150 focus:border-primary"
+            className="pl-8 pr-3 py-2 text-xs border-2 outline-none transition-colors duration-100 focus:border-primary"
             style={{
               backgroundColor: "var(--input)",
               borderColor: "var(--border)",
@@ -481,7 +481,7 @@ export function ProductCatalog({
             value={localMinPrice}
             onChange={(e) => handleMinPriceChange(e.target.value)}
             placeholder={t("minPrice")}
-            className="w-[70px] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 outline-none transition-colors duration-150 focus:border-[var(--primary-text)]"
+            className="w-[70px] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 outline-none transition-colors duration-100 focus:border-[var(--primary-text)]"
             style={{
               backgroundColor: "transparent",
               borderColor: localMinPrice ? "var(--primary-muted)" : "var(--border)",
@@ -504,7 +504,7 @@ export function ProductCatalog({
             value={localMaxPrice}
             onChange={(e) => handleMaxPriceChange(e.target.value)}
             placeholder={t("maxPrice")}
-            className="w-[70px] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 outline-none transition-colors duration-150 focus:border-[var(--primary-text)]"
+            className="w-[70px] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 outline-none transition-colors duration-100 focus:border-[var(--primary-text)]"
             style={{
               backgroundColor: "transparent",
               borderColor: localMaxPrice ? "var(--primary-muted)" : "var(--border)",
@@ -549,14 +549,16 @@ export function ProductCatalog({
 
       {/* Product grid */}
       <div
-        style={{ opacity: isPending ? 0.6 : 1, transition: "opacity 150ms" }}
+        style={{ opacity: isPending ? 0.6 : 1, transition: "opacity 100ms" }}
       >
+        {/* Empty state + product grid — containers use border-strong + hard-shadow per DESIGN.md §5 */}
         {visibleProducts.length === 0 ? (
           <div
-            className="border-2 py-16 text-center"
+            className="py-16 text-center"
             style={{
               backgroundColor: "var(--card)",
-              borderColor: "var(--border)",
+              border: "2px solid var(--border-strong)",
+              boxShadow: "var(--hard-shadow)",
             }}
           >
             <p
@@ -579,10 +581,11 @@ export function ProductCatalog({
               return (
                 <div
                   key={product.id}
-                  className="border-2 flex flex-col relative group"
+                  className="flex flex-col relative group"
                   style={{
                     backgroundColor: "var(--card)",
-                    borderColor: "var(--border)",
+                    border: "2px solid var(--border-strong)",
+                    boxShadow: "var(--hard-shadow)",
                   }}
                 >
                   {allowDeleteProduct && (
@@ -693,7 +696,7 @@ export function ProductCatalog({
                       {/* Ghost — View */}
                       <Link
                         href={`/dashboard/products/${product.id}`}
-                        className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 hover:opacity-80"
+                        className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
                         style={{
                           fontFamily: "var(--font-mono)",
                           backgroundColor: "transparent",

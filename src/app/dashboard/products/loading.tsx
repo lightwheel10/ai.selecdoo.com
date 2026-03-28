@@ -31,13 +31,15 @@ export default function ProductsLoading() {
 
       {/* Product grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
+        {/* Card skeletons — match product cards: border-strong + hard-shadow */}
         {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}
-            className="border-2 flex flex-col"
+            className="flex flex-col"
             style={{
               backgroundColor: "var(--card)",
-              borderColor: "var(--border)",
+              border: "2px solid var(--border-strong)",
+              boxShadow: "var(--hard-shadow)",
             }}
           >
             {/* Image placeholder */}

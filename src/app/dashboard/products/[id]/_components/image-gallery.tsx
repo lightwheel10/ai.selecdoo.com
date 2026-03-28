@@ -60,7 +60,7 @@ export function ImageGallery({ medias, mainImage, title }: ImageGalleryProps) {
             <button
               key={i}
               onClick={() => setSelected(i)}
-              className="relative w-14 h-14 flex-shrink-0 overflow-hidden transition-all duration-150"
+              className="relative w-14 h-14 flex-shrink-0 overflow-hidden transition-all duration-100"
               style={{
                 border: i === selected
                   ? "2px solid var(--primary-text)"

@@ -82,11 +82,13 @@ export function ProductMetadata({ product }: ProductMetadataProps) {
   const hasCoupon = product.coupon_code || product.coupon_value;
 
   return (
+    /* Metadata card — DESIGN.md §5: border-strong + hard-shadow */
     <div
-      className="border-2 p-4"
+      className="p-4"
       style={{
         backgroundColor: "var(--card)",
-        borderColor: "var(--border)",
+        border: "2px solid var(--border-strong)",
+        boxShadow: "var(--hard-shadow)",
       }}
     >
       {/* Source */}
