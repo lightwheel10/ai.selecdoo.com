@@ -650,10 +650,13 @@ export function AdminAIActivityTab() {
           <Skeleton className="h-3 w-24" />
           <Skeleton className="h-9 w-[120px]" />
         </div>
-        {/* Timeline skeleton */}
+        {/* Timeline skeleton — matches activity timeline: border-strong + hard-shadow */}
         <div
-          className="border-2"
-          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+          style={{
+            backgroundColor: "var(--card)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
+          }}
         >
           {Array.from({ length: 5 }).map((_, i) => (
             <div
@@ -680,9 +683,14 @@ export function AdminAIActivityTab() {
 
   if (dataError) {
     return (
+      /* Error state — DESIGN.md §5: border-strong + hard-shadow */
       <div
-        className="border-2 py-16 flex flex-col items-center justify-center gap-3"
-        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+        className="py-16 flex flex-col items-center justify-center gap-3"
+        style={{
+          backgroundColor: "var(--card)",
+          border: "2px solid var(--border-strong)",
+          boxShadow: "var(--hard-shadow)",
+        }}
       >
         <p
           className="text-[10px] font-bold uppercase tracking-[0.15em]"
@@ -692,7 +700,7 @@ export function AdminAIActivityTab() {
         </p>
         <button
           onClick={loadData}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
           style={{ fontFamily: "var(--font-mono)", borderColor: "var(--border)", color: "var(--muted-foreground)" }}
         >
           <RotateCcw className="w-3 h-3" />
@@ -714,7 +722,7 @@ export function AdminAIActivityTab() {
             <button
               key={status}
               onClick={() => setStatusFilter(active ? null : status)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100"
               style={{
                 fontFamily: "var(--font-mono)",
                 backgroundColor: active ? `${cfg.color}12` : "transparent",
@@ -735,7 +743,7 @@ export function AdminAIActivityTab() {
         {/* Scope filters (shops = shipping, products = full) */}
         <button
           onClick={() => setScopeFilter(scopeFilter === "shipping" ? null : "shipping")}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100"
           style={{
             fontFamily: "var(--font-mono)",
             backgroundColor: scopeFilter === "shipping" ? "#A78BFA12" : "transparent",
@@ -748,7 +756,7 @@ export function AdminAIActivityTab() {
         </button>
         <button
           onClick={() => setScopeFilter(scopeFilter === "full" ? null : "full")}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100"
           style={{
             fontFamily: "var(--font-mono)",
             backgroundColor: scopeFilter === "full" ? "#5AC8FA12" : "transparent",
@@ -764,7 +772,7 @@ export function AdminAIActivityTab() {
         {hasTimelineFilter && (
           <button
             onClick={() => { setStatusFilter(null); setScopeFilter(null); }}
-            className="flex items-center gap-1 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
+            className="flex items-center gap-1 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80"
             style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
           >
             <X className="w-3 h-3" />
@@ -782,14 +790,14 @@ export function AdminAIActivityTab() {
               {t("logsFiltered", { filtered: filteredLogs.length, total: activityLogs.length })}
             </p>
           )}
+          {/* Open dialog — DESIGN.md §5: primary button */}
           <button
             onClick={openDialog}
-            className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
+            className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] bg-primary text-primary-foreground transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:opacity-80"
             style={{
               fontFamily: "var(--font-mono)",
-              backgroundColor: "var(--primary)",
-              color: "#000",
-              borderRadius: 0,
+              border: "2px solid var(--border-strong)",
+              boxShadow: "var(--hard-shadow)",
             }}
           >
             <Sparkles className="w-3 h-3" />
@@ -799,10 +807,16 @@ export function AdminAIActivityTab() {
       </div>
 
       {/* Timeline */}
+      {/* Timeline + empty states — DESIGN.md §5: border-strong + hard-shadow.
+          Internal row dividers use soft --border for hierarchy. */}
       {activityLogs.length === 0 ? (
         <div
-          className="border-2 py-16 text-center"
-          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+          className="py-16 text-center"
+          style={{
+            backgroundColor: "var(--card)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
+          }}
         >
           <p
             className="text-[11px] font-bold uppercase tracking-[0.15em]"
@@ -813,8 +827,12 @@ export function AdminAIActivityTab() {
         </div>
       ) : filteredLogs.length === 0 ? (
         <div
-          className="border-2 py-16 text-center"
-          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+          className="py-16 text-center"
+          style={{
+            backgroundColor: "var(--card)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
+          }}
         >
           <p
             className="text-[11px] font-bold uppercase tracking-[0.15em]"
@@ -825,8 +843,11 @@ export function AdminAIActivityTab() {
         </div>
       ) : (
         <div
-          className="border-2"
-          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+          style={{
+            backgroundColor: "var(--card)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
+          }}
         >
           {visibleLogs.map((log, i) => {
             const config = statusConfig[log.status];
@@ -992,7 +1013,7 @@ export function AdminAIActivityTab() {
             <div className="flex justify-center py-3" style={{ borderTop: "1px solid var(--border)" }}>
               <button
                 onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
-                className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
+                className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
                 style={{ fontFamily: "var(--font-mono)", borderColor: "var(--border)", color: "var(--muted-foreground)", borderRadius: 0 }}
               >
                 {t("loadMore", { remaining })}
@@ -1104,7 +1125,7 @@ export function AdminAIActivityTab() {
                           <div className="relative" ref={storeFilterRef}>
                             <button
                               onClick={() => setStoreFilterOpen(!storeFilterOpen)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100"
                               style={{
                                 fontFamily: "var(--font-mono)",
                                 backgroundColor: storeFilter ? "var(--primary-muted)" : "transparent",
@@ -1167,7 +1188,7 @@ export function AdminAIActivityTab() {
                           {storeFilter && (
                             <button
                               onClick={selectAllFromStore}
-                              className="flex items-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80 flex-shrink-0"
+                              className="flex items-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80 flex-shrink-0"
                               style={{
                                 fontFamily: "var(--font-mono)",
                                 borderColor: "#22C55E40",
@@ -1310,21 +1331,19 @@ export function AdminAIActivityTab() {
               <div className="flex justify-end gap-2 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
                 <button
                   onClick={closeDialog}
-                  className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
+                  className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
                   style={{ fontFamily: "var(--font-mono)", borderColor: "var(--border)", color: "var(--muted-foreground)", borderRadius: 0 }}
                 >
                   {t("cancel")}
                 </button>
+                {/* Start — DESIGN.md §5: primary button */}
                 <button
                   onClick={handleStart}
-                  className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80 border-2"
+                  className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.15em] bg-primary text-primary-foreground transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:opacity-80"
                   style={{
                     fontFamily: "var(--font-mono)",
-                    backgroundColor: "var(--primary)",
-                    borderColor: "var(--primary)",
-                    color: "#000",
-                    borderRadius: 0,
-                    boxShadow: "3px 3px 0px var(--primary)",
+                    border: "2px solid var(--border-strong)",
+                    boxShadow: "var(--hard-shadow)",
                   }}
                 >
                   <span className="flex items-center gap-1.5">
@@ -1362,14 +1381,14 @@ export function AdminAIActivityTab() {
               <div className="flex justify-end gap-2 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
                 <button
                   onClick={() => setPhase("configure")}
-                  className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
+                  className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
                   style={{ fontFamily: "var(--font-mono)", borderColor: "var(--border)", color: "var(--muted-foreground)", borderRadius: 0 }}
                 >
                   {t("cancel")}
                 </button>
                 <button
                   onClick={handleClean}
-                  className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80 border-2"
+                  className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80 border-2"
                   style={{ fontFamily: "var(--font-mono)", backgroundColor: "#FF9F0A", borderColor: "#FF9F0A", color: "#000", borderRadius: 0 }}
                 >
                   <span className="flex items-center gap-1.5">
@@ -1445,7 +1464,7 @@ export function AdminAIActivityTab() {
                 <div className="flex justify-end pt-3" style={{ borderTop: "1px solid var(--border)" }}>
                   <button
                     onClick={handleCancel}
-                    className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
+                    className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
                     style={{
                       fontFamily: "var(--font-mono)",
                       borderColor: "#FF453A40",
@@ -1504,7 +1523,7 @@ export function AdminAIActivityTab() {
                 <div>
                   <button
                     onClick={() => setShowErrors(!showErrors)}
-                    className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
+                    className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80"
                     style={{ fontFamily: "var(--font-mono)", color: "#FF453A" }}
                   >
                     <XCircle className="w-3 h-3" />
@@ -1539,7 +1558,7 @@ export function AdminAIActivityTab() {
                 {failedItems.length > 0 && (
                   <button
                     onClick={handleRetry}
-                    className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
+                    className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
                     style={{
                       fontFamily: "var(--font-mono)",
                       borderColor: "#FF9F0A40",
@@ -1552,10 +1571,11 @@ export function AdminAIActivityTab() {
                     {t("retryFailed", { count: failedItems.length })}
                   </button>
                 )}
+                {/* Close — DESIGN.md §5: primary button */}
                 <button
                   onClick={closeDialog}
-                  className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80 border-2"
-                  style={{ fontFamily: "var(--font-mono)", backgroundColor: "var(--primary)", borderColor: "var(--primary)", color: "#000", borderRadius: 0 }}
+                  className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.15em] bg-primary text-primary-foreground transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:opacity-80"
+                  style={{ fontFamily: "var(--font-mono)", border: "2px solid var(--border-strong)", boxShadow: "var(--hard-shadow)" }}
                 >
                   {t("cleanClose")}
                 </button>
