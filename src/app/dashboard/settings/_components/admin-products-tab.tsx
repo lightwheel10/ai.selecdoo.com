@@ -98,7 +98,7 @@ function IconButton({
     <button
       onClick={onClick}
       title={title}
-      className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"
+      className="w-7 h-7 flex items-center justify-center transition-all duration-100 hover:opacity-80"
       style={{
         backgroundColor: "transparent",
         border: "2px solid var(--border)",
@@ -133,7 +133,7 @@ function SimpleFilter({
       <PopoverTrigger asChild>
         <button
           suppressHydrationWarning
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100"
           style={{
             fontFamily: "var(--font-mono)",
             backgroundColor: value ? "var(--primary-muted)" : "transparent",
@@ -206,7 +206,7 @@ function SearchableFilter({
       <PopoverTrigger asChild>
         <button
           suppressHydrationWarning
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100"
           style={{
             fontFamily: "var(--font-mono)",
             backgroundColor: value ? "var(--primary-muted)" : "transparent",
@@ -279,7 +279,7 @@ function PublishToggle({ published, onToggle }: { published: boolean; onToggle: 
   return (
     <button
       onClick={onToggle}
-      className="w-7 h-7 flex items-center justify-center transition-all duration-150"
+      className="w-7 h-7 flex items-center justify-center transition-all duration-100"
       style={{
         backgroundColor: published ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.10)",
         border: `1.5px solid ${published ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.3)"}`,
@@ -323,7 +323,7 @@ function ToggleRow({ label, checked, onChange }: { label: string; checked: boole
   return (
     <button
       onClick={() => onChange(!checked)}
-      className="w-full flex items-center justify-between px-3 py-2.5 mt-1.5 border-2 transition-all duration-150"
+      className="w-full flex items-center justify-between px-3 py-2.5 mt-1.5 border-2 transition-all duration-100"
       style={{
         backgroundColor: checked ? "rgba(34,197,94,0.06)" : "rgba(239,68,68,0.04)",
         borderColor: checked ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.2)",
@@ -339,7 +339,7 @@ function ToggleRow({ label, checked, onChange }: { label: string; checked: boole
         {label}
       </span>
       <div
-        className="w-6 h-6 flex items-center justify-center transition-all duration-150"
+        className="w-6 h-6 flex items-center justify-center transition-all duration-100"
         style={{
           backgroundColor: checked ? "rgba(34,197,94,0.20)" : "rgba(239,68,68,0.12)",
           color: checked ? "#22C55E" : "#EF4444",
@@ -753,10 +753,13 @@ export function AdminProductsTab() {
           <Skeleton className="h-7 w-[82px]" />
           <Skeleton className="h-3 w-24 ml-auto" />
         </div>
-        {/* Table skeleton */}
+        {/* Table skeleton — matches real table: border-strong + hard-shadow */}
         <div
-          className="border-2"
-          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+          style={{
+            backgroundColor: "var(--card)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
+          }}
         >
           {/* Header */}
           <div
@@ -810,9 +813,14 @@ export function AdminProductsTab() {
 
   if (error) {
     return (
+      /* Error state — DESIGN.md §5: border-strong + hard-shadow */
       <div
-        className="border-2 py-16 flex flex-col items-center justify-center gap-3"
-        style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+        className="py-16 flex flex-col items-center justify-center gap-3"
+        style={{
+          backgroundColor: "var(--card)",
+          border: "2px solid var(--border-strong)",
+          boxShadow: "var(--hard-shadow)",
+        }}
       >
         <p
           className="text-[10px] font-bold uppercase tracking-[0.15em]"
@@ -822,7 +830,7 @@ export function AdminProductsTab() {
         </p>
         <button
           onClick={loadData}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
           style={{ fontFamily: "var(--font-mono)", borderColor: "var(--border)", color: "var(--muted-foreground)" }}
         >
           <RotateCcw className="w-3 h-3" />
@@ -845,7 +853,7 @@ export function AdminProductsTab() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("searchProducts")}
-            className="pl-8 pr-3 py-2 text-xs border-2 outline-none transition-colors duration-150 focus:border-primary"
+            className="pl-8 pr-3 py-2 text-xs border-2 outline-none transition-all duration-100 focus:border-primary"
             style={{
               backgroundColor: "var(--input)",
               borderColor: "var(--border)",
@@ -900,7 +908,7 @@ export function AdminProductsTab() {
         {(hasAnyFilter || search.trim()) && (
           <button
             onClick={clearAll}
-            className="flex items-center gap-1 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80"
+            className="flex items-center gap-1 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80"
             style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
           >
             <X className="w-3 h-3" />
@@ -948,7 +956,7 @@ export function AdminProductsTab() {
             </span>
             <button
               onClick={() => setShowBulkDeleteConfirm(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80"
               style={{
                 fontFamily: "var(--font-mono)",
                 backgroundColor: "#FF453A12",
@@ -974,9 +982,14 @@ export function AdminProductsTab() {
 
       {/* Table */}
       {filtered.length === 0 ? (
+        /* Empty state — DESIGN.md §5: border-strong + hard-shadow */
         <div
-          className="border-2 py-16 text-center"
-          style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}
+          className="py-16 text-center"
+          style={{
+            backgroundColor: "var(--card)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
+          }}
         >
           <p
             className="text-[11px] font-bold uppercase tracking-[0.15em]"
@@ -986,11 +999,14 @@ export function AdminProductsTab() {
           </p>
         </div>
       ) : (
+        /* Products table — DESIGN.md §5: border-strong + hard-shadow on outer.
+           Internal row dividers use soft --border for hierarchy. */
         <div
-          className="border-2 overflow-auto scrollbar-none"
+          className="overflow-auto scrollbar-none"
           style={{
             backgroundColor: "var(--card)",
-            borderColor: "var(--border)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
             maxHeight: "70vh",
           }}
         >
@@ -1165,7 +1181,7 @@ export function AdminProductsTab() {
                           <button
                             onClick={() => deleteProduct(product.id)}
                             title={t("confirmDelete")}
-                            className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"
+                            className="w-7 h-7 flex items-center justify-center transition-all duration-100 hover:opacity-80"
                             style={{
                               backgroundColor: "rgba(255,69,58,0.15)",
                               border: "1.5px solid rgba(255,69,58,0.4)",
@@ -1177,7 +1193,7 @@ export function AdminProductsTab() {
                           <button
                             onClick={() => setPendingDelete(null)}
                             title={t("cancel")}
-                            className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"
+                            className="w-7 h-7 flex items-center justify-center transition-all duration-100 hover:opacity-80"
                             style={{
                               backgroundColor: "transparent",
                               border: "2px solid var(--border)",
@@ -1191,7 +1207,7 @@ export function AdminProductsTab() {
                         <div className="flex items-center gap-1.5 justify-center">
                           <Link
                             href={`/dashboard/products/${product.id}`}
-                            className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"
+                            className="w-7 h-7 flex items-center justify-center transition-all duration-100 hover:opacity-80"
                             style={{
                               backgroundColor: "transparent",
                               border: "2px solid var(--border)",
@@ -1222,7 +1238,7 @@ export function AdminProductsTab() {
                               onClick={() => handleAIClean(product)}
                               disabled={cleaningProductId !== null}
                               title={t("aiClean")}
-                              className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
+                              className="w-7 h-7 flex items-center justify-center transition-all duration-100 hover:opacity-80 disabled:opacity-40 disabled:pointer-events-none"
                               style={{
                                 backgroundColor: cleaningProductId === product.id
                                   ? "var(--primary-muted)"
@@ -1246,7 +1262,7 @@ export function AdminProductsTab() {
                             <button
                               onClick={() => setPendingDelete(product.id)}
                               title={t("delete")}
-                              className="w-7 h-7 flex items-center justify-center transition-all duration-150 hover:opacity-80"
+                              className="w-7 h-7 flex items-center justify-center transition-all duration-100 hover:opacity-80"
                               style={{
                                 backgroundColor: "rgba(255,69,58,0.15)",
                                 border: "1.5px solid rgba(255,69,58,0.4)",
@@ -1534,16 +1550,17 @@ export function AdminProductsTab() {
           <div className="flex justify-end gap-2 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
             <button
               onClick={() => setEditingProduct(null)}
-              className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
+              className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
               style={{ fontFamily: "var(--font-mono)", borderColor: "var(--border)", color: "var(--muted-foreground)", borderRadius: 0 }}
             >
               {t("cancel")}
             </button>
+            {/* Save — DESIGN.md §5: primary button with border-strong + hard-shadow */}
             <button
               onClick={() => editingProduct && saveProduct(editingProduct)}
               disabled={saving}
-              className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors hover:opacity-80 disabled:opacity-50"
-              style={{ fontFamily: "var(--font-mono)", backgroundColor: "var(--primary)", color: "var(--primary-foreground)", borderRadius: 0 }}
+              className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] bg-primary text-primary-foreground transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-50"
+              style={{ fontFamily: "var(--font-mono)", border: "2px solid var(--border-strong)", boxShadow: "var(--hard-shadow)" }}
             >
               {saving ? "Saving..." : t("save")}
             </button>
@@ -1559,10 +1576,12 @@ export function AdminProductsTab() {
             if (!open) setShowBulkDeleteConfirm(false);
           }}
         >
+          {/* Bulk delete dialog — DESIGN.md §5: border-strong + hard-shadow */}
           <DialogContent
-            className="border-2 p-0 gap-0 sm:max-w-md"
+            className="p-0 gap-0 sm:max-w-md"
             style={{
-              borderColor: "var(--border)",
+              border: "2px solid var(--border-strong)",
+              boxShadow: "var(--hard-shadow)",
               backgroundColor: "var(--card)",
               borderRadius: 0,
             }}
@@ -1590,7 +1609,7 @@ export function AdminProductsTab() {
             >
               <button
                 onClick={() => setShowBulkDeleteConfirm(false)}
-                className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-colors hover:opacity-80"
+                className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
                 style={{
                   fontFamily: "var(--font-mono)",
                   backgroundColor: "transparent",
@@ -1600,15 +1619,16 @@ export function AdminProductsTab() {
               >
                 {t("cancel")}
               </button>
+              {/* Destructive confirm — no shadow, clean pattern */}
               <button
                 onClick={handleBulkDelete}
-                className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none shadow-[3px_3px_0px]"
+                className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
                 style={{
                   fontFamily: "var(--font-mono)",
                   backgroundColor: "#FF453A",
-                  borderColor: "#FF453A",
+                  border: "2px solid #FF453A",
                   color: "#fff",
-                  boxShadow: "3px 3px 0px #FF453A",
+                  boxShadow: "none",
                 }}
               >
                 <Trash2 className="w-3 h-3" />
