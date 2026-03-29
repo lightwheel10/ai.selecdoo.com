@@ -1,6 +1,7 @@
 "use client";
 
-import { Tags, PenSquare, Globe, Megaphone, ExternalLink, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { Tags, PenSquare, Globe, Megaphone, Eye, Trash2 } from "lucide-react";
 import type { Product, Store, AIContentType } from "@/types";
 import type { ContentEntry } from "./utils";
 import { CONTENT_TYPE_CONFIG, ACTIVE_CONTENT_TYPES } from "./utils";
@@ -8,8 +9,6 @@ import { Highlight } from "./highlight";
 import { ContentStatusBadge } from "./content-status-badge";
 import { StatusBadge } from "@/components/domain/status-badge";
 import { ProductImage } from "@/components/domain/product-image";
-import { getProductExternalUrl } from "@/lib/shopshout";
-import { useWorkspace } from "@/components/domain/workspace-provider";
 
 interface ProductCardProps {
   product: Product;
@@ -40,7 +39,6 @@ export function ProductCard({
   onToggleSelect,
   onDelete,
 }: ProductCardProps) {
-  const { publicSiteUrl } = useWorkspace();
   const hasDiscount =
     product.discount_percentage && product.discount_percentage > 0;
 
@@ -236,24 +234,22 @@ export function ProductCard({
           })}
         </div>
 
-        {/* Visit Product */}
-        {getProductExternalUrl(product, publicSiteUrl) && (
-          <a
-            href={getProductExternalUrl(product, publicSiteUrl) || '#'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-1.5 w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80"
-            style={{
-              fontFamily: "var(--font-mono)",
-              backgroundColor: "var(--input)",
-              border: "1.5px solid var(--border)",
-              color: "var(--muted-foreground)",
-            }}
-          >
-            <ExternalLink className="w-3 h-3" />
-            {t("productCheck")}
-          </a>
-        )}
+        {/* Product Check — navigates to internal detail page.
+           External store link is available on the detail page itself
+           (product-detail.tsx "Visit Store" button). */}
+        <Link
+          href={`/dashboard/products/${product.id}`}
+          className="mt-1.5 w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80"
+          style={{
+            fontFamily: "var(--font-mono)",
+            backgroundColor: "var(--input)",
+            border: "1.5px solid var(--border)",
+            color: "var(--muted-foreground)",
+          }}
+        >
+          <Eye className="w-3 h-3" />
+          {t("productCheck")}
+        </Link>
       </div>
     </div>
   );

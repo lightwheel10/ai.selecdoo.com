@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import {
   Tags,
   PenSquare,
   Globe,
   Megaphone,
-  ExternalLink,
+  Eye,
   Trash2,
 } from "lucide-react";
 import type { Product, AIContentType } from "@/types";
@@ -13,8 +14,6 @@ import type { ContentEntry } from "./utils";
 import { CONTENT_TYPE_CONFIG, ACTIVE_CONTENT_TYPES } from "./utils";
 import { Highlight } from "./highlight";
 import { ProductImage } from "@/components/domain/product-image";
-import { getProductExternalUrl } from "@/lib/shopshout";
-import { useWorkspace } from "@/components/domain/workspace-provider";
 
 const TYPE_ICONS: Record<string, typeof Tags> = {
   deal_post: Tags,
@@ -53,7 +52,6 @@ export function MiniProductCard({
   onToggleSelect,
   onDelete,
 }: MiniProductCardProps) {
-  const { publicSiteUrl } = useWorkspace();
   const hasDiscount =
     product.discount_percentage && product.discount_percentage > 0;
 
@@ -192,24 +190,22 @@ export function MiniProductCard({
           );
         })}
 
-        {/* Visit Product */}
-        {getProductExternalUrl(product, publicSiteUrl) && (
-          <a
-            href={getProductExternalUrl(product, publicSiteUrl) || '#'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-7 h-7 flex items-center justify-center transition-all duration-100 hover:opacity-80"
-            style={{
-              backgroundColor: "var(--input)",
-              border: "1.5px solid var(--border)",
-              color: "var(--muted-foreground)",
-            }}
-            title={t("productCheck")}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <ExternalLink className="w-3 h-3" />
-          </a>
-        )}
+        {/* Product Check — navigates to internal detail page.
+           External store link is available on the detail page itself
+           (product-detail.tsx "Visit Store" button). */}
+        <Link
+          href={`/dashboard/products/${product.id}`}
+          className="w-7 h-7 flex items-center justify-center transition-all duration-100 hover:opacity-80"
+          style={{
+            backgroundColor: "var(--input)",
+            border: "1.5px solid var(--border)",
+            color: "var(--muted-foreground)",
+          }}
+          title={t("productCheck")}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Eye className="w-3 h-3" />
+        </Link>
 
         {canDeleteProduct && onDelete && (
           <button
