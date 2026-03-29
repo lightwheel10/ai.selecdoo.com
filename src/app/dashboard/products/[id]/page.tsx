@@ -1,5 +1,6 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getProductById, getStoreById } from "@/lib/queries";
+import { canAccessProducts } from "@/lib/auth/roles";
 import { getAuthContext } from "@/lib/auth/session";
 import { ProductDetailView } from "./_components/product-detail";
 
@@ -8,7 +9,13 @@ interface ProductPageProps {
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const { workspaceId } = await getAuthContext();
+  const { workspaceId, role, permissions } = await getAuthContext();
+
+  // Guard: must have products:access (matches /dashboard/products list page).
+  if (!canAccessProducts({ role, permissions })) {
+    redirect("/dashboard");
+  }
+
   const { id } = await params;
   const product = await getProductById(id, workspaceId!);
 

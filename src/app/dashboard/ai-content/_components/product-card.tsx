@@ -9,6 +9,8 @@ import { Highlight } from "./highlight";
 import { ContentStatusBadge } from "./content-status-badge";
 import { StatusBadge } from "@/components/domain/status-badge";
 import { ProductImage } from "@/components/domain/product-image";
+import { canAccessProducts } from "@/lib/auth/roles";
+import { useAuthAccess } from "@/components/domain/role-provider";
 
 interface ProductCardProps {
   product: Product;
@@ -39,6 +41,8 @@ export function ProductCard({
   onToggleSelect,
   onDelete,
 }: ProductCardProps) {
+  const access = useAuthAccess();
+  const allowViewProduct = canAccessProducts(access);
   const hasDiscount =
     product.discount_percentage && product.discount_percentage > 0;
 
@@ -236,8 +240,9 @@ export function ProductCard({
 
         {/* Product Check — navigates to internal detail page.
            External store link is available on the detail page itself
-           (product-detail.tsx "Visit Store" button). */}
-        <Link
+           (product-detail.tsx "Visit Store" button).
+           Hidden when user lacks products:access permission. */}
+        {allowViewProduct && <Link
           href={`/dashboard/products/${product.id}`}
           className="mt-1.5 w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-all duration-100 hover:opacity-80"
           style={{
@@ -249,7 +254,7 @@ export function ProductCard({
         >
           <Eye className="w-3 h-3" />
           {t("productCheck")}
-        </Link>
+        </Link>}
       </div>
     </div>
   );

@@ -14,6 +14,8 @@ import type { ContentEntry } from "./utils";
 import { CONTENT_TYPE_CONFIG, ACTIVE_CONTENT_TYPES } from "./utils";
 import { Highlight } from "./highlight";
 import { ProductImage } from "@/components/domain/product-image";
+import { canAccessProducts } from "@/lib/auth/roles";
+import { useAuthAccess } from "@/components/domain/role-provider";
 
 const TYPE_ICONS: Record<string, typeof Tags> = {
   deal_post: Tags,
@@ -52,6 +54,8 @@ export function MiniProductCard({
   onToggleSelect,
   onDelete,
 }: MiniProductCardProps) {
+  const access = useAuthAccess();
+  const allowViewProduct = canAccessProducts(access);
   const hasDiscount =
     product.discount_percentage && product.discount_percentage > 0;
 
@@ -192,8 +196,9 @@ export function MiniProductCard({
 
         {/* Product Check — navigates to internal detail page.
            External store link is available on the detail page itself
-           (product-detail.tsx "Visit Store" button). */}
-        <Link
+           (product-detail.tsx "Visit Store" button).
+           Hidden when user lacks products:access permission. */}
+        {allowViewProduct && <Link
           href={`/dashboard/products/${product.id}`}
           className="w-7 h-7 flex items-center justify-center transition-all duration-100 hover:opacity-80"
           style={{
@@ -205,7 +210,7 @@ export function MiniProductCard({
           onClick={(e) => e.stopPropagation()}
         >
           <Eye className="w-3 h-3" />
-        </Link>
+        </Link>}
 
         {canDeleteProduct && onDelete && (
           <button
