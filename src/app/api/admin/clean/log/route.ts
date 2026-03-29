@@ -47,8 +47,11 @@ export async function POST(req: Request) {
     const cappedResults = results?.slice(0, 50);
 
     const supabase = createAdminClient();
+    // workspace_id ensures logs are scoped to the correct workspace,
+    // even when store_id is null (workspace-level operations).
     const { error } = await supabase.from("ai_activity_logs").insert({
       store_id: storeId,
+      workspace_id: workspaceId,
       event_type: scope,
       scope,
       status,

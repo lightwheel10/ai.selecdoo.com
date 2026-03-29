@@ -868,22 +868,16 @@ function mapAIContent(row: any, storeNames: Record<string, string>): AIGenerated
 
 export async function getAIActivityLogs(workspaceId: string): Promise<AIActivityLog[]> {
   const supabase = createAdminClient();
-  const storeIds = await getWorkspaceStoreIds(workspaceId);
 
-  // Activity logs may have null store_id (workspace-level operations).
-  // Include those + logs for workspace stores.
+  // Filter directly by workspace_id so logs are properly isolated.
+  // Previously used store_id-based OR logic which leaked null-store_id
+  // rows across workspaces. The workspace_id column was added to fix this.
   const [{ data, error }, storeNames] = await Promise.all([
-    storeIds.length > 0
-      ? supabase
-          .from("ai_activity_logs")
-          .select("*")
-          .or(`store_id.in.(${storeIds.join(",")}),store_id.is.null`)
-          .order("created_at", { ascending: false })
-      : supabase
-          .from("ai_activity_logs")
-          .select("*")
-          .is("store_id", null)
-          .order("created_at", { ascending: false }),
+    supabase
+      .from("ai_activity_logs")
+      .select("*")
+      .eq("workspace_id", workspaceId)
+      .order("created_at", { ascending: false }),
     getStoreNameMap(workspaceId),
   ]);
 
