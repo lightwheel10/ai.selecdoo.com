@@ -54,7 +54,7 @@ export const CONTENT_TYPE_CONFIG: Record<
   deal_post: { color: "#22C55E", labelKey: "dealPost", genKey: "generateDeal", viewKey: "viewDeal", enabled: true },
   social_post: { color: "#5AC8FA", labelKey: "socialPost", genKey: "generatePost", viewKey: "viewPost", enabled: true },
   website_text: { color: "#FF9F0A", labelKey: "websiteText", genKey: "generateWebsite", viewKey: "viewWebsite", enabled: false },
-  facebook_ad: { color: "#BF5AF2", labelKey: "facebookAd", genKey: "generateFacebook", viewKey: "viewFacebook", enabled: true },
+  facebook_ad: { color: "#BF5AF2", labelKey: "facebookAd", genKey: "generateFacebook", viewKey: "viewFacebook", enabled: false },
 };
 
 export const ACTIVE_CONTENT_TYPES = Object.entries(CONTENT_TYPE_CONFIG)
