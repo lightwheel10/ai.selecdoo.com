@@ -11,6 +11,7 @@ import {
   Shield,
   Clock,
   Terminal,
+  Check,
 } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { ThemeIconToggle } from "@/components/domain/theme-icon-toggle";
@@ -407,6 +408,202 @@ export default async function LandingPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* ═══ PRICING ═══ */}
+        <section className="py-20 bg-background">
+          <div className="max-w-5xl mx-auto px-6 sm:px-8">
+            <div className="mb-12">
+              <p
+                className="text-[10px] font-bold uppercase tracking-[0.2em] mb-3"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  color: "var(--primary-text)",
+                }}
+              >
+                {t("pricingLabel")}
+              </p>
+              <h2
+                className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-[1.1] max-w-xl"
+                style={{
+                  fontFamily: "var(--font-display)",
+                  letterSpacing: "-0.03em",
+                }}
+              >
+                {t("pricingTitle")}
+              </h2>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              {/* ── Standard ── */}
+              <div
+                className="p-6 bg-card flex flex-col"
+                style={{
+                  border: "2px solid var(--border-strong)",
+                  boxShadow: "var(--hard-shadow)",
+                }}
+              >
+                <p
+                  className="text-[10px] font-bold uppercase tracking-[0.15em] mb-1"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  {t("pricingStandardName")}
+                </p>
+                <div className="flex items-baseline gap-1 mb-3">
+                  <span
+                    className="text-4xl font-black"
+                    style={{
+                      fontFamily: "var(--font-display)",
+                      letterSpacing: "-0.03em",
+                    }}
+                  >
+                    $79
+                  </span>
+                  <span
+                    className="text-[11px] font-bold text-muted-foreground"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    {t("pricingMonthly")}
+                  </span>
+                </div>
+                <p
+                  className="text-[13px] leading-relaxed text-muted-foreground mb-6"
+                  style={{ fontFamily: "var(--font-body)" }}
+                >
+                  {t("pricingStandardDesc")}
+                </p>
+
+                <div className="flex flex-col gap-3 mb-8 flex-1">
+                  {[
+                    { label: t("pricingShops"), value: t("pricingStandardShops") },
+                    { label: t("pricingProductsPerShop"), value: t("pricingStandardProducts") },
+                    { label: t("pricingTotalProducts"), value: t("pricingStandardTotal") },
+                    { label: t("pricingChecksPerMonth"), value: t("pricingStandardChecks") },
+                    { label: t("pricingAIGenerations"), value: t("pricingStandardGenerations") },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-2.5">
+                      <Check
+                        className="w-3.5 h-3.5 shrink-0"
+                        strokeWidth={3}
+                        style={{ color: "var(--primary-text)" }}
+                      />
+                      <span
+                        className="text-[12px]"
+                        style={{ fontFamily: "var(--font-body)" }}
+                      >
+                        <span className="font-bold">{item.value}</span>{" "}
+                        <span className="text-muted-foreground">{item.label}</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <Link
+                  href="/signup"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    border: "2px solid var(--border-strong)",
+                    boxShadow: "var(--hard-shadow)",
+                  }}
+                >
+                  {t("pricingGetStarted")}
+                  <ArrowRight className="w-3 h-3" strokeWidth={3} />
+                </Link>
+              </div>
+
+              {/* ── Pro ── */}
+              <div
+                className="p-6 bg-card flex flex-col relative"
+                style={{
+                  border: "2px solid var(--border-strong)",
+                  boxShadow: `4px 4px 0px var(--primary)`,
+                }}
+              >
+                {/* Most Popular badge */}
+                <div
+                  className="absolute -top-3.5 right-5 px-3 py-1 text-[9px] font-bold uppercase tracking-[0.15em]"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    backgroundColor: "var(--primary)",
+                    color: "var(--primary-foreground)",
+                    border: "2px solid var(--border-strong)",
+                  }}
+                >
+                  {t("pricingMostPopular")}
+                </div>
+
+                <p
+                  className="text-[10px] font-bold uppercase tracking-[0.15em] mb-1"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  {t("pricingProName")}
+                </p>
+                <div className="flex items-baseline gap-1 mb-3">
+                  <span
+                    className="text-4xl font-black"
+                    style={{
+                      fontFamily: "var(--font-display)",
+                      letterSpacing: "-0.03em",
+                    }}
+                  >
+                    $159
+                  </span>
+                  <span
+                    className="text-[11px] font-bold text-muted-foreground"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    {t("pricingMonthly")}
+                  </span>
+                </div>
+                <p
+                  className="text-[13px] leading-relaxed text-muted-foreground mb-6"
+                  style={{ fontFamily: "var(--font-body)" }}
+                >
+                  {t("pricingProDesc")}
+                </p>
+
+                <div className="flex flex-col gap-3 mb-8 flex-1">
+                  {[
+                    { label: t("pricingShops"), value: t("pricingProShops") },
+                    { label: t("pricingProductsPerShop"), value: t("pricingProProducts") },
+                    { label: t("pricingTotalProducts"), value: t("pricingProTotal") },
+                    { label: t("pricingChecksPerMonth"), value: t("pricingProChecks") },
+                    { label: t("pricingAIGenerations"), value: t("pricingProGenerations") },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-2.5">
+                      <Check
+                        className="w-3.5 h-3.5 shrink-0"
+                        strokeWidth={3}
+                        style={{ color: "var(--primary-text)" }}
+                      />
+                      <span
+                        className="text-[12px]"
+                        style={{ fontFamily: "var(--font-body)" }}
+                      >
+                        <span className="font-bold">{item.value}</span>{" "}
+                        <span className="text-muted-foreground">{item.label}</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <Link
+                  href="/signup"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 text-[10px] font-bold uppercase tracking-[0.15em] bg-primary text-primary-foreground transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    border: "2px solid var(--border-strong)",
+                    boxShadow: "var(--hard-shadow)",
+                  }}
+                >
+                  {t("pricingGetStarted")}
+                  <ArrowRight className="w-3 h-3" strokeWidth={3} />
+                </Link>
+              </div>
+            </div>
+
           </div>
         </section>
 
