@@ -1,13 +1,18 @@
 /**
- * POST /api/ai-content/analyze — Generate contextual question options.
+ * POST /api/ai-content/analyze — Generate contextual options for ONE question.
  *
- * Part of the Claude-based content generation pipeline. Fetches rich
- * product + store data from the DB, sends it to Claude, and returns
- * 3 fixed questions with dynamically generated options based on the
- * specific product's features, promotions, and use cases.
+ * Part of the Claude-based content generation pipeline. Called 3 times
+ * sequentially — once per question step (focus → occasion → tone).
+ * Each call receives the user's previous answers so Claude can tailor
+ * the next question's options to build on the user's choices.
+ *
+ * Request body:
+ *   { productId, contentType, step: "focus"|"occasion"|"tone", previousAnswers: [{id, answer}] }
+ *
+ * Response:
+ *   { question: { id, question, options } }
  *
  * Only available when AI_PROVIDER = "claude" (src/lib/ai-content/config.ts).
- * Auth follows the same pattern as /api/ai-content/generate.
  */
 
 import { NextResponse } from "next/server";
@@ -21,7 +26,10 @@ import { generateQuestionOptions } from "@/lib/ai-content/client";
 import {
   buildOptionsSystemPrompt,
   buildOptionsUserPrompt,
+  QUESTION_STEPS,
+  type QuestionStep,
   type QuestionOptionsResponse,
+  type QuestionAnswer,
 } from "@/lib/ai-content/prompts";
 
 const VALID_CONTENT_TYPES = ["deal_post", "social_post", "website_text", "facebook_ad"];
@@ -47,9 +55,11 @@ export async function POST(req: Request) {
 
     // ── Validate input ──
     const body = await req.json();
-    const { productId, contentType } = body as {
+    const { productId, contentType, step, previousAnswers } = body as {
       productId?: string;
       contentType?: string;
+      step?: string;
+      previousAnswers?: QuestionAnswer[];
     };
 
     if (!productId || typeof productId !== "string") {
@@ -58,6 +68,12 @@ export async function POST(req: Request) {
     if (!contentType || !VALID_CONTENT_TYPES.includes(contentType)) {
       return NextResponse.json(
         { error: `contentType must be one of: ${VALID_CONTENT_TYPES.join(", ")}` },
+        { status: 400 }
+      );
+    }
+    if (!step || !QUESTION_STEPS.includes(step as QuestionStep)) {
+      return NextResponse.json(
+        { error: `step must be one of: ${QUESTION_STEPS.join(", ")}` },
         { status: 400 }
       );
     }
@@ -93,13 +109,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
     }
 
-    // ── Call Claude to generate contextual question options ──
-    const result = await generateQuestionOptions<QuestionOptionsResponse>(
+    // ── Call Claude to generate options for this step ──
+    const question = await generateQuestionOptions<QuestionOptionsResponse>(
       buildOptionsSystemPrompt(),
-      buildOptionsUserPrompt(product, store, contentType)
+      buildOptionsUserPrompt(
+        product,
+        store,
+        contentType,
+        step as QuestionStep,
+        previousAnswers ?? []
+      )
     );
 
-    return NextResponse.json({ questions: result.questions });
+    return NextResponse.json({ question });
   } catch (err) {
     console.error("Analyze API error:", err);
     Sentry.captureException(err, { tags: { route: "ai-content/analyze" } });

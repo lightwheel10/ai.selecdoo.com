@@ -28,7 +28,7 @@ import {
   type StoreGroupData,
 } from "./utils";
 import { AI_PROVIDER } from "@/lib/ai-content/config";
-import type { QuestionOption } from "@/lib/ai-content/prompts";
+import { QUESTION_STEPS, type QuestionOption, type QuestionStep } from "@/lib/ai-content/prompts";
 import { MultiSearchableFilter, MultiSimpleFilter, SimpleFilter, ToggleGroup } from "./filters";
 import { Pagination } from "@/components/domain/pagination";
 import { ProductCard } from "./product-card";
@@ -158,11 +158,11 @@ export function AIContentWorkstation({
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   // ── Claude questionnaire state ──
-  // Used when AI_PROVIDER = "claude". The analyze endpoint returns 3
-  // questions with contextual options; the user picks answers before
-  // content is generated.
+  // Sequential: one question at a time. Each step's options are influenced
+  // by the user's previous answers. Steps: focus → occasion → tone.
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [questions, setQuestions] = useState<QuestionOption[] | null>(null);
+  const [questionStep, setQuestionStep] = useState<number>(0); // 0 = not started, 1-3 = step index
+  const [currentQuestion, setCurrentQuestion] = useState<QuestionOption | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -278,32 +278,103 @@ export function AIContentWorkstation({
     setModal({ product, contentType });
   }
 
-  // ── Claude: analyze product to get contextual question options ──
+  // ── Claude: fetch one question at a time (sequential flow) ──
+  // Each call sends previous answers so Claude tailors the next question.
   const handleAnalyze = useCallback(
-    async (product: Product, contentType: AIContentType) => {
+    async (product: Product, contentType: AIContentType, stepIndex?: number) => {
+      const step = stepIndex ?? 0;
+      const stepId = QUESTION_STEPS[step] as QuestionStep;
+      if (!stepId) return; // all 3 steps done
+
       setIsAnalyzing(true);
-      setQuestions(null);
-      setAnswers({});
+      setCurrentQuestion(null);
+      setQuestionStep(step + 1); // 1-indexed for display
+
+      // Build previous answers from current state
+      const prevAnswers = QUESTION_STEPS.slice(0, step)
+        .filter((id) => answers[id])
+        .map((id) => ({ id, answer: answers[id] }));
+
       try {
         const res = await fetch("/api/ai-content/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ productId: product.id, contentType }),
+          body: JSON.stringify({
+            productId: product.id,
+            contentType,
+            step: stepId,
+            previousAnswers: prevAnswers,
+          }),
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({ error: "Unknown error" }));
           throw new Error(err.error || `HTTP ${res.status}`);
         }
         const data = await res.json();
-        setQuestions(data.questions);
+        setCurrentQuestion(data.question);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Failed to analyze product");
-        setQuestions(null);
+        setCurrentQuestion(null);
       } finally {
         setIsAnalyzing(false);
       }
     },
-    []
+    [answers]
+  );
+
+  // Called when user picks an answer — saves it and auto-fetches the next question
+  const handleAnswerAndNext = useCallback(
+    (questionId: string, answer: string, product: Product, contentType: AIContentType) => {
+      setAnswers((prev) => ({ ...prev, [questionId]: answer }));
+      // Find the next step index
+      const currentStepIndex = QUESTION_STEPS.indexOf(questionId as QuestionStep);
+      const nextStep = currentStepIndex + 1;
+      if (nextStep < QUESTION_STEPS.length) {
+        // Fetch next question (need to pass the updated answers including this one)
+        // We use setTimeout to ensure the answers state has updated
+        const updatedAnswers = { ...answers, [questionId]: answer };
+        setIsAnalyzing(true);
+        setCurrentQuestion(null);
+        setQuestionStep(nextStep + 1);
+
+        const prevAnswers = QUESTION_STEPS.slice(0, nextStep)
+          .filter((id) => updatedAnswers[id])
+          .map((id) => ({ id, answer: updatedAnswers[id] }));
+
+        fetch("/api/ai-content/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            productId: product.id,
+            contentType,
+            step: QUESTION_STEPS[nextStep],
+            previousAnswers: prevAnswers,
+          }),
+        })
+          .then(async (res) => {
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({ error: "Unknown error" }));
+              throw new Error(err.error || `HTTP ${res.status}`);
+            }
+            return res.json();
+          })
+          .then((data) => {
+            setCurrentQuestion(data.question);
+          })
+          .catch((err) => {
+            toast.error(err instanceof Error ? err.message : "Failed to analyze product");
+            setCurrentQuestion(null);
+          })
+          .finally(() => {
+            setIsAnalyzing(false);
+          });
+      } else {
+        // All 3 questions answered — ready to generate
+        setCurrentQuestion(null);
+        setQuestionStep(QUESTION_STEPS.length + 1); // signals "all done"
+      }
+    },
+    [answers]
   );
 
   const handleGenerate = useCallback(
@@ -364,10 +435,11 @@ export function AIContentWorkstation({
     contentType: AIContentType
   ) {
     if (AI_PROVIDER === "claude") {
-      // Claude path: re-show the questionnaire so the user can adjust answers
-      setQuestions(null);
+      // Claude path: restart from question 1 so user can adjust answers
+      setCurrentQuestion(null);
       setAnswers({});
-      handleAnalyze(product, contentType);
+      setQuestionStep(0);
+      handleAnalyze(product, contentType, 0);
     } else {
       // n8n path: generate directly (upsert on server)
       handleGenerate(product, contentType);
@@ -1013,14 +1085,14 @@ export function AIContentWorkstation({
         storeMap={storeMap}
         canGenerateContent={allowGenerateContent}
         canEditContent={allowEditContent}
-        // Claude questionnaire props
+        // Claude questionnaire props (sequential: one question at a time)
         isAnalyzing={isAnalyzing}
-        questions={questions}
-        answers={answers}
+        questionStep={questionStep}
+        currentQuestion={currentQuestion}
         onAnalyze={handleAnalyze}
-        onAnswerChange={(id: string, value: string) =>
-          setAnswers((prev) => ({ ...prev, [id]: value }))
-        }
+        onAnswerAndNext={(id: string, answer: string) => {
+          if (modal) handleAnswerAndNext(id, answer, modal.product, modal.contentType);
+        }}
         onSubmitAnswers={() => {
           if (modal) handleGenerate(modal.product, modal.contentType);
         }}
@@ -1032,8 +1104,9 @@ export function AIContentWorkstation({
           setEditText("");
           // Reset questionnaire state
           setIsAnalyzing(false);
-          setQuestions(null);
-          setAnswers({});
+          setQuestionStep(0);
+          setCurrentQuestion(null);
+              setAnswers({});
         }}
         onGenerate={handleGenerate}
         onRegenerate={handleRegenerate}

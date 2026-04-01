@@ -17,10 +17,8 @@ export interface QuestionOption {
   options: string[];
 }
 
-/** Response from the options generation call */
-export interface QuestionOptionsResponse {
-  questions: QuestionOption[];
-}
+/** Response from the options generation call (single question per step) */
+export type QuestionOptionsResponse = QuestionOption;
 
 /** A single user answer */
 export interface QuestionAnswer {
@@ -121,54 +119,85 @@ function formatProductData(product: Record<string, any>, store: Record<string, a
 }
 
 // ─── Options Generation Prompts ───
+// Sequential: one question per call. Each step receives previous answers
+// so Claude can tailor the next question's options to the user's choices.
 
-const OPTIONS_SYSTEM_PROMPT = `You are a marketing strategist analyzing product data to help a content creator generate targeted deal posts and social media content.
+/** The 3 question steps in order */
+export const QUESTION_STEPS = ["focus", "occasion", "tone"] as const;
+export type QuestionStep = (typeof QUESTION_STEPS)[number];
 
-You will receive detailed product and store data. Your job is to generate contextual, product-specific OPTIONS for 3 fixed questions. The options must be directly relevant to THIS specific product — not generic.
+const STEP_SYSTEM_PROMPT = `You are a marketing strategist analyzing product data to help a content creator generate targeted deal posts and social media content.
+
+You will receive detailed product and store data, plus any answers the user has already given to previous questions. Your job is to generate contextual, product-specific OPTIONS for ONE specific question. The options must be directly relevant to THIS product and influenced by any previous answers.
 
 Return ONLY valid JSON matching this exact schema:
 {
-  "questions": [
-    { "id": "focus", "question": "...", "options": ["...", "...", "..."] },
-    { "id": "occasion", "question": "...", "options": ["...", "...", "..."] },
-    { "id": "tone", "question": "...", "options": ["...", "...", "..."] }
-  ]
+  "id": "question_id",
+  "question": "The question text",
+  "options": ["Option 1", "Option 2", "Option 3"]
 }
 
 Rules:
-- Each question must have 3-5 options
+- Generate 3-5 options
 - Options must be specific to this product (reference actual ingredients, features, promotions, use cases)
+- If the user already answered earlier questions, tailor options to build on those answers
 - Write questions and options in English
 - Do NOT include generic filler options`;
 
 export function buildOptionsSystemPrompt(): string {
-  return OPTIONS_SYSTEM_PROMPT;
+  return STEP_SYSTEM_PROMPT;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function buildOptionsUserPrompt(product: Record<string, any>, store: Record<string, any>, contentType: string): string {
+export function buildOptionsUserPrompt(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  product: Record<string, any>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  store: Record<string, any>,
+  contentType: string,
+  step: QuestionStep,
+  previousAnswers: QuestionAnswer[]
+): string {
   const productData = formatProductData(product, store);
   const typeContext = contentType === "deal_post"
     ? "a deal post (focused on discounts, urgency, value proposition)"
     : "a social media post (focused on engagement, sharing, lifestyle)";
 
+  // Format previous answers for context
+  let previousContext = "";
+  if (previousAnswers.length > 0) {
+    const lines = previousAnswers.map((a) => {
+      const labels: Record<string, string> = {
+        focus: "Main focus/angle",
+        occasion: "Occasion/context",
+        tone: "Tone & urgency",
+      };
+      return `- ${labels[a.id] || a.id}: ${a.answer}`;
+    }).join("\n");
+    previousContext = `\n## User's Previous Answers\n${lines}\n\nUse these answers to tailor the options below — they should build on the user's choices.\n`;
+  }
+
+  // Step-specific instructions
+  const stepInstructions: Record<QuestionStep, string> = {
+    focus: `Generate options for the **focus** question — "What should be the main focus or angle?"
+→ Generate options based on the product's actual features, benefits, ingredients, or use cases found in the data above.
+→ Return with id: "focus"`,
+
+    occasion: `Generate options for the **occasion** question — "What occasion or context should the content target?"
+→ Generate options based on current promotions, seasonal relevance, or typical use scenarios for this product.
+→ The user already chose a focus — tailor the occasion options to complement that choice.
+→ Return with id: "occasion"`,
+
+    tone: `Generate options for the **tone** question — "How should the tone and urgency feel?"
+→ Always include these 3 standard options: "Subtle & Informative", "Balanced — friendly with a nudge", "Full FOMO — maximum urgency"
+→ Add 1-2 product-specific tone options that fit the user's chosen focus and occasion.
+→ Return with id: "tone"`,
+  };
+
   return `Analyze this product and generate contextual options for a content creator who wants to write ${typeContext}.
 
 ${productData}
-
-Generate options for these 3 questions:
-
-1. **focus** — "What should be the main focus or angle?"
-   → Generate options based on the product's actual features, benefits, ingredients, or use cases found in the data above.
-
-2. **occasion** — "What occasion or context should the content target?"
-   → Generate options based on current promotions, seasonal relevance, or typical use scenarios for this product.
-
-3. **tone** — "How should the tone and urgency feel?"
-   → Always include these 3 standard options plus 1-2 product-specific ones:
-   - "Subtle & Informative"
-   - "Balanced — friendly with a nudge"
-   - "Full FOMO — maximum urgency"`;
+${previousContext}
+${stepInstructions[step]}`;
 }
 
 // ─── Content Generation Prompts ───

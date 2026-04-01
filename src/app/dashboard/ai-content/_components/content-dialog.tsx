@@ -26,7 +26,7 @@ import type { ContentEntry } from "./utils";
 import { CONTENT_TYPE_CONFIG } from "./utils";
 import { ProductImage } from "@/components/domain/product-image";
 import { AI_PROVIDER } from "@/lib/ai-content/config";
-import type { QuestionOption } from "@/lib/ai-content/prompts";
+import { QUESTION_STEPS, type QuestionOption } from "@/lib/ai-content/prompts";
 
 const TYPE_ICONS: Record<string, typeof Tags> = {
   deal_post: Tags,
@@ -45,12 +45,13 @@ interface ContentDialogProps {
   storeMap: Record<string, Store>;
   canGenerateContent: boolean;
   canEditContent: boolean;
-  // Claude questionnaire props (used when AI_PROVIDER = "claude")
+  // Claude questionnaire props — sequential: one question at a time.
+  // Each answer influences the next question's options.
   isAnalyzing: boolean;
-  questions: QuestionOption[] | null;
-  answers: Record<string, string>;
-  onAnalyze: (product: Product, contentType: AIContentType) => void;
-  onAnswerChange: (questionId: string, answer: string) => void;
+  questionStep: number; // 0 = not started, 1-3 = current step, 4 = all done
+  currentQuestion: QuestionOption | null; // the question being shown now
+  onAnalyze: (product: Product, contentType: AIContentType, stepIndex?: number) => void;
+  onAnswerAndNext: (questionId: string, answer: string) => void;
   onSubmitAnswers: () => void;
   t: (key: string, values?: Record<string, string | number>) => string;
   onClose: () => void;
@@ -74,10 +75,10 @@ export function ContentDialog({
   canGenerateContent,
   canEditContent,
   isAnalyzing,
-  questions,
-  answers,
+  questionStep,
+  currentQuestion,
   onAnalyze,
-  onAnswerChange,
+  onAnswerAndNext,
   onSubmitAnswers,
   t,
   onClose,
@@ -299,14 +300,14 @@ export function ContentDialog({
               ) : isGenerating ? (
                 <GeneratingView contentType={contentType} t={t} />
               ) : isAnalyzing ? (
-                <AnalyzingView contentType={contentType} t={t} />
-              ) : questions ? (
+                <AnalyzingView contentType={contentType} t={t} step={questionStep} />
+              ) : currentQuestion || questionStep > QUESTION_STEPS.length ? (
                 <QuestionnaireView
                   contentType={contentType}
-                  questions={questions}
-                  answers={answers}
+                  currentQuestion={currentQuestion}
+                  questionStep={questionStep}
                   t={t}
-                  onAnswerChange={onAnswerChange}
+                  onAnswerAndNext={onAnswerAndNext}
                   onSubmit={onSubmitAnswers}
                 />
               ) : (
@@ -870,14 +871,16 @@ function NoGenerateAccessView({
   );
 }
 
-// ─── Analyzing View (Claude: loading question options) ───
+// ─── Analyzing View (Claude: loading question options for current step) ───
 
 function AnalyzingView({
   contentType,
   t,
+  step,
 }: {
   contentType: AIContentType;
   t: (key: string, values?: Record<string, string | number>) => string;
+  step: number;
 }) {
   const accentColor = CONTENT_TYPE_CONFIG[contentType]?.color ?? "#22C55E";
 
@@ -901,44 +904,54 @@ function AnalyzingView({
             color: "var(--muted-foreground)",
           }}
         >
-          {t("analyzing")}
+          {t("analyzing")} ({step}/{QUESTION_STEPS.length})
         </p>
       </div>
     </div>
   );
 }
 
-// ─── Questionnaire View (Claude: 3 questions with selectable options) ───
-// Shown after the analyze step returns questions with contextual options.
-// User selects or types answers, then clicks "Generate Content" to proceed.
+// ─── Questionnaire View (Claude: sequential single-question display) ───
+// Shows one question at a time. Previously answered questions appear as
+// a compact summary above the current question. After the user answers
+// the last question, the "Generate Content" button appears.
 
 function QuestionnaireView({
   contentType,
-  questions,
-  answers,
+  currentQuestion,
+  questionStep,
   t,
-  onAnswerChange,
+  onAnswerAndNext,
   onSubmit,
 }: {
   contentType: AIContentType;
-  questions: QuestionOption[];
-  answers: Record<string, string>;
+  currentQuestion: QuestionOption | null;
+  questionStep: number;
   t: (key: string, values?: Record<string, string | number>) => string;
-  onAnswerChange: (questionId: string, answer: string) => void;
+  onAnswerAndNext: (questionId: string, answer: string) => void;
   onSubmit: () => void;
 }) {
   const accentColor = CONTENT_TYPE_CONFIG[contentType]?.color ?? "#22C55E";
-  const allAnswered = questions.every((q) => answers[q.id]?.trim());
+  const allDone = questionStep > QUESTION_STEPS.length;
 
-  // Track which questions have custom input open
-  const [customOpen, setCustomOpen] = useState<Set<string>>(new Set());
+  // Track whether custom input is open for the current question.
+  // Keyed by question ID so state resets naturally when question changes.
+  const currentQId = currentQuestion?.id ?? "";
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customText, setCustomText] = useState("");
+  const prevQIdRef = useRef(currentQId);
+  if (prevQIdRef.current !== currentQId) {
+    prevQIdRef.current = currentQId;
+    if (customOpen) setCustomOpen(false);
+    if (customText) setCustomText("");
+  }
 
   return (
-    <div className="pt-4 space-y-4">
-      {/* Header */}
-      <div>
+    <div className="pt-4 space-y-3">
+      {/* Header with progress */}
+      <div className="flex items-center justify-between">
         <p
-          className="text-[10px] font-bold uppercase tracking-[0.15em] mb-1"
+          className="text-[10px] font-bold uppercase tracking-[0.15em]"
           style={{
             fontFamily: "var(--font-mono)",
             color: accentColor,
@@ -947,103 +960,85 @@ function QuestionnaireView({
           {t("questionnaireTitle")}
         </p>
         <p
-          className="text-[12px] leading-relaxed"
+          className="text-[10px] font-bold tracking-wider"
           style={{
-            fontFamily: "var(--font-body)",
+            fontFamily: "var(--font-mono)",
             color: "var(--muted-foreground)",
           }}
         >
-          {t("questionnaireSubtitle")}
+          {Math.min(questionStep, QUESTION_STEPS.length)}/{QUESTION_STEPS.length}
         </p>
       </div>
 
-      {/* Questions */}
-      {questions.map((q) => {
-        const selected = answers[q.id] || "";
-        const isCustom = customOpen.has(q.id);
-        const isOptionSelected = q.options.includes(selected);
-
-        return (
-          <div
-            key={q.id}
-            className="p-3"
+      {/* Current question — full interactive view */}
+      {currentQuestion && !allDone && (
+        <div
+          className="p-3"
+          style={{
+            border: `2px solid ${accentColor}40`,
+            backgroundColor: "var(--card)",
+          }}
+        >
+          <p
+            className="text-[10px] font-bold uppercase tracking-[0.15em] mb-2.5"
             style={{
-              border: "2px solid var(--border)",
-              backgroundColor: "var(--card)",
+              fontFamily: "var(--font-mono)",
+              color: "var(--foreground)",
             }}
           >
-            <p
-              className="text-[10px] font-bold uppercase tracking-[0.15em] mb-2.5"
-              style={{
-                fontFamily: "var(--font-mono)",
-                color: "var(--foreground)",
-              }}
-            >
-              {q.question}
-            </p>
+            {currentQuestion.question}
+          </p>
 
-            {/* Option pills */}
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {q.options.map((option) => {
-                const isActive = selected === option;
-                return (
-                  <button
-                    key={option}
-                    onClick={() => {
-                      onAnswerChange(q.id, option);
-                      // Close custom input if an option is selected
-                      setCustomOpen((prev) => {
-                        const next = new Set(prev);
-                        next.delete(q.id);
-                        return next;
-                      });
-                    }}
-                    className="px-2.5 py-1 text-[10px] font-bold tracking-wider transition-all duration-100"
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      backgroundColor: isActive ? accentColor : "transparent",
-                      color: isActive ? "#fff" : "var(--muted-foreground)",
-                      border: `1.5px solid ${isActive ? accentColor : "var(--border)"}`,
-                    }}
-                  >
-                    {option}
-                  </button>
-                );
-              })}
-
-              {/* Toggle custom input */}
+          {/* Option pills — clicking one answers and auto-fetches next */}
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {currentQuestion.options.map((option) => (
               <button
-                onClick={() =>
-                  setCustomOpen((prev) => {
-                    const next = new Set(prev);
-                    if (next.has(q.id)) {
-                      next.delete(q.id);
-                    } else {
-                      next.add(q.id);
-                    }
-                    return next;
-                  })
-                }
-                className="px-2.5 py-1 text-[10px] font-bold tracking-wider transition-all duration-100"
+                key={option}
+                onClick={() => onAnswerAndNext(currentQuestion.id, option)}
+                className="px-2.5 py-1 text-[10px] font-bold tracking-wider transition-all duration-100 hover:opacity-80"
                 style={{
                   fontFamily: "var(--font-mono)",
-                  backgroundColor: isCustom && !isOptionSelected ? accentColor : "transparent",
-                  color: isCustom && !isOptionSelected ? "#fff" : "var(--muted-foreground)",
-                  border: `1.5px solid ${isCustom && !isOptionSelected ? accentColor : "var(--border)"}`,
+                  backgroundColor: "transparent",
+                  color: "var(--muted-foreground)",
+                  border: `1.5px solid var(--border)`,
                 }}
               >
-                {t("customAnswer")}
+                {option}
               </button>
-            </div>
+            ))}
 
-            {/* Custom text input */}
-            {isCustom && (
+            {/* Toggle custom input */}
+            <button
+              onClick={() => setCustomOpen((prev) => !prev)}
+              className="px-2.5 py-1 text-[10px] font-bold tracking-wider transition-all duration-100"
+              style={{
+                fontFamily: "var(--font-mono)",
+                backgroundColor: customOpen ? accentColor : "transparent",
+                color: customOpen ? "#fff" : "var(--muted-foreground)",
+                border: `1.5px solid ${customOpen ? accentColor : "var(--border)"}`,
+              }}
+            >
+              {t("customAnswer")}
+            </button>
+          </div>
+
+          {/* Custom text input with submit */}
+          {customOpen && (
+            <div className="flex gap-1.5">
               <input
                 type="text"
-                value={isOptionSelected ? "" : selected}
-                onChange={(e) => onAnswerChange(q.id, e.target.value)}
+                value={customText}
+                onChange={(e) => setCustomText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && customText.trim()) {
+                    onAnswerAndNext(currentQuestion.id, customText.trim());
+                    setCustomText("");
+                    setCustomOpen(false);
+                  }
+                }}
                 placeholder={t("customAnswer")}
-                className="w-full px-2.5 py-1.5 text-[11px] border-2 outline-none transition-all duration-100 focus:border-current"
+                autoFocus
+                className="flex-1 px-2.5 py-1.5 text-[11px] border-2 outline-none transition-all duration-100 focus:border-current"
                 style={{
                   fontFamily: "var(--font-mono)",
                   backgroundColor: "var(--input)",
@@ -1052,27 +1047,47 @@ function QuestionnaireView({
                   borderRadius: 0,
                 }}
               />
-            )}
-          </div>
-        );
-      })}
+              <button
+                onClick={() => {
+                  if (customText.trim()) {
+                    onAnswerAndNext(currentQuestion.id, customText.trim());
+                    setCustomText("");
+                    setCustomOpen(false);
+                  }
+                }}
+                disabled={!customText.trim()}
+                className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 disabled:opacity-40"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  backgroundColor: accentColor,
+                  color: "#fff",
+                  border: `2px solid ${accentColor}`,
+                }}
+              >
+                OK
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
-      {/* Generate button */}
-      <button
-        onClick={onSubmit}
-        disabled={!allAnswered}
-        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-40 disabled:pointer-events-none"
-        style={{
-          fontFamily: "var(--font-mono)",
-          backgroundColor: accentColor,
-          color: "#fff",
-          border: `2px solid ${accentColor}`,
-          boxShadow: "var(--hard-shadow)",
-        }}
-      >
-        <Sparkles className="w-3.5 h-3.5" />
-        {t("generateContent")}
-      </button>
+      {/* Generate button — only shown after all 3 questions answered */}
+      {allDone && (
+        <button
+          onClick={onSubmit}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+          style={{
+            fontFamily: "var(--font-mono)",
+            backgroundColor: accentColor,
+            color: "#fff",
+            border: `2px solid ${accentColor}`,
+            boxShadow: "var(--hard-shadow)",
+          }}
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          {t("generateContent")}
+        </button>
+      )}
     </div>
   );
 }
