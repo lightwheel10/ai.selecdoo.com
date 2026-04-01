@@ -197,6 +197,12 @@ async function cleanStoreShipping(
     if (result.description_de) dbUpdate.description_de = result.description_de;
   }
 
+  // Save the cleaned store name (strips TLDs, "Store", "Shop" suffixes, etc.)
+  // Claude already generates this — no reason to throw it away.
+  if (result.cleaned_name) {
+    dbUpdate.name = result.cleaned_name;
+  }
+
   // Auto-set affiliate_link_base if missing (same logic as the admin route)
   // ⚠️ utm_source MUST be "selecdoo" — see src/lib/ai-clean/affiliate.ts
   if (!store.affiliate_link_base && store.url) {
