@@ -185,6 +185,7 @@
     "startMonitoring": "Start Monitoring",
     "storeAdded": "Store added",
     "storeAddedDescription": "{url} is now being monitored.",
+    "storeAddedScraping": "Store added and product scraping started automatically.",
     "searchStores": "Search stores...",
     "storesFound": "{count} stores",
     "storesFiltered": "{filtered} of {total} stores matching \"{query}\"",

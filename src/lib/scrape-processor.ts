@@ -285,6 +285,21 @@ export async function processCompletedScrape(
     })
     .eq("id", job.id);
 
+  // ── Flag store for automatic AI cleaning ──
+  // After a successful scrape, mark the store so the auto-clean cron
+  // (/api/cron/auto-clean) picks it up and enriches the store and its
+  // products with shipping data, descriptions, categories, and affiliate links.
+  // This is a fire-and-forget update — if it fails, the store can still
+  // be cleaned manually from the admin UI.
+  try {
+    await supabase
+      .from("stores")
+      .update({ ai_clean_status: "pending" })
+      .eq("id", job.store_id);
+  } catch (err) {
+    console.error("Failed to flag store for auto-clean:", err);
+  }
+
   return {
     status: "completed",
     products_found: products.length,

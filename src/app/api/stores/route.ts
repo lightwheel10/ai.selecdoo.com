@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { canCreateStore } from "@/lib/auth/roles";
 import { getAuthContext } from "@/lib/auth/session";
+import { triggerScrape } from "@/lib/scrape-trigger";
 
 const PRIVATE_IP_RANGES = [
   /^127\./,
@@ -130,6 +132,27 @@ export async function POST(req: Request) {
       enabled: true,
       check_interval_hours: 72,
       next_check_at: nextCheck.toISOString(),
+    });
+
+    // ── Auto-scrape: trigger product scrape after the response is sent ──
+    // Uses Next.js after() to run the scrape trigger AFTER returning the
+    // response to the client. This keeps the store creation fast (~1s) so
+    // the dialog closes immediately and the table updates via router.refresh().
+    // The scrape runs on Apify's side; we just start the actor here.
+    // If after() fails, the store still exists — user can manually scrape.
+    after(async () => {
+      try {
+        const adminClient = createAdminClient();
+        await triggerScrape(adminClient, {
+          id: newStore.id,
+          url: normalized,
+          name: newStore.name,
+          platform: newStore.platform,
+          last_scraped_at: null, // first scrape — triggers platform detection
+        });
+      } catch (err) {
+        console.error("Auto-scrape trigger failed (store was created successfully):", err);
+      }
     });
 
     return NextResponse.json({ store: newStore });

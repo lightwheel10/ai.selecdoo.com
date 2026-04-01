@@ -42,8 +42,10 @@ export function AddStoreDialog() {
       });
 
       if (res.ok) {
+        // Auto-scrape runs in the background via after() on the server.
+        // The response returns immediately so the dialog closes fast.
         toast(t("storeAdded"), {
-          description: t("storeAddedDescription", { url }),
+          description: t("storeAddedScraping"),
         });
         setUrl("");
         setOpen(false);

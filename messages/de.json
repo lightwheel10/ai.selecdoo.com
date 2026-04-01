@@ -185,6 +185,7 @@
     "startMonitoring": "Überwachung Starten",
     "storeAdded": "Shop hinzugefügt",
     "storeAddedDescription": "{url} wird jetzt überwacht.",
+    "storeAddedScraping": "Shop hinzugefügt und Produkt-Scraping automatisch gestartet.",
     "searchStores": "Shops suchen...",
     "storesFound": "{count} Shops",
     "storesFiltered": "{filtered} von {total} Shops für \"{query}\"",

@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/poll-scrapes",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/auto-clean",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   Search,
   ExternalLink,
@@ -220,6 +220,16 @@ export function StoreTable({ stores }: StoreTableProps) {
   const allowDeleteStore = canDeleteStore(access);
 
   const [localStores, setLocalStores] = useState(stores);
+
+  // Sync local state when the server-provided stores prop changes.
+  // This happens when router.refresh() re-renders the server component
+  // (e.g. after adding a new store). Without this effect, useState()
+  // only uses the prop as the initial value and ignores subsequent changes,
+  // causing newly added stores to not appear until a full page reload.
+  useEffect(() => {
+    setLocalStores(stores);
+  }, [stores]);
+
   const [search, setSearch] = useState("");
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
