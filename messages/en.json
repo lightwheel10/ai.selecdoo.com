@@ -331,7 +331,14 @@
     "comingSoon": "Coming soon",
     "googleError": "Error",
     "viewFormatted": "Formatted",
-    "viewRaw": "Original"
+    "viewRaw": "Original",
+    "analyzing": "Analyzing product...",
+    "questionnaireTitle": "Answer a few questions",
+    "questionnaireSubtitle": "Help us create better content by answering these questions about this product.",
+    "customAnswer": "Custom...",
+    "generateContent": "Generate Content",
+    "answersRequired": "Please answer all questions",
+    "analyzeFailed": "Analysis failed — click to retry"
   },
   "Monitoring": {
     "storeSchedules": "Store Schedules",

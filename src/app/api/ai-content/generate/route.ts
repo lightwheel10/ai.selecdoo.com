@@ -5,6 +5,14 @@ import { getAuthContext } from "@/lib/auth/session";
 import { canGenerateAIContent } from "@/lib/auth/roles";
 import { verifyStoreInWorkspace } from "@/lib/auth/workspace";
 import { getWebhookFieldConfig, buildGeneratePayload } from "@/lib/webhook-payload";
+import { AI_PROVIDER } from "@/lib/ai-content/config";
+import { generateContent } from "@/lib/ai-content/client";
+import {
+  buildGenerateSystemPrompt,
+  buildGenerateUserPrompt,
+  type QuestionAnswer,
+  type GeneratedContentResponse,
+} from "@/lib/ai-content/prompts";
 
 const N8N_URLS: Record<string, string | undefined> = {
   deal_post: process.env.N8N_DEALS_WEBHOOK_URL,
@@ -92,18 +100,11 @@ export async function POST(req: Request) {
     if (!productId || typeof productId !== "string") {
       return NextResponse.json({ error: "productId is required" }, { status: 400 });
     }
-    if (!contentType || !N8N_URLS.hasOwnProperty(contentType)) {
+    const VALID_CONTENT_TYPES = Object.keys(N8N_URLS);
+    if (!contentType || !VALID_CONTENT_TYPES.includes(contentType)) {
       return NextResponse.json(
-        { error: `contentType must be one of: ${Object.keys(N8N_URLS).join(", ")}` },
+        { error: `contentType must be one of: ${VALID_CONTENT_TYPES.join(", ")}` },
         { status: 400 }
-      );
-    }
-
-    const webhookUrl = N8N_URLS[contentType];
-    if (!webhookUrl) {
-      return NextResponse.json(
-        { error: "Webhook URL not configured" },
-        { status: 500 }
       );
     }
 
@@ -136,6 +137,69 @@ export async function POST(req: Request) {
 
     if (storeErr || !store) {
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
+    }
+
+    // ── Route to correct provider ──
+    // When AI_PROVIDER is "claude", use the new questionnaire-based pipeline.
+    // The frontend sends user's answers from the questionnaire step.
+    // When AI_PROVIDER is "n8n", fall through to the existing webhook flow below.
+    if (AI_PROVIDER === "claude") {
+      const answers: QuestionAnswer[] = body.answers || [];
+
+      const claudeResponse = await generateContent<GeneratedContentResponse>(
+        buildGenerateSystemPrompt(contentType),
+        buildGenerateUserPrompt(product, store, contentType, answers)
+      );
+
+      // Combine DE + EN content with a separator
+      const content = claudeResponse.content_de + "\n\n---\n\n" + claudeResponse.content_en;
+
+      // Upsert: delete old content of same type, insert new
+      await supabase
+        .from("ai_content")
+        .delete()
+        .eq("product_id", productId)
+        .eq("content_type", contentType);
+
+      const { data: inserted, error: insertErr } = await supabase
+        .from("ai_content")
+        .insert({
+          product_id: product.id,
+          store_id: product.store_id,
+          content_type: contentType,
+          content,
+          status: "generated",
+          // Store raw Claude response for debugging (same column as n8n response)
+          webhook_response: claudeResponse,
+        })
+        .select("*")
+        .single();
+
+      if (insertErr || !inserted) {
+        console.error("AI content insert error (Claude):", insertErr);
+        if (insertErr) Sentry.captureException(new Error(insertErr.message), { tags: { route: "ai-content/generate", provider: "claude" } });
+        return NextResponse.json({ error: "Failed to save generated content" }, { status: 500 });
+      }
+
+      return NextResponse.json({
+        id: inserted.id,
+        store_id: inserted.store_id,
+        store_name: store.name,
+        product_id: inserted.product_id,
+        product_title: product.cleaned_title || product.title,
+        content_type: inserted.content_type,
+        content: inserted.content,
+        webhook_response: inserted.webhook_response ?? null,
+        webhook_sent_at: inserted.webhook_sent_at ?? null,
+        webhook_status: inserted.webhook_status ?? null,
+        created_at: inserted.created_at,
+      });
+    }
+
+    // ── n8n provider (legacy) ──
+    const webhookUrl = N8N_URLS[contentType];
+    if (!webhookUrl) {
+      return NextResponse.json({ error: "Webhook URL not configured" }, { status: 500 });
     }
 
     // Build payload from configurable field list

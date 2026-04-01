@@ -331,7 +331,14 @@
     "comingSoon": "Kommt bald",
     "googleError": "Fehler",
     "viewFormatted": "Formatiert",
-    "viewRaw": "Original"
+    "viewRaw": "Original",
+    "analyzing": "Produkt wird analysiert...",
+    "questionnaireTitle": "Ein paar Fragen beantworten",
+    "questionnaireSubtitle": "Hilf uns, besseren Inhalt zu erstellen, indem Du diese Fragen zum Produkt beantwortest.",
+    "customAnswer": "Eigene...",
+    "generateContent": "Inhalt generieren",
+    "answersRequired": "Bitte alle Fragen beantworten",
+    "analyzeFailed": "Analyse fehlgeschlagen — klicke zum Wiederholen"
   },
   "Monitoring": {
     "storeSchedules": "Shop-Zeitpläne",

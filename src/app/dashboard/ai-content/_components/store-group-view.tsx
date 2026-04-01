@@ -13,6 +13,7 @@ import type { Product, AIContentType } from "@/types";
 import type { ContentEntry, StoreGroupData } from "./utils";
 import { CONTENT_TYPE_CONFIG, ACTIVE_CONTENT_TYPES } from "./utils";
 import { MiniProductCard } from "./mini-product-card";
+import { AI_PROVIDER } from "@/lib/ai-content/config";
 
 const BULK_ICONS: Record<string, typeof Tags> = {
   deal_post: Tags,
@@ -277,7 +278,10 @@ export function StoreGroupView({
                         </>
                       )}
 
-                      {allowGenerateContent &&
+                      {/* Bulk generate buttons: only shown when using n8n provider.
+                          Claude requires per-product questionnaire answers, so bulk
+                          generation is not supported in that mode. */}
+                      {allowGenerateContent && AI_PROVIDER === "n8n" &&
                         ACTIVE_CONTENT_TYPES.map((type) => {
                           const cfg = CONTENT_TYPE_CONFIG[type];
                           const Icon = BULK_ICONS[type] ?? Tags;

@@ -27,6 +27,8 @@ import {
   CONTENT_TYPE_CONFIG,
   type StoreGroupData,
 } from "./utils";
+import { AI_PROVIDER } from "@/lib/ai-content/config";
+import type { QuestionOption } from "@/lib/ai-content/prompts";
 import { MultiSearchableFilter, MultiSimpleFilter, SimpleFilter, ToggleGroup } from "./filters";
 import { Pagination } from "@/components/domain/pagination";
 import { ProductCard } from "./product-card";
@@ -155,6 +157,14 @@ export function AIContentWorkstation({
   // Bulk delete confirm
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
+  // ── Claude questionnaire state ──
+  // Used when AI_PROVIDER = "claude". The analyze endpoint returns 3
+  // questions with contextual options; the user picks answers before
+  // content is generated.
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [questions, setQuestions] = useState<QuestionOption[] | null>(null);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (!allowDeleteProduct) {
       setSelectedProducts(new Set());
@@ -268,6 +278,34 @@ export function AIContentWorkstation({
     setModal({ product, contentType });
   }
 
+  // ── Claude: analyze product to get contextual question options ──
+  const handleAnalyze = useCallback(
+    async (product: Product, contentType: AIContentType) => {
+      setIsAnalyzing(true);
+      setQuestions(null);
+      setAnswers({});
+      try {
+        const res = await fetch("/api/ai-content/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId: product.id, contentType }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: "Unknown error" }));
+          throw new Error(err.error || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        setQuestions(data.questions);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to analyze product");
+        setQuestions(null);
+      } finally {
+        setIsAnalyzing(false);
+      }
+    },
+    []
+  );
+
   const handleGenerate = useCallback(
     async (product: Product, contentType: AIContentType) => {
       if (!allowGenerateContent) {
@@ -276,10 +314,17 @@ export function AIContentWorkstation({
       }
       setIsGenerating(true);
       try {
+        // When using Claude, include the user's questionnaire answers in the request.
+        // The generate endpoint checks AI_PROVIDER and routes accordingly.
+        const requestBody: Record<string, unknown> = { productId: product.id, contentType };
+        if (AI_PROVIDER === "claude" && Object.keys(answers).length > 0) {
+          requestBody.answers = Object.entries(answers).map(([id, answer]) => ({ id, answer }));
+        }
+
         const res = await fetch("/api/ai-content/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ productId: product.id, contentType }),
+          body: JSON.stringify(requestBody),
         });
 
         if (!res.ok) {
@@ -311,15 +356,22 @@ export function AIContentWorkstation({
         setIsGenerating(false);
       }
     },
-    [allowGenerateContent, t]
+    [allowGenerateContent, t, answers]
   );
 
   function handleRegenerate(
     product: Product,
     contentType: AIContentType
   ) {
-    // Generate handles upsert (deletes old + inserts new on server)
-    handleGenerate(product, contentType);
+    if (AI_PROVIDER === "claude") {
+      // Claude path: re-show the questionnaire so the user can adjust answers
+      setQuestions(null);
+      setAnswers({});
+      handleAnalyze(product, contentType);
+    } else {
+      // n8n path: generate directly (upsert on server)
+      handleGenerate(product, contentType);
+    }
   }
 
   async function handleSendToWebhook(
@@ -961,12 +1013,27 @@ export function AIContentWorkstation({
         storeMap={storeMap}
         canGenerateContent={allowGenerateContent}
         canEditContent={allowEditContent}
+        // Claude questionnaire props
+        isAnalyzing={isAnalyzing}
+        questions={questions}
+        answers={answers}
+        onAnalyze={handleAnalyze}
+        onAnswerChange={(id: string, value: string) =>
+          setAnswers((prev) => ({ ...prev, [id]: value }))
+        }
+        onSubmitAnswers={() => {
+          if (modal) handleGenerate(modal.product, modal.contentType);
+        }}
         t={t}
         onClose={() => {
           setModal(null);
           setIsGenerating(false);
           setEditingContent(null);
           setEditText("");
+          // Reset questionnaire state
+          setIsAnalyzing(false);
+          setQuestions(null);
+          setAnswers({});
         }}
         onGenerate={handleGenerate}
         onRegenerate={handleRegenerate}
