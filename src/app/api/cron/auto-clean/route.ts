@@ -3,20 +3,20 @@
  *
  * Picks up stores flagged with ai_clean_status = 'pending' (set by
  * processCompletedScrape in scrape-processor.ts after a successful scrape)
- * and runs the full AI cleaning pipeline:
+ * and runs STORE-LEVEL cleaning:
  *
- *   1. Store shipping + descriptions (Firecrawl → Claude)
- *   2. Product descriptions, categories, affiliate links (Claude, batches of 5)
+ *   - Shipping data extraction (Firecrawl → Claude)
+ *   - Store descriptions (about page → Claude)
+ *   - Affiliate link base auto-generation
  *
- * Processes ONE store per invocation to stay within Vercel's function timeout.
- * Uses CAS (compare-and-swap) to prevent concurrent processing.
+ * Product-level cleaning is NOT done here — the AI content generation
+ * pipeline works directly with raw scraped product data.
  *
- * If the function runs out of time mid-product-clean, it stops gracefully and
- * leaves status as 'running'. The next invocation detects uncleaned products
- * (ai_cleaned_at IS NULL) and continues from where it left off.
+ * Processes ONE store per invocation. Uses CAS (compare-and-swap) to
+ * prevent concurrent processing.
  *
- * Stale check: if a store has been 'running' for > 1 hour, it's reset to
- * 'failed' to avoid indefinitely stuck states.
+ * Stale check: if a store has been 'running' for > 10 minutes, it's
+ * reset to 'failed' to avoid blocking the queue.
  */
 
 import { NextResponse } from "next/server";
@@ -28,11 +28,10 @@ export const maxDuration = 60;
 
 const CRON_SECRET = process.env.CRON_SECRET;
 
-/** Stop processing 10 seconds before the Vercel timeout */
-const SAFE_MARGIN_MS = 10_000;
-
-/** If a store has been in 'running' state for this long, force-fail it */
-const STALE_THRESHOLD_MS = 60 * 60 * 1000; // 1 hour
+/** If a store has been in 'running' state for this long, force-fail it.
+ *  Reduced from 1 hour to 10 minutes since we only do store-level clean
+ *  now (no product batches), which should complete in under 60 seconds. */
+const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
 
 export async function GET(req: Request) {
   try {
@@ -46,27 +45,19 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const startTime = Date.now();
     const supabase = createAdminClient();
 
-    // ── Stale check: reset stores stuck in 'running' for > 1 hour ──
+    // ── Stale check: reset stores stuck in 'running' for > 10 minutes ──
     const { data: staleStores } = await supabase
       .from("stores")
-      .select("id")
+      .select("id, updated_at")
       .eq("ai_clean_status", "running")
       .is("deleted_at", null);
 
     if (staleStores) {
       for (const staleStore of staleStores) {
-        // Check when the status was last updated by looking at updated_at
-        const { data: storeData } = await supabase
-          .from("stores")
-          .select("updated_at")
-          .eq("id", staleStore.id)
-          .single();
-
-        if (storeData?.updated_at) {
-          const elapsed = Date.now() - new Date(storeData.updated_at).getTime();
+        if (staleStore.updated_at) {
+          const elapsed = Date.now() - new Date(staleStore.updated_at).getTime();
           if (elapsed > STALE_THRESHOLD_MS) {
             console.warn(`Auto-clean: resetting stale store ${staleStore.id} (running for ${Math.round(elapsed / 60000)}m)`);
             await supabase
@@ -107,39 +98,14 @@ export async function GET(req: Request) {
       return NextResponse.json({ processed: false, reason: "claimed_by_other" });
     }
 
-    // ── Run auto-clean with time budgeting ──
-    const hasTimeRemaining = () => Date.now() - startTime < (maxDuration * 1000) - SAFE_MARGIN_MS;
-
+    // ── Run store-level auto-clean ──
     try {
-      const result = await runAutoClean(supabase, store.id, hasTimeRemaining);
+      const result = await runAutoClean(supabase, store.id);
 
-      // If we stopped early (timeout), leave as 'running' — next cron
-      // invocation will find uncleaned products and continue.
-      // Otherwise, mark completed.
-      if (result.stoppedEarly) {
-        // Keep 'running' — will continue next invocation.
-        // But check if there are actually uncleaned products left; if not,
-        // we can still mark completed.
-        const { count } = await supabase
-          .from("products")
-          .select("id", { count: "exact", head: true })
-          .eq("store_id", store.id)
-          .is("deleted_at", null)
-          .is("ai_cleaned_at", null);
-
-        if (count === 0) {
-          await supabase
-            .from("stores")
-            .update({ ai_clean_status: "completed" })
-            .eq("id", store.id);
-        }
-        // else leave as 'running' for next invocation
-      } else {
-        await supabase
-          .from("stores")
-          .update({ ai_clean_status: "completed" })
-          .eq("id", store.id);
-      }
+      await supabase
+        .from("stores")
+        .update({ ai_clean_status: "completed" })
+        .eq("id", store.id);
 
       return NextResponse.json({
         processed: true,
