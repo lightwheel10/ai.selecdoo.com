@@ -298,9 +298,20 @@ export function ContentDialog({
               ) : !canGenerateContent ? (
                 <NoGenerateAccessView t={t} />
               ) : isGenerating ? (
-                <GeneratingView contentType={contentType} t={t} />
+                <GeneratingView
+                  contentType={contentType}
+                  t={t}
+                  storeName={storeMap[modal.product.store_id]?.name}
+                  productTitle={modal.product.title}
+                />
               ) : isAnalyzing ? (
-                <AnalyzingView contentType={contentType} t={t} step={questionStep} />
+                <AnalyzingView
+                  contentType={contentType}
+                  t={t}
+                  step={questionStep}
+                  storeName={storeMap[modal.product.store_id]?.name || "Store"}
+                  productTitle={modal.product.title}
+                />
               ) : currentQuestion || questionStep > QUESTION_STEPS.length ? (
                 <QuestionnaireView
                   contentType={contentType}
@@ -753,39 +764,135 @@ function WebhookButton({
   );
 }
 
-// ─── Generating View (auto-generation in progress) ───
+// ─── Generating View (content generation in progress) ───
+// Shows animated progress steps during the final content generation call.
+// Same cosmetic progress pattern as AnalyzingView.
 
 function GeneratingView({
   contentType,
   t,
+  storeName,
+  productTitle,
 }: {
   contentType: AIContentType;
   t: (key: string, values?: Record<string, string | number>) => string;
+  storeName?: string;
+  productTitle?: string;
 }) {
   const accentColor = CONTENT_TYPE_CONFIG[contentType]?.color ?? "#22C55E";
+
+  // If AI_PROVIDER is claude, show step-by-step progress.
+  // For n8n, show the simple spinner (no product/store context available).
+  if (AI_PROVIDER !== "claude" || !storeName || !productTitle) {
+    return (
+      <div className="pt-4">
+        <div
+          className="flex flex-col items-center py-10 gap-3 border-2"
+          style={{
+            borderColor: "var(--border)",
+            borderStyle: "dashed",
+          }}
+        >
+          <Loader2
+            className="w-6 h-6 animate-spin"
+            style={{ color: accentColor }}
+          />
+          <p
+            className="text-[10px] font-bold uppercase tracking-[0.15em]"
+            style={{
+              fontFamily: "var(--font-mono)",
+              color: "var(--muted-foreground)",
+            }}
+          >
+            {t("generating")}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Claude provider: animated step-by-step progress
+  const truncatedTitle = productTitle && productTitle.length > 30 ? productTitle.slice(0, 30) + "..." : productTitle;
+  const progressSteps = [
+    t("genProgressData", { name: truncatedTitle }),
+    t("genProgressFramework"),
+    t("genProgressWritingDe"),
+    t("genProgressWritingEn"),
+  ];
+
+  return <StepByStepProgress steps={progressSteps} accentColor={accentColor} />;
+}
+
+// ─── Shared step-by-step progress component ───
+// Used by both AnalyzingView and GeneratingView to show cosmetic
+// progress steps that stagger in while the real API call runs.
+
+function StepByStepProgress({
+  steps,
+  accentColor,
+}: {
+  steps: string[];
+  accentColor: string;
+}) {
+  const [completedSteps, setCompletedSteps] = useState(0);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => {
+    timersRef.current.forEach(clearTimeout);
+    timersRef.current = [];
+    setCompletedSteps(0);
+
+    steps.forEach((_, i) => {
+      const timer = setTimeout(() => {
+        setCompletedSteps((prev) => Math.max(prev, i + 1));
+      }, (i + 1) * 1500);
+      timersRef.current.push(timer);
+    });
+
+    return () => {
+      timersRef.current.forEach(clearTimeout);
+      timersRef.current = [];
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [steps.length]);
 
   return (
     <div className="pt-4">
       <div
-        className="flex flex-col items-center py-10 gap-3 border-2"
-        style={{
-          borderColor: "var(--border)",
-          borderStyle: "dashed",
-        }}
+        className="py-6 px-5 border-2"
+        style={{ borderColor: "var(--border)", borderStyle: "dashed" }}
       >
-        <Loader2
-          className="w-6 h-6 animate-spin"
-          style={{ color: accentColor }}
-        />
-        <p
-          className="text-[10px] font-bold uppercase tracking-[0.15em]"
-          style={{
-            fontFamily: "var(--font-mono)",
-            color: "var(--muted-foreground)",
-          }}
-        >
-          {t("generating")}
-        </p>
+        <div className="space-y-2.5">
+          {steps.map((label, i) => {
+            const isDone = i < completedSteps;
+            const isActive = i === completedSteps;
+            const isVisible = i <= completedSteps;
+            if (!isVisible) return null;
+
+            return (
+              <div
+                key={i}
+                className="flex items-center gap-2.5"
+                style={{ opacity: isDone ? 0.5 : 1, transition: "opacity 0.3s ease" }}
+              >
+                {isDone ? (
+                  <Check className="w-3.5 h-3.5 shrink-0" strokeWidth={3} style={{ color: accentColor }} />
+                ) : isActive ? (
+                  <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin" style={{ color: accentColor }} />
+                ) : null}
+                <p
+                  className="text-[10px] font-bold uppercase tracking-[0.15em]"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: isDone ? "var(--muted-foreground)" : "var(--foreground)",
+                  }}
+                >
+                  {label}
+                </p>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -871,44 +978,34 @@ function NoGenerateAccessView({
   );
 }
 
-// ─── Analyzing View (Claude: loading question options for current step) ───
+// ─── Analyzing View (Claude: animated step-by-step progress) ───
+// Shows cosmetic progress steps while the real API call runs.
+// When the API returns, this component unmounts and the question appears.
 
 function AnalyzingView({
   contentType,
   t,
   step,
+  storeName,
+  productTitle,
 }: {
   contentType: AIContentType;
   t: (key: string, values?: Record<string, string | number>) => string;
   step: number;
+  storeName: string;
+  productTitle: string;
 }) {
   const accentColor = CONTENT_TYPE_CONFIG[contentType]?.color ?? "#22C55E";
+  const truncatedTitle = productTitle.length > 30 ? productTitle.slice(0, 30) + "..." : productTitle;
 
-  return (
-    <div className="pt-4">
-      <div
-        className="flex flex-col items-center py-10 gap-3 border-2"
-        style={{
-          borderColor: "var(--border)",
-          borderStyle: "dashed",
-        }}
-      >
-        <Loader2
-          className="w-6 h-6 animate-spin"
-          style={{ color: accentColor }}
-        />
-        <p
-          className="text-[10px] font-bold uppercase tracking-[0.15em]"
-          style={{
-            fontFamily: "var(--font-mono)",
-            color: "var(--muted-foreground)",
-          }}
-        >
-          {t("analyzing")} ({step}/{QUESTION_STEPS.length})
-        </p>
-      </div>
-    </div>
-  );
+  const progressSteps = [
+    t("progressStore", { name: storeName }),
+    t("progressProduct", { name: truncatedTitle }),
+    t("progressAnalyzing"),
+    t("progressQuestion", { step }),
+  ];
+
+  return <StepByStepProgress steps={progressSteps} accentColor={accentColor} />;
 }
 
 // ─── Questionnaire View (Claude: sequential single-question display) ───

@@ -338,7 +338,15 @@
     "customAnswer": "Eigene...",
     "generateContent": "Inhalt generieren",
     "answersRequired": "Bitte alle Fragen beantworten",
-    "analyzeFailed": "Analyse fehlgeschlagen — klicke zum Wiederholen"
+    "analyzeFailed": "Analyse fehlgeschlagen — klicke zum Wiederholen",
+    "progressStore": "{name} Shop-Daten werden abgerufen...",
+    "progressProduct": "{name} Details werden gelesen...",
+    "progressAnalyzing": "Produkt wird auf beste Ansätze analysiert...",
+    "progressQuestion": "Frage {step} von 3 wird vorbereitet...",
+    "genProgressData": "{name} Daten werden vorbereitet...",
+    "genProgressFramework": "Sales-Copywriting-Framework wird angewendet...",
+    "genProgressWritingDe": "Deutscher Inhalt wird geschrieben...",
+    "genProgressWritingEn": "Englischer Inhalt wird geschrieben..."
   },
   "Monitoring": {
     "storeSchedules": "Shop-Zeitpläne",

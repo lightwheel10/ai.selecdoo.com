@@ -338,7 +338,15 @@
     "customAnswer": "Custom...",
     "generateContent": "Generate Content",
     "answersRequired": "Please answer all questions",
-    "analyzeFailed": "Analysis failed — click to retry"
+    "analyzeFailed": "Analysis failed — click to retry",
+    "progressStore": "Fetching {name} store data...",
+    "progressProduct": "Reading {name} details...",
+    "progressAnalyzing": "Analyzing product for best angles...",
+    "progressQuestion": "Preparing question {step} of 3...",
+    "genProgressData": "Preparing {name} data...",
+    "genProgressFramework": "Applying sales copywriting framework...",
+    "genProgressWritingDe": "Writing German content...",
+    "genProgressWritingEn": "Writing English content..."
   },
   "Monitoring": {
     "storeSchedules": "Store Schedules",
