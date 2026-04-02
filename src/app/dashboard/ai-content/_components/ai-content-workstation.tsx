@@ -369,12 +369,57 @@ export function AIContentWorkstation({
             setIsAnalyzing(false);
           });
       } else {
-        // All 3 questions answered — ready to generate
+        // All 3 questions answered — auto-trigger content generation.
+        // No need for the user to click a separate "Generate" button.
         setCurrentQuestion(null);
-        setQuestionStep(QUESTION_STEPS.length + 1); // signals "all done"
+        setQuestionStep(QUESTION_STEPS.length + 1);
+        // Build the final answers including this last one, since setState
+        // for `answers` hasn't flushed yet at this point.
+        const finalAnswers = { ...answers, [questionId]: answer };
+        // Call generate directly with the complete answers
+        setIsGenerating(true);
+        const requestBody = {
+          productId: product.id,
+          contentType,
+          answers: Object.entries(finalAnswers).map(([id, a]) => ({ id, answer: a })),
+        };
+        fetch("/api/ai-content/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        })
+          .then(async (res) => {
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({ error: "Unknown error" }));
+              throw new Error(err.error || `HTTP ${res.status}`);
+            }
+            return res.json();
+          })
+          .then((newContent: AIGeneratedContent) => {
+            setLocalContent((prev) => [
+              ...prev.filter(
+                (c) => !(c.product_id === product.id && c.content_type === contentType)
+              ),
+              newContent,
+            ]);
+            setEditingContent(null);
+            const cfg = CONTENT_TYPE_CONFIG[contentType];
+            toast(t("contentGenerated"), {
+              description: t("contentGeneratedDescription", {
+                type: cfg ? t(cfg.labelKey) : contentType,
+                title: product.title,
+              }),
+            });
+          })
+          .catch((err) => {
+            toast.error(err instanceof Error ? err.message : "Failed to generate content");
+          })
+          .finally(() => {
+            setIsGenerating(false);
+          });
       }
     },
-    [answers]
+    [answers, t]
   );
 
   const handleGenerate = useCallback(
@@ -1107,9 +1152,6 @@ export function AIContentWorkstation({
         onAnalyze={handleAnalyze}
         onAnswerAndNext={(id: string, answer: string) => {
           if (modal) handleAnswerAndNext(id, answer, modal.product, modal.contentType);
-        }}
-        onSubmitAnswers={() => {
-          if (modal) handleGenerate(modal.product, modal.contentType);
         }}
         t={t}
         onClose={() => {

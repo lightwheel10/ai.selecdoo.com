@@ -52,7 +52,6 @@ interface ContentDialogProps {
   currentQuestion: QuestionOption | null; // the question being shown now
   onAnalyze: (product: Product, contentType: AIContentType, stepIndex?: number) => void;
   onAnswerAndNext: (questionId: string, answer: string) => void;
-  onSubmitAnswers: () => void;
   t: (key: string, values?: Record<string, string | number>) => string;
   onClose: () => void;
   onGenerate: (product: Product, contentType: AIContentType) => void;
@@ -79,7 +78,6 @@ export function ContentDialog({
   currentQuestion,
   onAnalyze,
   onAnswerAndNext,
-  onSubmitAnswers,
   t,
   onClose,
   onGenerate,
@@ -319,7 +317,6 @@ export function ContentDialog({
                   questionStep={questionStep}
                   t={t}
                   onAnswerAndNext={onAnswerAndNext}
-                  onSubmit={onSubmitAnswers}
                 />
               ) : (
                 <GenerateFailedView
@@ -1060,17 +1057,14 @@ function QuestionnaireView({
   questionStep,
   t,
   onAnswerAndNext,
-  onSubmit,
 }: {
   contentType: AIContentType;
   currentQuestion: QuestionOption | null;
   questionStep: number;
   t: (key: string, values?: Record<string, string | number>) => string;
   onAnswerAndNext: (questionId: string, answer: string) => void;
-  onSubmit: () => void;
 }) {
   const accentColor = CONTENT_TYPE_CONFIG[contentType]?.color ?? "#22C55E";
-  const allDone = questionStep > QUESTION_STEPS.length;
 
   // Track whether custom input is open for the current question.
   // Keyed by question ID so state resets naturally when question changes.
@@ -1108,8 +1102,10 @@ function QuestionnaireView({
         </p>
       </div>
 
-      {/* Current question — full interactive view */}
-      {currentQuestion && !allDone && (
+      {/* Current question — full interactive view.
+          currentQuestion is null after all 3 questions are answered
+          (set in handleAnswerAndNext), so this naturally hides. */}
+      {currentQuestion && (
         <div
           className="p-3"
           style={{
@@ -1209,23 +1205,8 @@ function QuestionnaireView({
         </div>
       )}
 
-      {/* Generate button — only shown after all 3 questions answered */}
-      {allDone && (
-        <button
-          onClick={onSubmit}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
-          style={{
-            fontFamily: "var(--font-mono)",
-            backgroundColor: accentColor,
-            color: "#fff",
-            border: `2px solid ${accentColor}`,
-            boxShadow: "var(--hard-shadow)",
-          }}
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          {t("generateContent")}
-        </button>
-      )}
+      {/* No generate button needed — content generation auto-triggers
+          after the 3rd question is answered (in handleAnswerAndNext) */}
     </div>
   );
 }
