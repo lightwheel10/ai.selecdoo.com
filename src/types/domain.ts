@@ -208,7 +208,12 @@ export interface AIGeneratedContent {
   product_id: string | null;
   product_title: string | null;
   content_type: AIContentType;
+  /** Combined content (DE + EN joined by ---). Always populated for backward compat. */
   content: string;
+  /** German content. Populated by Claude provider, null for n8n-generated content. */
+  content_de: string | null;
+  /** English content. Populated by Claude provider, null for n8n-generated content. */
+  content_en: string | null;
   webhook_response?: unknown;
   webhook_sent_at: string | null;
   webhook_status: string | null;

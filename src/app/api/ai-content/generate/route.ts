@@ -151,8 +151,12 @@ export async function POST(req: Request) {
         buildGenerateUserPrompt(product, store, contentType, answers)
       );
 
-      // Combine DE + EN content with a separator
-      const content = claudeResponse.content_de + "\n\n---\n\n" + claudeResponse.content_en;
+      // Store DE and EN in separate columns for the language toggle UI.
+      // The combined `content` column is still populated for backward compat
+      // (webhook send flow, n8n content, copy-to-clipboard).
+      const contentDe = claudeResponse.content_de;
+      const contentEn = claudeResponse.content_en;
+      const content = contentDe + "\n\n---\n\n" + contentEn;
 
       // Upsert: delete old content of same type, insert new
       await supabase
@@ -168,6 +172,8 @@ export async function POST(req: Request) {
           store_id: product.store_id,
           content_type: contentType,
           content,
+          content_de: contentDe,
+          content_en: contentEn,
           status: "generated",
           // Store raw Claude response for debugging (same column as n8n response)
           webhook_response: claudeResponse,
@@ -189,6 +195,8 @@ export async function POST(req: Request) {
         product_title: product.cleaned_title || product.title,
         content_type: inserted.content_type,
         content: inserted.content,
+        content_de: inserted.content_de ?? null,
+        content_en: inserted.content_en ?? null,
         webhook_response: inserted.webhook_response ?? null,
         webhook_sent_at: inserted.webhook_sent_at ?? null,
         webhook_status: inserted.webhook_status ?? null,

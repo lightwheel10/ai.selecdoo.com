@@ -359,7 +359,12 @@ export function buildSendPayload(
     contentType: contentType === "deal_post" ? "deal" : "post",
     productId: product.id,
     hashId: product.hash_id || null,
+    // Combined content for backward compatibility with n8n workflows
     content: aiContent.content,
+    // Separate language fields — populated by Claude provider, null for n8n content.
+    // Webhook consumers can use these for language-specific processing.
+    contentDe: aiContent.content_de ?? null,
+    contentEn: aiContent.content_en ?? null,
     product: productPayload,
     store: storePayload,
     metadata: {

@@ -507,9 +507,13 @@ export function AIContentWorkstation({
     }
   }
 
+  // Save edit — supports both combined (legacy/n8n) and per-language (Claude) editing.
+  // When `editLang` is provided ("de" or "en"), only that language column is updated
+  // and the combined content column is rebuilt server-side for backward compatibility.
   async function handleSaveEdit(
     productId: string,
-    contentType: AIContentType
+    contentType: AIContentType,
+    editLang?: "de" | "en"
   ) {
     if (!allowEditContent) {
       toast.error(t("noEditAccess"));
@@ -523,11 +527,16 @@ export function AIContentWorkstation({
 
     // Update local state immediately
     setLocalContent((prev) =>
-      prev.map((c) =>
-        c.product_id === productId && c.content_type === contentType
-          ? { ...c, content: editText }
-          : c
-      )
+      prev.map((c) => {
+        if (c.product_id !== productId || c.content_type !== contentType) return c;
+        if (editLang === "de") {
+          return { ...c, content_de: editText, content: editText + "\n\n---\n\n" + (c.content_en || "") };
+        }
+        if (editLang === "en") {
+          return { ...c, content_en: editText, content: (c.content_de || "") + "\n\n---\n\n" + editText };
+        }
+        return { ...c, content: editText };
+      })
     );
     setEditingContent(null);
     setEditText("");
@@ -535,10 +544,16 @@ export function AIContentWorkstation({
     // Persist to database
     if (entry) {
       try {
+        // Send language-specific field if editing a specific language,
+        // otherwise send the combined content field.
+        const body = editLang
+          ? { [`content_${editLang}`]: editText }
+          : { content: editText };
+
         const res = await fetch(`/api/ai-content/${entry.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: editText }),
+          body: JSON.stringify(body),
         });
         if (!res.ok) {
           toast.error("Failed to save edit to database");

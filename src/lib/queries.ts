@@ -857,6 +857,9 @@ function mapAIContent(row: any, storeNames: Record<string, string>): AIGenerated
     product_title: null,
     content_type: mapContentType(row.content_type),
     content: row.content,
+    // Separate language columns — populated by Claude provider, null for n8n content
+    content_de: row.content_de ?? null,
+    content_en: row.content_en ?? null,
     webhook_response: row.webhook_response ?? null,
     webhook_sent_at: row.webhook_sent_at ?? null,
     webhook_status: row.webhook_status ?? null,

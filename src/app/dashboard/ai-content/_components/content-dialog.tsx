@@ -60,7 +60,7 @@ interface ContentDialogProps {
   onSendToWebhook: (product: Product, contentType: AIContentType) => void;
   onStartEdit: (contentId: string, text: string) => void;
   onCancelEdit: () => void;
-  onSaveEdit: (productId: string, contentType: AIContentType) => void;
+  onSaveEdit: (productId: string, contentType: AIContentType, editLang?: "de" | "en") => void;
   onEditTextChange: (text: string) => void;
 }
 
@@ -403,12 +403,22 @@ function ContentView({
   onSendToWebhook: (product: Product, contentType: AIContentType) => void;
   onStartEdit: (contentId: string, text: string) => void;
   onCancelEdit: () => void;
-  onSaveEdit: (productId: string, contentType: AIContentType) => void;
+  onSaveEdit: (productId: string, contentType: AIContentType, editLang?: "de" | "en") => void;
   onEditTextChange: (text: string) => void;
 }) {
   const [viewMode, setViewMode] = useState<"formatted" | "raw">(
     content.webhook_response ? "raw" : "formatted"
   );
+  // Language toggle — only available when content_de and content_en are
+  // stored separately (Claude provider). Falls back to combined view for
+  // n8n-generated content where content_de/content_en are null.
+  const hasLanguages = !!content.content_de && !!content.content_en;
+  const [lang, setLang] = useState<"de" | "en">("de");
+  // The text to display for the currently selected language
+  const displayContent = hasLanguages
+    ? (lang === "de" ? content.content_de! : content.content_en!)
+    : content.content;
+
   const isEditing = editingContent === content.id;
   const accentColor = CONTENT_TYPE_CONFIG[contentType]?.color ?? "#22C55E";
 
@@ -448,7 +458,7 @@ function ContentView({
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => onSaveEdit(product.id, contentType)}
+              onClick={() => onSaveEdit(product.id, contentType, hasLanguages ? lang : undefined)}
               disabled={!canEditContent}
               className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] bg-primary text-primary-foreground transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
               style={{
@@ -504,6 +514,36 @@ function ContentView({
               <span
                 className="ml-auto flex items-center gap-2"
               >
+                {/* DE/EN language toggle — only for Claude-generated content
+                    with separate language columns */}
+                {hasLanguages && (
+                  <span className="flex" style={{ border: "2px solid var(--border)" }}>
+                    <button
+                      onClick={() => setLang("de")}
+                      className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-colors"
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        backgroundColor: lang === "de" ? "var(--primary-muted)" : "transparent",
+                        color: lang === "de" ? "var(--primary-text)" : "var(--muted-foreground)",
+                        borderRight: "2px solid var(--border)",
+                      }}
+                    >
+                      DE
+                    </button>
+                    <button
+                      onClick={() => setLang("en")}
+                      className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.15em] transition-colors"
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        backgroundColor: lang === "en" ? "var(--primary-muted)" : "transparent",
+                        color: lang === "en" ? "var(--primary-text)" : "var(--muted-foreground)",
+                      }}
+                    >
+                      EN
+                    </button>
+                  </span>
+                )}
+                {/* Formatted/Raw toggle — only when webhook_response exists */}
                 {!!content.webhook_response && (
                   <span className="flex" style={{ border: "2px solid var(--border)" }}>
                     <button
@@ -541,7 +581,7 @@ function ContentView({
                   {t("chars", {
                     count: viewMode === "raw" && content.webhook_response
                       ? formatRawResponse(content.webhook_response).length
-                      : content.content.length,
+                      : displayContent.length,
                   })}
                 </span>
               </span>
@@ -577,7 +617,8 @@ function ContentView({
                     wordBreak: "break-word",
                   }}
                 >
-                  {content.content}
+                  {/* Show selected language content, or combined for n8n content */}
+                  {displayContent}
                 </p>
               )}
             </div>
@@ -604,10 +645,10 @@ function ContentView({
 
           {/* Action buttons */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Edit */}
+            {/* Edit — edits the currently selected language (or combined if no languages) */}
             {canEditContent && (
               <button
-                onClick={() => onStartEdit(content.id, content.content)}
+                onClick={() => onStartEdit(content.id, displayContent)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
                 style={{
                   fontFamily: "var(--font-mono)",
@@ -621,9 +662,9 @@ function ContentView({
               </button>
             )}
 
-            {/* Copy */}
+            {/* Copy — copies the currently selected language */}
             <CopyBtn
-              text={content.content}
+              text={displayContent}
               label={t("copiedToClipboard")}
               buttonLabel={t("copyContent")}
             />
