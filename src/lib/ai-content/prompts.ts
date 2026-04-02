@@ -43,8 +43,12 @@ export interface GeneratedContentResponse {
 function formatProductData(product: Record<string, any>, store: Record<string, any>): string {
   const lines: string[] = [];
 
+  // Current date — helps Claude generate seasonally relevant content
+  // and reference timely promotions (e.g. "this week only", "spring sale")
+  lines.push(`Today's Date: ${new Date().toISOString().split("T")[0]}`);
+
   // Core product info
-  lines.push(`## Product`);
+  lines.push(`\n## Product`);
   lines.push(`Title: ${product.cleaned_title || product.title}`);
   if (product.brand) lines.push(`Brand: ${product.brand}`);
   lines.push(`Price: ${product.price} ${product.currency || "EUR"}`);
