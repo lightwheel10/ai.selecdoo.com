@@ -20,7 +20,7 @@ function getClient(): Anthropic {
   return _client;
 }
 
-const DEFAULT_MODEL = "claude-sonnet-4-20250514";
+const DEFAULT_MODEL = "claude-sonnet-4-6";
 
 /**
  * Shared Claude JSON caller. Strips markdown fences before parsing.
