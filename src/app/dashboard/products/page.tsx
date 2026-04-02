@@ -37,6 +37,12 @@ export default async function ProductsPage({ searchParams }: Props) {
       : undefined;
   const page =
     typeof sp.page === "string" ? Math.max(1, parseInt(sp.page, 10)) : 1;
+  const sortBy =
+    sp.sortBy === "discount_percentage" || sp.sortBy === "price"
+      ? sp.sortBy
+      : undefined;
+  const sortDir =
+    sp.sortDir === "asc" || sp.sortDir === "desc" ? sp.sortDir : undefined;
 
   const [result, stores] = await Promise.all([
     getFilteredProducts({
@@ -49,7 +55,9 @@ export default async function ProductsPage({ searchParams }: Props) {
       maxPrice: maxPrice !== undefined && !isNaN(maxPrice) ? maxPrice : undefined,
       page,
       pageSize: 24,
-      randomize: true,
+      sortBy: sortBy as "discount_percentage" | "price" | undefined,
+      sortDir,
+      randomize: !sortBy,
     }, workspaceId!),
     getStores(workspaceId!),
   ]);
@@ -69,6 +77,8 @@ export default async function ProductsPage({ searchParams }: Props) {
         variantFilter: variantFilter ?? null,
         minPrice: typeof sp.minPrice === "string" ? sp.minPrice : "",
         maxPrice: typeof sp.maxPrice === "string" ? sp.maxPrice : "",
+        sortBy: sortBy ?? null,
+        sortDir: sortDir ?? null,
       }}
     />
   );

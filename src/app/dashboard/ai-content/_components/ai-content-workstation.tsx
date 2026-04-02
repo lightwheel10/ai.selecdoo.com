@@ -59,6 +59,10 @@ interface AIContentWorkstationProps {
     search: string;
     storeIds: string[];
     discountFilter: string | null;
+    stockFilter: string | null;
+    variantFilter: string | null;
+    minPrice: string;
+    maxPrice: string;
     contentStatus: string[];
     sortBy: string | null;
     sortDir: string | null;
@@ -129,6 +133,35 @@ export function AIContentWorkstation({
     debounceRef.current = setTimeout(() => {
       setFilter("search", value || null);
     }, 400);
+  }
+
+  // Price range inputs — local state with debounce
+  const [localMinPrice, setLocalMinPrice] = useState(filters.minPrice);
+  const [localMaxPrice, setLocalMaxPrice] = useState(filters.maxPrice);
+  const minPriceRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const maxPriceRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  useEffect(() => {
+    setLocalMinPrice(filters.minPrice);
+  }, [filters.minPrice]);
+  useEffect(() => {
+    setLocalMaxPrice(filters.maxPrice);
+  }, [filters.maxPrice]);
+
+  function handleMinPriceChange(value: string) {
+    setLocalMinPrice(value);
+    if (minPriceRef.current) clearTimeout(minPriceRef.current);
+    minPriceRef.current = setTimeout(() => {
+      setFilter("minPrice", value || null);
+    }, 600);
+  }
+
+  function handleMaxPriceChange(value: string) {
+    setLocalMaxPrice(value);
+    if (maxPriceRef.current) clearTimeout(maxPriceRef.current);
+    maxPriceRef.current = setTimeout(() => {
+      setFilter("maxPrice", value || null);
+    }, 600);
   }
 
   // Selection
@@ -259,6 +292,16 @@ export function AIContentWorkstation({
   const sortPriceOptions = [
     { label: t("highToLow"), value: "desc" },
     { label: t("lowToHigh"), value: "asc" },
+  ];
+
+  const stockOptions = [
+    { label: t("inStock"), value: "in_stock" },
+    { label: t("outOfStock"), value: "out_of_stock" },
+  ];
+
+  const variantOptions = [
+    { label: t("withVariants"), value: "with_variants" },
+    { label: t("withoutVariants"), value: "without_variants" },
   ];
 
   // Current sort state derived from URL
@@ -1075,6 +1118,62 @@ export function AIContentWorkstation({
               }
             }}
           />
+          {/* Stock — synced with Products page filters */}
+          <SimpleFilter
+            label={t("stock")}
+            resetLabel={t("allStock")}
+            options={stockOptions}
+            value={filters.stockFilter}
+            onChange={(v) => setFilter("stock", v)}
+          />
+          {/* Variants — synced with Products page filters */}
+          <SimpleFilter
+            label={t("variants")}
+            resetLabel={t("allVariants")}
+            options={variantOptions}
+            value={filters.variantFilter}
+            onChange={(v) => setFilter("variants", v)}
+          />
+          {/* Price range — synced with Products page filters */}
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              value={localMinPrice}
+              onChange={(e) => handleMinPriceChange(e.target.value)}
+              placeholder={t("minPrice")}
+              className="w-[70px] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 outline-none transition-colors duration-100 focus:border-[var(--primary-text)]"
+              style={{
+                backgroundColor: "transparent",
+                borderColor: localMinPrice ? "var(--primary-muted)" : "var(--border)",
+                color: localMinPrice ? "var(--primary-text)" : "var(--muted-foreground)",
+                borderRadius: 0,
+                fontFamily: "var(--font-mono)",
+              }}
+            />
+            <span
+              className="text-[10px] font-bold"
+              style={{
+                fontFamily: "var(--font-mono)",
+                color: "var(--muted-foreground)",
+              }}
+            >
+              –
+            </span>
+            <input
+              type="number"
+              value={localMaxPrice}
+              onChange={(e) => handleMaxPriceChange(e.target.value)}
+              placeholder={t("maxPrice")}
+              className="w-[70px] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 outline-none transition-colors duration-100 focus:border-[var(--primary-text)]"
+              style={{
+                backgroundColor: "transparent",
+                borderColor: localMaxPrice ? "var(--primary-muted)" : "var(--border)",
+                color: localMaxPrice ? "var(--primary-text)" : "var(--muted-foreground)",
+                borderRadius: 0,
+                fontFamily: "var(--font-mono)",
+              }}
+            />
+          </div>
         </div>
       )}
 

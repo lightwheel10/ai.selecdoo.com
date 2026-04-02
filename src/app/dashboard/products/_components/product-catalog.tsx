@@ -49,6 +49,8 @@ interface ProductCatalogProps {
     variantFilter: string | null;
     minPrice: string;
     maxPrice: string;
+    sortBy: string | null;
+    sortDir: string | null;
   };
 }
 
@@ -302,7 +304,7 @@ export function ProductCatalog({
   // Product delete is admin-only; keep UI and API behavior aligned.
   const allowDeleteProduct = canDeleteProduct(access);
 
-  const { setFilter, clearAll, isPending } = useFilterNavigation();
+  const { setFilter, setFilters, clearAll, isPending } = useFilterNavigation();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
 
@@ -389,7 +391,7 @@ export function ProductCatalog({
   }
 
   const hasAnyFilter =
-    filters.storeId || filters.stockFilter || filters.discountFilter || filters.variantFilter || filters.minPrice || filters.maxPrice;
+    filters.storeId || filters.stockFilter || filters.discountFilter || filters.variantFilter || filters.minPrice || filters.maxPrice || filters.sortBy;
 
   const stockOptions = [
     { label: ts("inStock"), value: "in_stock" },
@@ -409,6 +411,20 @@ export function ProductCatalog({
     { label: t("withVariants"), value: "with_variants" },
     { label: t("withoutVariants"), value: "without_variants" },
   ];
+
+  const sortDiscountOptions = [
+    { label: t("highToLow"), value: "desc" },
+    { label: t("lowToHigh"), value: "asc" },
+  ];
+
+  const sortPriceOptions = [
+    { label: t("highToLow"), value: "desc" },
+    { label: t("lowToHigh"), value: "asc" },
+  ];
+
+  // Derive sort state from URL params
+  const discountSort = filters.sortBy === "discount_percentage" ? filters.sortDir : null;
+  const priceSort = filters.sortBy === "price" ? filters.sortDir : null;
 
   return (
     <div>
@@ -472,6 +488,36 @@ export function ProductCatalog({
           options={variantOptions}
           value={filters.variantFilter}
           onChange={(v) => setFilter("variants", v)}
+        />
+
+        {/* Sort by Discount — synced with AI Content page */}
+        <SimpleFilter
+          label={t("sortDiscount")}
+          resetLabel={t("noSort")}
+          options={sortDiscountOptions}
+          value={discountSort}
+          onChange={(v) => {
+            if (v) {
+              setFilters({ sortBy: "discount_percentage", sortDir: v });
+            } else {
+              setFilters({ sortBy: null, sortDir: null });
+            }
+          }}
+        />
+
+        {/* Sort by Price — synced with AI Content page */}
+        <SimpleFilter
+          label={t("sortPrice")}
+          resetLabel={t("noSort")}
+          options={sortPriceOptions}
+          value={priceSort}
+          onChange={(v) => {
+            if (v) {
+              setFilters({ sortBy: "price", sortDir: v });
+            } else {
+              setFilters({ sortBy: null, sortDir: null });
+            }
+          }}
         />
 
         {/* Price range */}

@@ -30,6 +30,18 @@ export default async function AIContentPage({ searchParams }: Props) {
       : undefined;
   const discountFilter =
     typeof sp.discount === "string" ? sp.discount : "17";
+  const stockFilter =
+    sp.stock === "in_stock" || sp.stock === "out_of_stock"
+      ? sp.stock
+      : undefined;
+  const variantFilter =
+    sp.variants === "with_variants" || sp.variants === "without_variants"
+      ? sp.variants
+      : undefined;
+  const minPrice =
+    typeof sp.minPrice === "string" ? parseFloat(sp.minPrice) : undefined;
+  const maxPrice =
+    typeof sp.maxPrice === "string" ? parseFloat(sp.maxPrice) : undefined;
   const sortBy =
     sp.sortBy === "discount_percentage" || sp.sortBy === "price"
       ? sp.sortBy
@@ -50,6 +62,10 @@ export default async function AIContentPage({ searchParams }: Props) {
       search,
       storeIds,
       discountFilter: discountFilter === "all" ? undefined : (discountFilter || undefined),
+      stockFilter,
+      variantFilter,
+      minPrice: minPrice !== undefined && !isNaN(minPrice) ? minPrice : undefined,
+      maxPrice: maxPrice !== undefined && !isNaN(maxPrice) ? maxPrice : undefined,
       contentStatus: contentStatus?.length ? contentStatus : undefined,
       sortBy: sortBy as "discount_percentage" | "price" | undefined,
       sortDir,
@@ -90,6 +106,10 @@ export default async function AIContentPage({ searchParams }: Props) {
         search: search ?? "",
         storeIds: storeIds ?? [],
         discountFilter: discountFilter ?? null,
+        stockFilter: stockFilter ?? null,
+        variantFilter: variantFilter ?? null,
+        minPrice: typeof sp.minPrice === "string" ? sp.minPrice : "",
+        maxPrice: typeof sp.maxPrice === "string" ? sp.maxPrice : "",
         contentStatus: contentStatus ?? [],
         sortBy: sortBy ?? null,
         sortDir: sortDir ?? null,
