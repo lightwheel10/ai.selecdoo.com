@@ -302,22 +302,45 @@ is positioned as a genuine problem-solver for their community.
 </task>
 
 <deal_post_rules>
+LANGUAGE:
 - German is the PRIMARY language. Write the German version first, then English.
 - English is NOT a literal translation — adapt the tone for English-speaking audiences.
-- Follow HOOK-RETAIN-REWARD structure strictly.
-- Lead with the PROBLEM, not the product. Make the reader feel the pain first.
-- Include the discount/price prominently — make the math obvious.
-- Include relevant emojis (purposeful, not excessive).
-- Mention the brand and store name naturally within the text.
-- Include a call-to-action with [LINK] placeholder for the affiliate link.
-- If there's a coupon code, make it unmissable (bold it with text formatting).
-- Reference SPECIFIC product features (ingredients, materials, specs) from the data.
-- If tiered prices or bundles exist, call out the best value option.
-- Add a legal disclaimer line at the bottom if health/supplement claims are made (with *).
+- German: Use "Du", conversational, direct. English: natural, engaging.
+
+STRUCTURE (follow this order):
+1. HEADLINE: Bold, attention-grabbing. Include the promotion name or deal if one exists. Add urgency.
+2. SUBHEADLINE: One line that frames the transformation (from problem → to solution).
+3. STORYTELLING HOOK (2-3 paragraphs): Paint a vivid, relatable scenario the reader FEELS.
+   Describe the problem in everyday language. Make them nod and think "that's me."
+   Do NOT mention the product yet — build the emotional tension first.
+4. PRODUCT INTRODUCTION: Now introduce the product as the solution. Name the brand.
+   Explain WHY it works (the mechanism — specific ingredients, technology, materials).
+5. FEATURE BREAKDOWN: List 5-8 specific features/ingredients with emoji bullets.
+   Each bullet = one concrete benefit. Use specific numbers, percentages, certifications.
+6. PRICING & DEAL: Show the math. Original price → deal price → savings.
+   If tiered pricing or bundles exist, break down EACH tier on its own line with emoji.
+   Make the best-value option obvious.
+7. SOCIAL PROOF: Reviews, ratings, retail presence, awards — whatever is in the data.
+   Use specific numbers ("12.000+ Bewertungen", "erhältlich bei DM, Rossmann, Müller").
+8. FOMO CLOSING: Hard closing line that creates urgency. The user's tone selection
+   determines how aggressive: "Subtle" = gentle reminder, "Balanced" = friendly nudge
+   with deadline, "Full FOMO" = aggressive scarcity ("Wer jetzt nicht zugreift, zahlt
+   morgen wieder den vollen Preis. So einfach ist das.")
+9. CTA: Clear call-to-action with [LINK] placeholder.
+10. DISCLAIMER: If health/supplement claims, add legal disclaimer with * at the bottom.
+
+FORMATTING:
+- Use emojis purposefully (🔥 for deals, ✅ for features, 🚨 for urgency, 👉 for CTA).
 - Content must be plain text suitable for direct posting (not HTML).
-- Aim for 200-400 words per language.
-- NEVER use banned words: innovative, cutting-edge, revolutionary, game-changing.
-- Every sentence must earn its place — if it doesn't sell, cut it.
+- Use **bold** with double asterisks for emphasis on key prices and savings.
+- Write as MUCH as the product deserves — do not cut short. Aim for 300-500 words per language.
+- If a coupon code exists, make it unmissable.
+
+TONE:
+- NEVER use banned words: innovative, cutting-edge, revolutionary, game-changing, world-class.
+- Be specific, not vague. Numbers > adjectives. Always.
+- The tone selection from the user's questionnaire MUST be respected — if they chose
+  "Full FOMO", write with maximum urgency and scarcity. Do not play it safe.
 </deal_post_rules>
 
 <output_format>
@@ -345,19 +368,34 @@ creator want to share because it makes THEM look good to their audience.
 </task>
 
 <social_post_rules>
+LANGUAGE:
 - German is the PRIMARY language. Write the German version first, then English.
 - English is NOT a literal translation — adapt for English-speaking audiences.
-- Lead with a HOOK: question, bold statement, or relatable scenario that stops the scroll.
-- Structure: Hook → Story/Problem → Solution (the product) → Soft CTA.
-- Keep it shorter than a deal post — aim for 100-250 words per language.
-- Include relevant emojis (native to social media style).
-- Include a soft call-to-action with [LINK] placeholder.
-- Mention the brand naturally — not salesy, as if recommending to a friend.
-- If there's a discount, weave it in naturally — don't make it the entire focus.
+- German: Use "Du", relatable, like talking to a friend. English: same energy.
+
+STRUCTURE:
+1. HOOK (first 1-2 sentences): Stop the scroll. Use a question, bold claim, or
+   a "Kennst du das?" relatable scenario. This is the most important part.
+2. STORY/PROBLEM (1-2 paragraphs): Tell a short, vivid story that connects to
+   the reader's life. Paint the frustration or desire. Make them feel it.
+3. PRODUCT AS SOLUTION (1 paragraph): Introduce the product naturally — as if
+   you're recommending it to a friend, not selling it. Mention 2-3 key features.
+4. SOFT CTA: Gentle nudge with [LINK] placeholder. Not pushy.
+   If there's a discount, weave it in here naturally.
+
+FORMATTING:
+- Include relevant emojis (native to social media style, not forced).
 - Content must be plain text suitable for direct posting (not HTML).
-- Make it shareable — something a creator would proudly post as their own.
+- Aim for 150-300 words per language. Longer than a tweet, shorter than a deal post.
+- Make it shareable — something a creator would proudly post as their own recommendation.
+
+TONE:
+- Story > pitch. But the pitch is always there, woven into the narrative.
+- Mention the brand naturally — as if you genuinely use and love the product.
 - NEVER use banned words: innovative, cutting-edge, revolutionary, game-changing.
-- Story > pitch. But always have the pitch woven in.
+- The user's tone selection matters: "Subtle" = pure story with soft mention,
+  "Balanced" = story + clear recommendation, "Full FOMO" = story + urgency + deal highlight.
+- Read like an influencer's authentic post, not a brand's ad copy.
 </social_post_rules>
 
 <output_format>
