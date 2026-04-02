@@ -341,10 +341,10 @@
     "analyzeFailed": "Analyse fehlgeschlagen — klicke zum Wiederholen",
     "progressStore": "{name} Shop-Daten werden abgerufen...",
     "progressProduct": "{name} Details werden gelesen...",
-    "progressAnalyzing": "Produkt wird auf beste Ansätze analysiert...",
+    "progressAnalyzing": "Alex Hormozi Skill wird angewendet...",
     "progressQuestion": "Frage {step} von 3 wird vorbereitet...",
     "genProgressData": "{name} Daten werden vorbereitet...",
-    "genProgressFramework": "Sales-Copywriting-Framework wird angewendet...",
+    "genProgressFramework": "Alex Hormozi Copywriting-Skill wird angewendet...",
     "genProgressWritingDe": "Deutscher Inhalt wird geschrieben...",
     "genProgressWritingEn": "Englischer Inhalt wird geschrieben..."
   },

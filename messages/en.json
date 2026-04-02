@@ -341,10 +341,10 @@
     "analyzeFailed": "Analysis failed — click to retry",
     "progressStore": "Fetching {name} store data...",
     "progressProduct": "Reading {name} details...",
-    "progressAnalyzing": "Analyzing product for best angles...",
+    "progressAnalyzing": "Applying Alex Hormozi skill...",
     "progressQuestion": "Preparing question {step} of 3...",
     "genProgressData": "Preparing {name} data...",
-    "genProgressFramework": "Applying sales copywriting framework...",
+    "genProgressFramework": "Applying Alex Hormozi copywriting skill...",
     "genProgressWritingDe": "Writing German content...",
     "genProgressWritingEn": "Writing English content..."
   },
