@@ -192,11 +192,12 @@ DEAL FRAMING:
 - If coupon code exists, make it unmissable
 </framework>`;
 
+// Hormozi framework is intentionally NOT included here — it's only needed for the
+// final content generation, not for generating question options. This keeps the
+// analyze calls leaner and faster.
 const STEP_SYSTEM_PROMPT = `<role>You are a marketing strategist for the selecdoo affiliate platform, analyzing product data to help generate targeted deal posts and social media content.</role>
 
 ${SELECDOO_CONTEXT}
-
-${HORMOZI_FRAMEWORK}
 
 <task>
 You will receive detailed product and store data, plus any answers the user has already given to previous questions. Your job is to generate contextual, product-specific OPTIONS for ONE specific question. The options must be directly relevant to THIS product and influenced by any previous answers.

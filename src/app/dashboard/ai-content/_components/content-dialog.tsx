@@ -1057,7 +1057,6 @@ function AnalyzingView({
   const progressSteps = [
     t("progressStore", { name: storeName }),
     t("progressProduct", { name: truncatedTitle }),
-    t("progressAnalyzing"),
     t("progressQuestion", { step }),
   ];
 
