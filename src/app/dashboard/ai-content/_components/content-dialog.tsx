@@ -865,6 +865,12 @@ function GeneratingView({
 // Used by both AnalyzingView and GeneratingView to show cosmetic
 // progress steps that stagger in while the real API call runs.
 
+// Cosmetic step-by-step progress. Two key UX rules:
+// 1. The LAST step never auto-completes — it keeps spinning until the API
+//    returns and this component unmounts. This ensures the user always sees
+//    activity, even if the API takes 20+ seconds.
+// 2. Steps stagger at 2.5s intervals (not 1.5s) to fill more of the wait time.
+
 function StepByStepProgress({
   steps,
   accentColor,
@@ -880,12 +886,22 @@ function StepByStepProgress({
     timersRef.current = [];
     setCompletedSteps(0);
 
+    // Stagger steps at 2.5s intervals. Stop BEFORE the last step —
+    // the last step stays as a spinner until the component unmounts.
+    const lastIndex = steps.length - 1;
     steps.forEach((_, i) => {
+      if (i >= lastIndex) return; // never auto-complete the last step
       const timer = setTimeout(() => {
         setCompletedSteps((prev) => Math.max(prev, i + 1));
-      }, (i + 1) * 1500);
+      }, (i + 1) * 2500);
       timersRef.current.push(timer);
     });
+
+    // Reveal the last step (as a spinner) after all previous steps complete
+    const revealLastTimer = setTimeout(() => {
+      setCompletedSteps((prev) => Math.max(prev, lastIndex));
+    }, lastIndex * 2500);
+    timersRef.current.push(revealLastTimer);
 
     return () => {
       timersRef.current.forEach(clearTimeout);
@@ -902,8 +918,10 @@ function StepByStepProgress({
       >
         <div className="space-y-2.5">
           {steps.map((label, i) => {
-            const isDone = i < completedSteps;
-            const isActive = i === completedSteps;
+            const isLast = i === steps.length - 1;
+            const isDone = !isLast && i < completedSteps;
+            // Last step is always "active" (spinner) once revealed, never "done"
+            const isActive = isLast ? i <= completedSteps : i === completedSteps;
             const isVisible = i <= completedSteps;
             if (!isVisible) return null;
 
