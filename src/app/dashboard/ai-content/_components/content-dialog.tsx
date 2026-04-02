@@ -406,13 +406,13 @@ function ContentView({
   onSaveEdit: (productId: string, contentType: AIContentType, editLang?: "de" | "en") => void;
   onEditTextChange: (text: string) => void;
 }) {
-  const [viewMode, setViewMode] = useState<"formatted" | "raw">(
-    content.webhook_response ? "raw" : "formatted"
-  );
-  // Language toggle — only available when content_de and content_en are
-  // stored separately (Claude provider). Falls back to combined view for
-  // n8n-generated content where content_de/content_en are null.
+  // When separate language columns exist (Claude provider), default to
+  // "formatted" view with the language toggle. Only default to "raw" for
+  // n8n content where webhook_response is the primary way to inspect output.
   const hasLanguages = !!content.content_de && !!content.content_en;
+  const [viewMode, setViewMode] = useState<"formatted" | "raw">(
+    hasLanguages ? "formatted" : content.webhook_response ? "raw" : "formatted"
+  );
   const [lang, setLang] = useState<"de" | "en">("de");
   // The text to display for the currently selected language
   const displayContent = hasLanguages
