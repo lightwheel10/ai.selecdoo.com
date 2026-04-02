@@ -246,6 +246,17 @@ export async function processCompletedScrape(
           .from("products")
           .upsert(product, { onConflict: "hash_id" });
         if (singleErr) {
+          // TODO: Fix duplicate handle collision (products_store_handle_unique).
+          // When a Shopify merchant deletes and recreates a product, the new
+          // product gets a different hash_id but the same handle (URL slug).
+          // The upsert on hash_id sees it as a new product, but the (store_id,
+          // handle) unique constraint blocks the insert.
+          // Fix: when singleErr.message contains "products_store_handle_unique",
+          // find the old row by (store_id, handle), update its hash_id to the
+          // new one, then retry the upsert. This preserves AI enrichment,
+          // admin flags, and ai_content references.
+          // Impact: ~0.2% of scrapes, 1 product per affected store. Low priority.
+          // Investigated 2026-04-02: only 2/905 jobs affected (raeucherwelt, jegit).
           console.error(`Upsert failed for hash_id=${product.hash_id}:`, singleErr.message);
           Sentry.captureException(new Error(singleErr.message), {
             tags: { query: "productUpsert", jobId: job.id },
