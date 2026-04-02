@@ -497,10 +497,16 @@ export function AIContentWorkstation({
   ) {
     if (AI_PROVIDER === "claude") {
       // Claude path: restart from question 1 so user can adjust answers.
-      // Reset clientWebsiteContent so it re-scrapes fresh (site may have updated).
+      // Remove the old content from local state so the dialog falls through
+      // from ContentView to AnalyzingView → QuestionnaireView. Without this,
+      // currentContent stays truthy and ContentView keeps rendering.
+      setLocalContent((prev) =>
+        prev.filter((c) => !(c.product_id === product.id && c.content_type === contentType))
+      );
       setCurrentQuestion(null);
       setAnswers({});
       setQuestionStep(0);
+      // Reset clientWebsiteContent so it re-scrapes fresh (site may have updated).
       setClientWebsiteContent(null);
       handleAnalyze(product, contentType, 0);
     } else {
