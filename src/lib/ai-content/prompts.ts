@@ -157,6 +157,11 @@ WRITING STYLE:
 - No hype words: BANNED words include "innovative", "cutting-edge",
   "revolutionary", "game-changing", "world-class", "best-in-class".
 - Replace vague language with concrete results.
+- PLAIN TEXT ONLY: No markdown formatting. No **asterisks** for bold, no
+  ~~tildes~~ for strikethrough, no *asterisks* for italic, no # headings.
+  For emphasis use: ALL CAPS for key words, emojis, or line breaks.
+  The text must look correct when pasted directly into Instagram, Facebook,
+  Telegram, or any social platform — no raw formatting characters.
 
 HOOK-RETAIN-REWARD STRUCTURE:
 - HOOK (first 1-2 sentences): Pattern interrupt. Specific outcome or bold
@@ -332,7 +337,7 @@ STRUCTURE (follow this order):
 FORMATTING:
 - Use emojis purposefully (🔥 for deals, ✅ for features, 🚨 for urgency, 👉 for CTA).
 - Content must be plain text suitable for direct posting (not HTML).
-- Use **bold** with double asterisks for emphasis on key prices and savings.
+- Use ALL CAPS or emojis for emphasis on key prices and savings. NO markdown.
 - Write as MUCH as the product deserves — do not cut short. Aim for 300-500 words per language.
 - If a coupon code exists, make it unmissable.
 
