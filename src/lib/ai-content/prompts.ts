@@ -159,7 +159,11 @@ export function buildOptionsUserPrompt(
   store: Record<string, any>,
   contentType: string,
   step: QuestionStep,
-  previousAnswers: QuestionAnswer[]
+  previousAnswers: QuestionAnswer[],
+  /** Scraped markdown from the client's own website (e.g. selecdoo.com).
+   *  Provides brand voice and content style context. Scraped once on step 1,
+   *  passed through from frontend state on subsequent steps. */
+  clientWebsiteContent?: string | null
 ): string {
   const productData = formatProductData(product, store);
   const typeContext = contentType === "deal_post"
@@ -197,9 +201,16 @@ export function buildOptionsUserPrompt(
 → Return with id: "tone"`,
   };
 
+  // Client website content — gives Claude context about the brand's voice,
+  // deal formatting style, and content patterns to match.
+  const websiteSection = clientWebsiteContent
+    ? `\n## Client Website Content (match this brand's voice and style)\n${clientWebsiteContent.slice(0, 3000)}\n`
+    : "";
+
   return `Analyze this product and generate contextual options for a content creator who wants to write ${typeContext}.
 
 ${productData}
+${websiteSection}
 ${previousContext}
 ${stepInstructions[step]}`;
 }
@@ -270,7 +281,10 @@ export function buildGenerateUserPrompt(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   store: Record<string, any>,
   contentType: string,
-  answers: QuestionAnswer[]
+  answers: QuestionAnswer[],
+  /** Scraped markdown from the client's own website. Helps Claude match
+   *  the brand's voice, tone, and deal formatting style. */
+  clientWebsiteContent?: string | null
 ): string {
   const productData = formatProductData(product, store);
   const typeLabel = contentType === "deal_post" ? "deal post" : "social media post";
@@ -285,10 +299,14 @@ export function buildGenerateUserPrompt(
     return `- ${labels[a.id] || a.id}: ${a.answer}`;
   }).join("\n");
 
+  const websiteSection = clientWebsiteContent
+    ? `\n## Client Website Content (match this brand's voice and style)\n${clientWebsiteContent.slice(0, 3000)}\n`
+    : "";
+
   return `Generate a ${typeLabel} for this product based on the data and the user's preferences below.
 
 ${productData}
-
+${websiteSection}
 ## User's Content Preferences
 ${answerLines}
 

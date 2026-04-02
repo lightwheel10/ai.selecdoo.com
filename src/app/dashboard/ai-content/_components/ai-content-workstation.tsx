@@ -164,6 +164,9 @@ export function AIContentWorkstation({
   const [questionStep, setQuestionStep] = useState<number>(0); // 0 = not started, 1-3 = step index
   const [currentQuestion, setCurrentQuestion] = useState<QuestionOption | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  // Scraped client website content — fetched once on the first question
+  // step and reused across subsequent steps and the final generate call.
+  const [clientWebsiteContent, setClientWebsiteContent] = useState<string | null>(null);
 
   useEffect(() => {
     if (!allowDeleteProduct) {
@@ -304,6 +307,9 @@ export function AIContentWorkstation({
             contentType,
             step: stepId,
             previousAnswers: prevAnswers,
+            // Pass client website content on steps 2 & 3 (already scraped).
+            // On step 1, the API scrapes it and returns it in the response.
+            ...(clientWebsiteContent ? { clientWebsiteContent } : {}),
           }),
         });
         if (!res.ok) {
@@ -312,6 +318,10 @@ export function AIContentWorkstation({
         }
         const data = await res.json();
         setCurrentQuestion(data.question);
+        // Store the scraped client website content from step 1 for reuse
+        if (data.clientWebsiteContent && !clientWebsiteContent) {
+          setClientWebsiteContent(data.clientWebsiteContent);
+        }
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Failed to analyze product");
         setCurrentQuestion(null);
@@ -319,7 +329,7 @@ export function AIContentWorkstation({
         setIsAnalyzing(false);
       }
     },
-    [answers]
+    [answers, clientWebsiteContent]
   );
 
   // Called when user picks an answer — saves it and auto-fetches the next question
@@ -349,6 +359,8 @@ export function AIContentWorkstation({
             contentType,
             step: QUESTION_STEPS[nextStep],
             previousAnswers: prevAnswers,
+            // Pass scraped client website content to avoid re-scraping
+            ...(clientWebsiteContent ? { clientWebsiteContent } : {}),
           }),
         })
           .then(async (res) => {
@@ -382,6 +394,8 @@ export function AIContentWorkstation({
           productId: product.id,
           contentType,
           answers: Object.entries(finalAnswers).map(([id, a]) => ({ id, answer: a })),
+          // Include scraped client website content for brand voice context
+          ...(clientWebsiteContent ? { clientWebsiteContent } : {}),
         };
         fetch("/api/ai-content/generate", {
           method: "POST",
@@ -419,7 +433,7 @@ export function AIContentWorkstation({
           });
       }
     },
-    [answers, t]
+    [answers, clientWebsiteContent, t]
   );
 
   const handleGenerate = useCallback(
@@ -435,6 +449,8 @@ export function AIContentWorkstation({
         const requestBody: Record<string, unknown> = { productId: product.id, contentType };
         if (AI_PROVIDER === "claude" && Object.keys(answers).length > 0) {
           requestBody.answers = Object.entries(answers).map(([id, answer]) => ({ id, answer }));
+          // Include scraped client website content for brand voice context
+          if (clientWebsiteContent) requestBody.clientWebsiteContent = clientWebsiteContent;
         }
 
         const res = await fetch("/api/ai-content/generate", {
@@ -472,7 +488,7 @@ export function AIContentWorkstation({
         setIsGenerating(false);
       }
     },
-    [allowGenerateContent, t, answers]
+    [allowGenerateContent, t, answers, clientWebsiteContent]
   );
 
   function handleRegenerate(
@@ -480,10 +496,12 @@ export function AIContentWorkstation({
     contentType: AIContentType
   ) {
     if (AI_PROVIDER === "claude") {
-      // Claude path: restart from question 1 so user can adjust answers
+      // Claude path: restart from question 1 so user can adjust answers.
+      // Reset clientWebsiteContent so it re-scrapes fresh (site may have updated).
       setCurrentQuestion(null);
       setAnswers({});
       setQuestionStep(0);
+      setClientWebsiteContent(null);
       handleAnalyze(product, contentType, 0);
     } else {
       // n8n path: generate directly (upsert on server)
@@ -1163,7 +1181,8 @@ export function AIContentWorkstation({
           setIsAnalyzing(false);
           setQuestionStep(0);
           setCurrentQuestion(null);
-              setAnswers({});
+          setAnswers({});
+          setClientWebsiteContent(null);
         }}
         onGenerate={handleGenerate}
         onRegenerate={handleRegenerate}

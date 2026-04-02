@@ -10,4 +10,4 @@ export {
   type StoreCleanResult,
 } from "./prompts";
 export { generateAffiliateLink } from "./affiliate";
-export { scrapeShippingPolicy, scrapeStoreDescription, clearMapCache } from "./firecrawl";
+export { scrapeShippingPolicy, scrapeStoreDescription, scrapeClientWebsite, clearMapCache } from "./firecrawl";

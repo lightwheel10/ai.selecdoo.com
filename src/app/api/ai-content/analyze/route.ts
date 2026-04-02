@@ -31,6 +31,7 @@ import {
   type QuestionOptionsResponse,
   type QuestionAnswer,
 } from "@/lib/ai-content/prompts";
+import { scrapeClientWebsite } from "@/lib/ai-clean";
 
 const VALID_CONTENT_TYPES = ["deal_post", "social_post", "website_text", "facebook_ad"];
 
@@ -55,11 +56,14 @@ export async function POST(req: Request) {
 
     // ── Validate input ──
     const body = await req.json();
-    const { productId, contentType, step, previousAnswers } = body as {
+    const { productId, contentType, step, previousAnswers, clientWebsiteContent: passedContent } = body as {
       productId?: string;
       contentType?: string;
       step?: string;
       previousAnswers?: QuestionAnswer[];
+      /** Scraped client website content — passed from frontend state on
+       *  steps 2 & 3 to avoid re-scraping. Null on step 1 (will be scraped). */
+      clientWebsiteContent?: string;
     };
 
     if (!productId || typeof productId !== "string") {
@@ -109,6 +113,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Store not found" }, { status: 404 });
     }
 
+    // ── Client website scraping (brand voice context) ──
+    // On step 1: scrape the client's public website via Firecrawl to capture
+    // brand voice and deal formatting style. The result is returned in the
+    // response so the frontend can pass it to subsequent steps and generate.
+    // On steps 2 & 3: use the content passed from the frontend (already scraped).
+    let clientWebsiteContent: string | null = passedContent ?? null;
+    if (!clientWebsiteContent && step === "focus") {
+      // First step — scrape the client website if configured
+      const { data: workspace } = await supabase
+        .from("workspaces")
+        .select("public_site_url")
+        .eq("id", workspaceId)
+        .single();
+
+      if (workspace?.public_site_url) {
+        clientWebsiteContent = await scrapeClientWebsite(workspace.public_site_url);
+      }
+    }
+
     // ── Call Claude to generate options for this step ──
     const question = await generateQuestionOptions<QuestionOptionsResponse>(
       buildOptionsSystemPrompt(),
@@ -117,11 +140,15 @@ export async function POST(req: Request) {
         store,
         contentType,
         step as QuestionStep,
-        previousAnswers ?? []
+        previousAnswers ?? [],
+        clientWebsiteContent
       )
     );
 
-    return NextResponse.json({ question });
+    // Return the question + scraped client website content.
+    // The frontend stores clientWebsiteContent and passes it back on
+    // subsequent steps and the final generate call to avoid re-scraping.
+    return NextResponse.json({ question, clientWebsiteContent });
   } catch (err) {
     console.error("Analyze API error:", err);
     Sentry.captureException(err, { tags: { route: "ai-content/analyze" } });

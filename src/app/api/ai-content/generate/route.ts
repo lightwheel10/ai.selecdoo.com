@@ -145,10 +145,13 @@ export async function POST(req: Request) {
     // When AI_PROVIDER is "n8n", fall through to the existing webhook flow below.
     if (AI_PROVIDER === "claude") {
       const answers: QuestionAnswer[] = body.answers || [];
+      // Client website content — scraped once on the first question step,
+      // passed through from the frontend to avoid re-scraping.
+      const clientWebsiteContent: string | undefined = body.clientWebsiteContent;
 
       const claudeResponse = await generateContent<GeneratedContentResponse>(
         buildGenerateSystemPrompt(contentType),
-        buildGenerateUserPrompt(product, store, contentType, answers)
+        buildGenerateUserPrompt(product, store, contentType, answers, clientWebsiteContent)
       );
 
       // Store DE and EN in separate columns for the language toggle UI.

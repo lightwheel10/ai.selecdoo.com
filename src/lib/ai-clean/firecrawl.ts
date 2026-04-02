@@ -240,6 +240,38 @@ export async function scrapeStoreDescription(
   }
 }
 
+// ─── Client Website Scraping ───
+// Scrapes the client's own public website (e.g. selecdoo.com) to extract
+// brand voice, deal formatting style, and content patterns. Called once
+// per content generation session (on the first question step) and the
+// result is passed through subsequent steps to avoid repeat scraping.
+
+export async function scrapeClientWebsite(
+  publicSiteUrl: string
+): Promise<string | null> {
+  try {
+    const client = getClient();
+    if (!client) return null;
+
+    // Scrape the homepage for brand voice and content style
+    const result = await client.scrape(publicSiteUrl, {
+      formats: ["markdown"],
+    });
+    const md = result?.markdown ?? "";
+    if (md.length >= MIN_CHARS && !isParkedPage(md)) {
+      return md.slice(0, MAX_CHARS_PER_PAGE);
+    }
+    return null;
+  } catch (err) {
+    console.warn("Firecrawl scrapeClientWebsite failed:", err);
+    Sentry.captureException(err, {
+      tags: { service: "firecrawl", operation: "scrapeClientWebsite" },
+      extra: { publicSiteUrl },
+    });
+    return null;
+  }
+}
+
 function isParkedPage(text: string): boolean {
   const lower = text.toLowerCase();
   return PARKING_MARKERS.some((marker) => lower.includes(marker));
