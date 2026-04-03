@@ -196,34 +196,53 @@ DEAL FRAMING:
 - If coupon code exists, make it unmissable
 </framework>`;
 
-/** AI Skills config shape stored in app_settings table, key "ai_skills" */
+/** AI Skills config shape stored in app_settings table */
 export interface AISkills {
   context: string;
   framework: string;
 }
 
 /**
- * Read AI skills from the app_settings table. Falls back to hardcoded
- * defaults if not configured. Called by the analyze and generate API
- * routes once per request — the result is then passed to prompt builders.
+ * Build the workspace-scoped app_settings key for AI skills.
+ * Format: "ai_skills:{workspaceId}" — each workspace has its own row.
+ * This avoids schema changes to app_settings (no workspace_id column needed).
  */
-export async function getAISkillsFromDB(supabase: AnySupabaseClient): Promise<AISkills> {
+export function aiSkillsKey(workspaceId: string): string {
+  return `ai_skills:${workspaceId}`;
+}
+
+/**
+ * Read AI skills from the app_settings table for a specific workspace.
+ * Falls back to hardcoded defaults if no custom config exists.
+ *
+ * Workspace-scoped: each workspace can have its own prompts stored
+ * under key "ai_skills:{workspaceId}". If no workspace config exists,
+ * the hardcoded Hormozi defaults are used — but admins never see them
+ * in the settings UI (they see empty textareas instead).
+ */
+export async function getAISkillsFromDB(
+  supabase: AnySupabaseClient,
+  workspaceId: string | null
+): Promise<AISkills> {
+  if (!workspaceId) return { context: DEFAULT_CONTEXT, framework: DEFAULT_FRAMEWORK };
+
   try {
     const { data } = await supabase
       .from("app_settings")
       .select("value")
-      .eq("key", "ai_skills")
+      .eq("key", aiSkillsKey(workspaceId))
       .single();
 
     if (data?.value) {
       const val = data.value as { context?: string; framework?: string };
       return {
+        // Use workspace config if set, otherwise fall back to hardcoded defaults
         context: val.context || DEFAULT_CONTEXT,
         framework: val.framework || DEFAULT_FRAMEWORK,
       };
     }
   } catch {
-    // No custom skills configured — use defaults
+    // No workspace-specific config — use hardcoded defaults
   }
   return { context: DEFAULT_CONTEXT, framework: DEFAULT_FRAMEWORK };
 }

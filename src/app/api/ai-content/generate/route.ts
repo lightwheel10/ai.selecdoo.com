@@ -151,7 +151,7 @@ export async function POST(req: Request) {
       const clientWebsiteContent: string | undefined = body.clientWebsiteContent;
 
       // Fetch AI skills (editable via Settings → AI Skills tab)
-      const skills = await getAISkillsFromDB(supabase);
+      const skills = await getAISkillsFromDB(supabase, workspaceId);
 
       const claudeResponse = await generateContent<GeneratedContentResponse>(
         buildGenerateSystemPrompt(contentType, skills.context, skills.framework),

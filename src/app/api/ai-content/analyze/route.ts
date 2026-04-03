@@ -139,7 +139,7 @@ export async function POST(req: Request) {
     const locale = cookieStore.get("locale")?.value || "en";
 
     // ── Fetch AI skills (editable via Settings → AI Skills tab) ──
-    const skills = await getAISkillsFromDB(supabase);
+    const skills = await getAISkillsFromDB(supabase, workspaceId);
 
     // ── Call Claude to generate options for this step ──
     const question = await generateQuestionOptions<QuestionOptionsResponse>(

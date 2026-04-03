@@ -1,35 +1,28 @@
 /**
- * Admin AI Skills Tab — editable platform context and copywriting framework.
+ * Admin AI Skills Tab — workspace-scoped AI prompt editor.
  *
- * Allows workspace admins to customize the AI prompts used for content
- * generation without code changes. Two text fields:
+ * Each workspace has its own AI skills config. When no custom config exists:
+ * - Textareas are EMPTY (hardcoded Hormozi defaults are hidden)
+ * - A warning explains that overwriting costs 99 EUR to restore
+ * - Content generation still works — falls back to hidden defaults
  *
- * 1. Platform Context — who the content is for, target audience, how it's used
- * 2. Copywriting Framework — writing style, structure, rules (e.g. Hormozi skill)
- *
- * Values are stored in the app_settings table (key: "ai_skills") and read
- * by the analyze and generate API routes on every content generation call.
- * Falls back to hardcoded defaults if not configured.
- *
- * Follows the same patterns as admin-webhook-tab.tsx:
- * - Fetch on mount, dirty state tracking, save/discard, reset to defaults
- * - Card styling per DESIGN.md §5 (border-strong + hard-shadow)
+ * When custom config exists:
+ * - Textareas show the saved text
+ * - Warning is hidden (they already committed)
+ * - "Reset to Default" deletes the config (goes back to empty + defaults)
  */
 
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Loader2, RotateCcw, Save } from "lucide-react";
+import { Loader2, RotateCcw, Save, AlertTriangle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 interface AISkillsData {
   context: string;
   framework: string;
-  defaults: {
-    context: string;
-    framework: string;
-  };
+  hasCustomConfig: boolean;
 }
 
 export function AdminAISkillsTab() {
@@ -48,17 +41,17 @@ export function AdminAISkillsTab() {
   const [savedContext, setSavedContext] = useState("");
   const [savedFramework, setSavedFramework] = useState("");
 
-  // Defaults (for reset button)
-  const [defaults, setDefaults] = useState<{ context: string; framework: string }>({
-    context: "",
-    framework: "",
-  });
+  // Whether this workspace has ever saved custom config
+  const [hasCustomConfig, setHasCustomConfig] = useState(false);
 
   // ── Dirty tracking ──
   const isDirty = useMemo(
     () => context !== savedContext || framework !== savedFramework,
     [context, framework, savedContext, savedFramework]
   );
+
+  // Whether textareas have any content (determines if save is allowed)
+  const hasContent = context.trim().length > 0 && framework.trim().length > 0;
 
   // ── Fetch on mount ──
   useEffect(() => {
@@ -77,7 +70,7 @@ export function AdminAISkillsTab() {
       setFramework(data.framework);
       setSavedContext(data.context);
       setSavedFramework(data.framework);
-      setDefaults(data.defaults);
+      setHasCustomConfig(data.hasCustomConfig);
     } catch {
       setError(true);
     } finally {
@@ -98,6 +91,7 @@ export function AdminAISkillsTab() {
 
       setSavedContext(context);
       setSavedFramework(framework);
+      setHasCustomConfig(true);
       toast(t("aiSkillsSaved"), {
         description: t("aiSkillsSavedDescription"),
       });
@@ -114,10 +108,22 @@ export function AdminAISkillsTab() {
     setFramework(savedFramework);
   }
 
-  // ── Reset to defaults ──
-  function handleReset() {
-    setContext(defaults.context);
-    setFramework(defaults.framework);
+  // ── Reset to defaults (delete workspace config) ──
+  async function handleReset() {
+    try {
+      const res = await fetch("/api/settings/ai-skills", { method: "DELETE" });
+      if (!res.ok) throw new Error();
+
+      // Clear everything — workspace goes back to empty (hidden defaults used)
+      setContext("");
+      setFramework("");
+      setSavedContext("");
+      setSavedFramework("");
+      setHasCustomConfig(false);
+      toast(t("aiSkillsReset"));
+    } catch {
+      toast.error(t("aiSkillsSaveFailed"));
+    }
   }
 
   // ── Loading skeleton ──
@@ -134,17 +140,6 @@ export function AdminAISkillsTab() {
         >
           <div className="h-4 w-48 mb-4" style={{ backgroundColor: "var(--border)" }} />
           <div className="h-32 w-full" style={{ backgroundColor: "var(--border)" }} />
-        </div>
-        <div
-          className="p-6 animate-pulse"
-          style={{
-            backgroundColor: "var(--card)",
-            border: "2px solid var(--border-strong)",
-            boxShadow: "var(--hard-shadow)",
-          }}
-        >
-          <div className="h-4 w-56 mb-4" style={{ backgroundColor: "var(--border)" }} />
-          <div className="h-48 w-full" style={{ backgroundColor: "var(--border)" }} />
         </div>
       </div>
     );
@@ -206,6 +201,38 @@ export function AdminAISkillsTab() {
         </p>
       </div>
 
+      {/* ── Warning: 99 EUR restore cost ──
+          Only shown when NO custom config exists (workspace hasn't committed yet).
+          Once they save, the warning disappears — they made their choice. */}
+      {!hasCustomConfig && (
+        <div
+          className="p-4 flex items-start gap-3"
+          style={{
+            backgroundColor: "rgba(255,159,10,0.06)",
+            border: "2px solid rgba(255,159,10,0.3)",
+          }}
+        >
+          <AlertTriangle
+            className="w-4 h-4 shrink-0 mt-0.5"
+            style={{ color: "#FF9F0A" }}
+          />
+          <div>
+            <p
+              className="text-[10px] font-bold uppercase tracking-[0.15em] mb-1"
+              style={{ fontFamily: "var(--font-mono)", color: "#FF9F0A" }}
+            >
+              {t("aiSkillsWarningTitle")}
+            </p>
+            <p
+              className="text-[11px] leading-relaxed"
+              style={{ fontFamily: "var(--font-body)", color: "var(--muted-foreground)" }}
+            >
+              {t("aiSkillsWarningDescription")}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* ── Platform Context ── */}
       <div
         className="p-4"
@@ -230,6 +257,7 @@ export function AdminAISkillsTab() {
         <textarea
           value={context}
           onChange={(e) => setContext(e.target.value)}
+          placeholder={t("aiSkillsContextPlaceholder")}
           className="w-full text-[11px] leading-relaxed p-3 border-2 resize-y outline-none transition-all duration-100 focus:border-primary"
           style={{
             backgroundColor: "var(--input)",
@@ -241,12 +269,14 @@ export function AdminAISkillsTab() {
             whiteSpace: "pre-wrap",
           }}
         />
-        <p
-          className="text-[9px] font-bold uppercase tracking-[0.15em] mt-1.5"
-          style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
-        >
-          {context.length} chars
-        </p>
+        {context.length > 0 && (
+          <p
+            className="text-[9px] font-bold uppercase tracking-[0.15em] mt-1.5"
+            style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+          >
+            {context.length} chars
+          </p>
+        )}
       </div>
 
       {/* ── Copywriting Framework ── */}
@@ -273,6 +303,7 @@ export function AdminAISkillsTab() {
         <textarea
           value={framework}
           onChange={(e) => setFramework(e.target.value)}
+          placeholder={t("aiSkillsFrameworkPlaceholder")}
           className="w-full text-[11px] leading-relaxed p-3 border-2 resize-y outline-none transition-all duration-100 focus:border-primary"
           style={{
             backgroundColor: "var(--input)",
@@ -284,30 +315,34 @@ export function AdminAISkillsTab() {
             whiteSpace: "pre-wrap",
           }}
         />
-        <p
-          className="text-[9px] font-bold uppercase tracking-[0.15em] mt-1.5"
-          style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
-        >
-          {framework.length} chars
-        </p>
+        {framework.length > 0 && (
+          <p
+            className="text-[9px] font-bold uppercase tracking-[0.15em] mt-1.5"
+            style={{ fontFamily: "var(--font-mono)", color: "var(--muted-foreground)" }}
+          >
+            {framework.length} chars
+          </p>
+        )}
       </div>
 
       {/* ── Action Buttons ── */}
       <div className="flex items-center gap-2">
-        {/* Reset to defaults */}
-        <button
-          onClick={handleReset}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
-          style={{
-            fontFamily: "var(--font-mono)",
-            backgroundColor: "transparent",
-            borderColor: "var(--border)",
-            color: "var(--muted-foreground)",
-          }}
-        >
-          <RotateCcw className="w-3 h-3" />
-          {t("aiSkillsResetDefaults")}
-        </button>
+        {/* Reset — only visible when custom config exists */}
+        {hasCustomConfig && (
+          <button
+            onClick={handleReset}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] border-2 transition-all duration-100 hover:opacity-80"
+            style={{
+              fontFamily: "var(--font-mono)",
+              backgroundColor: "transparent",
+              borderColor: "var(--border)",
+              color: "var(--muted-foreground)",
+            }}
+          >
+            <RotateCcw className="w-3 h-3" />
+            {t("aiSkillsResetDefaults")}
+          </button>
+        )}
 
         {/* Discard changes */}
         {isDirty && (
@@ -328,7 +363,7 @@ export function AdminAISkillsTab() {
         {/* Save */}
         <button
           onClick={handleSave}
-          disabled={!isDirty || saving}
+          disabled={!isDirty || !hasContent || saving}
           className="flex items-center gap-1.5 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] bg-primary text-primary-foreground transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-40 disabled:pointer-events-none"
           style={{
             fontFamily: "var(--font-mono)",
