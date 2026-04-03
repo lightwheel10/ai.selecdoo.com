@@ -252,7 +252,9 @@ export function buildOptionsUserPrompt(
   /** Scraped markdown from the client's own website (e.g. selecdoo.com).
    *  Provides brand voice and content style context. Scraped once on step 1,
    *  passed through from frontend state on subsequent steps. */
-  clientWebsiteContent?: string | null
+  clientWebsiteContent?: string | null,
+  /** User's locale — used to write tone option examples in the correct language */
+  locale: string = "en"
 ): string {
   const productData = formatProductData(product, store);
   const typeContext = contentType === "deal_post"
@@ -284,7 +286,12 @@ export function buildOptionsUserPrompt(
 → The user already chose a focus — tailor the occasion options to complement that choice.
 → Return with id: "occasion"`,
 
-    tone: `Generate options for the **tone** question — "How should the tone and urgency feel?"
+    tone: locale === "de"
+      ? `Generiere Optionen für die **Ton**-Frage — "Wie soll der Ton und die Dringlichkeit wirken?"
+→ Diese 3 Standard-Optionen immer einschließen: "Subtil & Informativ", "Ausgewogen — freundlich mit einem Anstoß", "Volle Dringlichkeit — maximaler Handlungsdruck"
+→ Füge 1-2 produktspezifische Ton-Optionen hinzu, die zum gewählten Fokus und Anlass passen.
+→ Return with id: "tone"`
+      : `Generate options for the **tone** question — "How should the tone and urgency feel?"
 → Always include these 3 standard options: "Subtle & Informative", "Balanced — friendly with a nudge", "Full FOMO — maximum urgency"
 → Add 1-2 product-specific tone options that fit the user's chosen focus and occasion.
 → Return with id: "tone"`,

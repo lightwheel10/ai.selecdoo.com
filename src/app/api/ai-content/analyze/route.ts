@@ -146,7 +146,8 @@ export async function POST(req: Request) {
         contentType,
         step as QuestionStep,
         previousAnswers ?? [],
-        clientWebsiteContent
+        clientWebsiteContent,
+        locale
       )
     );
 
