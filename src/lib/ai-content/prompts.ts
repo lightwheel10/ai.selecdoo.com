@@ -130,12 +130,16 @@ function formatProductData(product: Record<string, any>, store: Record<string, a
 export const QUESTION_STEPS = ["focus", "occasion", "tone"] as const;
 export type QuestionStep = (typeof QUESTION_STEPS)[number];
 
-// ─── Hormozi Skill Context ───
-// Shared context block used across all prompts. Defines who the content
-// is for, how it will be used, and the copywriting framework to apply.
-// Based on the client's Hormozi Skill documents (Google Docs collection).
+// ─── AI Skills (editable via Settings → AI Skills tab) ───
+// These defaults are used when no custom skills are configured in the
+// app_settings table. Admins can override them from the settings UI.
+// The prompt builders accept context/framework as params so the API
+// routes can pass DB values or fall back to these defaults.
 
-const SELECDOO_CONTEXT = `<context>
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnySupabaseClient = import("@supabase/supabase-js").SupabaseClient<any, any, any>;
+
+export const DEFAULT_CONTEXT = `<context>
 You write posts and deals for selecdoo — an affiliate marketing platform.
 The content is used on selecdoo.com/deals as templates for creators and influencers.
 Target audience: creators, bloggers, influencers, YouTubers, and other publishers.
@@ -144,7 +148,7 @@ PROBLEM-SOLVERS to their community. Creators should understand the deal, copy
 their affiliate link, and share it. This gives creators top briefings.
 </context>`;
 
-const HORMOZI_FRAMEWORK = `<framework name="hormozi-copywriting">
+export const DEFAULT_FRAMEWORK = `<framework name="hormozi-copywriting">
 You apply Alex Hormozi's direct-response copywriting methodology:
 
 WRITING STYLE:
@@ -192,6 +196,38 @@ DEAL FRAMING:
 - If coupon code exists, make it unmissable
 </framework>`;
 
+/** AI Skills config shape stored in app_settings table, key "ai_skills" */
+export interface AISkills {
+  context: string;
+  framework: string;
+}
+
+/**
+ * Read AI skills from the app_settings table. Falls back to hardcoded
+ * defaults if not configured. Called by the analyze and generate API
+ * routes once per request — the result is then passed to prompt builders.
+ */
+export async function getAISkillsFromDB(supabase: AnySupabaseClient): Promise<AISkills> {
+  try {
+    const { data } = await supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "ai_skills")
+      .single();
+
+    if (data?.value) {
+      const val = data.value as { context?: string; framework?: string };
+      return {
+        context: val.context || DEFAULT_CONTEXT,
+        framework: val.framework || DEFAULT_FRAMEWORK,
+      };
+    }
+  } catch {
+    // No custom skills configured — use defaults
+  }
+  return { context: DEFAULT_CONTEXT, framework: DEFAULT_FRAMEWORK };
+}
+
 // Hormozi framework is intentionally NOT included here — it's only needed for the
 // final content generation, not for generating question options. This keeps the
 // analyze calls leaner and faster.
@@ -201,11 +237,11 @@ const LOCALE_LANGUAGE: Record<string, string> = {
   de: "German",
 };
 
-function buildStepSystemPrompt(locale: string): string {
+function buildStepSystemPrompt(locale: string, context: string): string {
   const language = LOCALE_LANGUAGE[locale] || "English";
   return `<role>You are a marketing strategist for the selecdoo affiliate platform, analyzing product data to help generate targeted deal posts and social media content.</role>
 
-${SELECDOO_CONTEXT}
+${context}
 
 <task>
 You will receive detailed product and store data, plus any answers the user has already given to previous questions. Your job is to generate contextual, product-specific OPTIONS for ONE specific question. The options must be directly relevant to THIS product and influenced by any previous answers.
@@ -237,8 +273,8 @@ Return ONLY valid JSON matching this exact schema:
  * @param locale - User's locale ("en" or "de"). Questions and options
  *   will be written in the user's language so the UI feels native.
  */
-export function buildOptionsSystemPrompt(locale: string = "en"): string {
-  return buildStepSystemPrompt(locale);
+export function buildOptionsSystemPrompt(locale: string = "en", context: string = DEFAULT_CONTEXT): string {
+  return buildStepSystemPrompt(locale, context);
 }
 
 export function buildOptionsUserPrompt(
@@ -313,12 +349,12 @@ ${stepInstructions[step]}`;
 
 // ─── Content Generation Prompts ───
 
-function buildDealPostSystemPrompt(): string {
+function buildDealPostSystemPrompt(context: string, framework: string): string {
   return `<role>You are an expert direct-response copywriter for the selecdoo affiliate platform, specializing in deal posts that creators and influencers will share with their communities.</role>
 
-${SELECDOO_CONTEXT}
+${context}
 
-${HORMOZI_FRAMEWORK}
+${framework}
 
 <task>
 Generate a complete DEAL POST in both German (primary) and English.
@@ -379,12 +415,12 @@ Return ONLY valid JSON:
 </output_format>`;
 }
 
-function buildSocialPostSystemPrompt(): string {
+function buildSocialPostSystemPrompt(context: string, framework: string): string {
   return `<role>You are an expert social media copywriter for the selecdoo affiliate platform, creating engaging posts that creators and influencers will share with their communities.</role>
 
-${SELECDOO_CONTEXT}
+${context}
 
-${HORMOZI_FRAMEWORK}
+${framework}
 
 <task>
 Generate a SOCIAL MEDIA POST in both German (primary) and English.
@@ -434,10 +470,14 @@ Return ONLY valid JSON:
 </output_format>`;
 }
 
-export function buildGenerateSystemPrompt(contentType: string): string {
+export function buildGenerateSystemPrompt(
+  contentType: string,
+  context: string = DEFAULT_CONTEXT,
+  framework: string = DEFAULT_FRAMEWORK
+): string {
   return contentType === "deal_post"
-    ? buildDealPostSystemPrompt()
-    : buildSocialPostSystemPrompt();
+    ? buildDealPostSystemPrompt(context, framework)
+    : buildSocialPostSystemPrompt(context, framework);
 }
 
 export function buildGenerateUserPrompt(

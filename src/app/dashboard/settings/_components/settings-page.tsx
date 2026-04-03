@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useCallback } from "react";
-import { Users, Store as StoreIcon, Package, Bot, Webhook } from "lucide-react";
+import { Users, Store as StoreIcon, Package, Bot, Webhook, Sparkles } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TeamAccessManager } from "./team-access-manager";
 
@@ -24,6 +24,10 @@ const AdminWebhookTab = dynamic(
   () => import("./admin-webhook-tab").then((m) => m.AdminWebhookTab),
   { ssr: false }
 );
+const AdminAISkillsTab = dynamic(
+  () => import("./admin-ai-skills-tab").then((m) => m.AdminAISkillsTab),
+  { ssr: false }
+);
 
 interface SettingsPageProps {
   isAdmin: boolean;
@@ -31,7 +35,7 @@ interface SettingsPageProps {
 }
 
 // Valid tab values — used to validate URL param
-const VALID_TABS = ["team", "shops", "products", "webhook", "ai-activity"] as const;
+const VALID_TABS = ["team", "shops", "products", "webhook", "ai-skills", "ai-activity"] as const;
 type TabValue = (typeof VALID_TABS)[number];
 
 export function SettingsPage({ isAdmin, canManageTeam }: SettingsPageProps) {
@@ -116,6 +120,10 @@ export function SettingsPage({ isAdmin, canManageTeam }: SettingsPageProps) {
           <Webhook className="w-3.5 h-3.5" />
           {ta("webhookTab")}
         </TabsTrigger>
+        <TabsTrigger value="ai-skills">
+          <Sparkles className="w-3.5 h-3.5" />
+          {ta("aiSkillsTab")}
+        </TabsTrigger>
         <TabsTrigger value="ai-activity">
           <Bot className="w-3.5 h-3.5" />
           {ta("aiActivityTab")}
@@ -133,6 +141,9 @@ export function SettingsPage({ isAdmin, canManageTeam }: SettingsPageProps) {
       </TabsContent>
       <TabsContent value="webhook">
         <AdminWebhookTab />
+      </TabsContent>
+      <TabsContent value="ai-skills">
+        <AdminAISkillsTab />
       </TabsContent>
       <TabsContent value="ai-activity">
         <AdminAIActivityTab />

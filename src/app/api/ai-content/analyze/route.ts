@@ -27,6 +27,7 @@ import { generateQuestionOptions } from "@/lib/ai-content/client";
 import {
   buildOptionsSystemPrompt,
   buildOptionsUserPrompt,
+  getAISkillsFromDB,
   QUESTION_STEPS,
   type QuestionStep,
   type QuestionOptionsResponse,
@@ -137,9 +138,12 @@ export async function POST(req: Request) {
     const cookieStore = await cookies();
     const locale = cookieStore.get("locale")?.value || "en";
 
+    // ── Fetch AI skills (editable via Settings → AI Skills tab) ──
+    const skills = await getAISkillsFromDB(supabase);
+
     // ── Call Claude to generate options for this step ──
     const question = await generateQuestionOptions<QuestionOptionsResponse>(
-      buildOptionsSystemPrompt(locale),
+      buildOptionsSystemPrompt(locale, skills.context),
       buildOptionsUserPrompt(
         product,
         store,

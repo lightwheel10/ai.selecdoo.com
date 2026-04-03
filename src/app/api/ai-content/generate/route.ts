@@ -10,6 +10,7 @@ import { generateContent } from "@/lib/ai-content/client";
 import {
   buildGenerateSystemPrompt,
   buildGenerateUserPrompt,
+  getAISkillsFromDB,
   type QuestionAnswer,
   type GeneratedContentResponse,
 } from "@/lib/ai-content/prompts";
@@ -149,8 +150,11 @@ export async function POST(req: Request) {
       // passed through from the frontend to avoid re-scraping.
       const clientWebsiteContent: string | undefined = body.clientWebsiteContent;
 
+      // Fetch AI skills (editable via Settings → AI Skills tab)
+      const skills = await getAISkillsFromDB(supabase);
+
       const claudeResponse = await generateContent<GeneratedContentResponse>(
-        buildGenerateSystemPrompt(contentType),
+        buildGenerateSystemPrompt(contentType, skills.context, skills.framework),
         buildGenerateUserPrompt(product, store, contentType, answers, clientWebsiteContent)
       );
 
