@@ -195,7 +195,15 @@ DEAL FRAMING:
 // Hormozi framework is intentionally NOT included here — it's only needed for the
 // final content generation, not for generating question options. This keeps the
 // analyze calls leaner and faster.
-const STEP_SYSTEM_PROMPT = `<role>You are a marketing strategist for the selecdoo affiliate platform, analyzing product data to help generate targeted deal posts and social media content.</role>
+/** Map locale code to the language name used in the prompt */
+const LOCALE_LANGUAGE: Record<string, string> = {
+  en: "English",
+  de: "German",
+};
+
+function buildStepSystemPrompt(locale: string): string {
+  const language = LOCALE_LANGUAGE[locale] || "English";
+  return `<role>You are a marketing strategist for the selecdoo affiliate platform, analyzing product data to help generate targeted deal posts and social media content.</role>
 
 ${SELECDOO_CONTEXT}
 
@@ -218,13 +226,19 @@ Return ONLY valid JSON matching this exact schema:
 - Generate 3-5 options
 - Options must be specific to this product (reference actual ingredients, features, promotions, use cases)
 - If the user already answered earlier questions, tailor options to build on those answers
-- Write questions and options in English
+- Write questions and options in ${language}
 - Do NOT include generic filler options
 - Frame options around PROBLEMS the product solves (Hormozi approach)
 </rules>`;
+}
 
-export function buildOptionsSystemPrompt(): string {
-  return STEP_SYSTEM_PROMPT;
+/**
+ * Build the system prompt for question option generation.
+ * @param locale - User's locale ("en" or "de"). Questions and options
+ *   will be written in the user's language so the UI feels native.
+ */
+export function buildOptionsSystemPrompt(locale: string = "en"): string {
+  return buildStepSystemPrompt(locale);
 }
 
 export function buildOptionsUserPrompt(

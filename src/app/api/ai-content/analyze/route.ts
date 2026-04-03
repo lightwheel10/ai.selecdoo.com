@@ -16,6 +16,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import * as Sentry from "@sentry/nextjs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthContext } from "@/lib/auth/session";
@@ -132,9 +133,13 @@ export async function POST(req: Request) {
       }
     }
 
+    // ── Read user's locale so questions appear in their language ──
+    const cookieStore = await cookies();
+    const locale = cookieStore.get("locale")?.value || "en";
+
     // ── Call Claude to generate options for this step ──
     const question = await generateQuestionOptions<QuestionOptionsResponse>(
-      buildOptionsSystemPrompt(),
+      buildOptionsSystemPrompt(locale),
       buildOptionsUserPrompt(
         product,
         store,
