@@ -9,7 +9,7 @@ function getClient(): Anthropic {
   return _client;
 }
 
-const DEFAULT_MODEL = "claude-haiku-4-5-20251001";
+const DEFAULT_MODEL = "claude-sonnet-4-6";
 
 /**
  * Call Claude with a system + user prompt and parse the response as JSON.
