@@ -235,14 +235,22 @@ export async function getAISkillsFromDB(
 
     if (data?.value) {
       const val = data.value as { context?: string; framework?: string };
+      // Trim whitespace before checking — prevents whitespace-only values
+      // from bypassing the default fallback and being sent to Claude as junk.
+      const ctx = typeof val.context === "string" ? val.context.trim() : "";
+      const fw = typeof val.framework === "string" ? val.framework.trim() : "";
       return {
-        // Use workspace config if set, otherwise fall back to hardcoded defaults
-        context: val.context || DEFAULT_CONTEXT,
-        framework: val.framework || DEFAULT_FRAMEWORK,
+        context: ctx || DEFAULT_CONTEXT,
+        framework: fw || DEFAULT_FRAMEWORK,
       };
     }
-  } catch {
-    // No workspace-specific config — use hardcoded defaults
+  } catch (err) {
+    // Supabase throws PGRST116 when no row matches .single() — expected
+    // when no custom config exists. Log anything else as a real error.
+    const pgErr = err as { code?: string };
+    if (pgErr.code !== "PGRST116") {
+      console.error(`getAISkillsFromDB: unexpected error for workspace ${workspaceId}:`, err);
+    }
   }
   return { context: DEFAULT_CONTEXT, framework: DEFAULT_FRAMEWORK };
 }

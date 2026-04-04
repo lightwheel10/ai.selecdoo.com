@@ -36,11 +36,18 @@ export async function GET() {
     const supabase = createAdminClient();
     const dbKey = aiSkillsKey(workspaceId);
 
-    const { data } = await supabase
+    const { data, error: fetchErr } = await supabase
       .from("app_settings")
       .select("value")
       .eq("key", dbKey)
       .single();
+
+    // PGRST116 = no rows — expected when workspace hasn't configured skills yet.
+    // Any other error is a real DB issue.
+    if (fetchErr && fetchErr.code !== "PGRST116") {
+      console.error("GET ai-skills DB error:", fetchErr);
+      return NextResponse.json({ error: "Failed to fetch config" }, { status: 500 });
+    }
 
     // Check if this workspace has a saved config
     const saved =
@@ -97,38 +104,22 @@ export async function PUT(req: Request) {
     const supabase = createAdminClient();
     const dbKey = aiSkillsKey(workspaceId);
 
-    // Upsert: try update first, insert if the row doesn't exist yet
-    const { data: existing } = await supabase
+    // Atomic upsert — avoids race condition when two admins save
+    // simultaneously. The old check-then-act pattern (SELECT → INSERT/UPDATE)
+    // could cause a constraint violation if both requests saw "no row"
+    // and both tried to INSERT.
+    const { error } = await supabase
       .from("app_settings")
-      .select("key")
-      .eq("key", dbKey)
-      .single();
-
-    if (existing) {
-      const { error } = await supabase
-        .from("app_settings")
-        .update({
-          value: { context, framework },
-          updated_at: new Date().toISOString(),
-          updated_by: user?.id ?? null,
-        })
-        .eq("key", dbKey);
-
-      if (error) {
-        console.error("Update ai-skills error:", error);
-        return NextResponse.json({ error: "Failed to update config" }, { status: 500 });
-      }
-    } else {
-      const { error } = await supabase.from("app_settings").insert({
+      .upsert({
         key: dbKey,
         value: { context, framework },
+        updated_at: new Date().toISOString(),
         updated_by: user?.id ?? null,
-      });
+      }, { onConflict: "key" });
 
-      if (error) {
-        console.error("Insert ai-skills error:", error);
-        return NextResponse.json({ error: "Failed to save config" }, { status: 500 });
-      }
+    if (error) {
+      console.error("Upsert ai-skills error:", error);
+      return NextResponse.json({ error: "Failed to save config" }, { status: 500 });
     }
 
     return NextResponse.json({ context, framework });
@@ -157,10 +148,15 @@ export async function DELETE() {
     }
 
     const supabase = createAdminClient();
-    await supabase
+    const { error } = await supabase
       .from("app_settings")
       .delete()
       .eq("key", aiSkillsKey(workspaceId));
+
+    if (error) {
+      console.error("DELETE ai-skills error:", error);
+      return NextResponse.json({ error: "Failed to reset config" }, { status: 500 });
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {
