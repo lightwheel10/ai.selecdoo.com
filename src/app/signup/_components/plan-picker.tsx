@@ -21,8 +21,8 @@ interface Plan {
 export const PLANS: Plan[] = [
   {
     id: "standard",
-    name: "Standard",
-    price: "$79",
+    name: "Pro",
+    price: "€79",
     priceSuffix: "/month",
     description:
       "For solo affiliates getting started with deal content automation.",
@@ -31,13 +31,13 @@ export const PLANS: Plan[] = [
       "50 products per shop",
       "250 total products",
       "2 checks per month",
-      "$5 AI generations",
+      "€5 AI generations",
     ],
   },
   {
     id: "pro",
-    name: "Pro",
-    price: "$159",
+    name: "Business Class",
+    price: "€159",
     priceSuffix: "/month",
     description:
       "For power users and teams scaling across multiple stores.",
@@ -46,7 +46,7 @@ export const PLANS: Plan[] = [
       "100 products per shop",
       "1,000 total products",
       "5 checks per month",
-      "$10 AI generations",
+      "€10 AI generations",
     ],
     popular: true,
   },

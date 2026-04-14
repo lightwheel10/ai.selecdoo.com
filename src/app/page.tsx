@@ -458,7 +458,7 @@ export default async function LandingPage() {
                       letterSpacing: "-0.03em",
                     }}
                   >
-                    $79
+                    €79
                   </span>
                   <span
                     className="text-[11px] font-bold text-muted-foreground"
@@ -548,7 +548,7 @@ export default async function LandingPage() {
                       letterSpacing: "-0.03em",
                     }}
                   >
-                    $159
+                    €159
                   </span>
                   <span
                     className="text-[11px] font-bold text-muted-foreground"
