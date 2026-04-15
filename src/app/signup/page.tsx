@@ -1,27 +1,29 @@
 /**
- * Signup page — creates a new workspace + starts a 7-day trial.
+ * Signup page — creates a new workspace and redirects to Stripe
+ * Checkout for the 7-day trial.
  *
  * Six-step wizard:
  *   1. personal   First + Last + Country
  *   2. workspace  Workspace name + Email                (no API call)
  *   3. business   First store URL (optional)            (no API call)
- *   4. plan       Pick Standard or Pro (from ?plan=)    (no API call)
- *   5. payment    Card form + "Start Trial"             (sends OTP)
- *   6. verify     6-digit OTP code                      (verify + POST)
- *   — creating    Spinner while /api/workspaces runs, then /dashboard.
+ *   4. plan       Pick Pro or Business (from ?plan=)    (no API call)
+ *   5. payment    Order summary + "Continue" button     (sends OTP)
+ *   6. verify     6-digit OTP code                      (verify → create
+ *                                                        workspace →
+ *                                                        Stripe Checkout)
+ *   — creating    Brief spinner while the two API calls run, then the
+ *                 browser navigates to Stripe's hosted checkout (or
+ *                 /dashboard in dev bypass).
  *
- * Rationale for OTP at the end (not the middle): tab-switches to the
- * email app are the single biggest conversion killer in signup flows.
- * By the time the user reaches "Check your inbox" they've already
- * invested 60–90 seconds and entered a card — strong commitment signal.
+ * Rationale for OTP at the end: tab-switches to the email app are the
+ * single biggest conversion killer. By the time the user reaches
+ * "Check your inbox" they've already picked a plan and reviewed the
+ * trial terms — strong commitment signal.
  *
- * The optional Step 3 store URL is forwarded to the API which inserts
- * a stores row and kicks off the initial product import.
- *
- * Card data is never sent to our server — the card form is a mock UI
- * for the Option B scope (UI + DB only). When Stripe lands, replace
- * CardForm with Stripe Elements and route the payment-method id into
- * the POST body.
+ * Card data never touches this app. Card entry happens on Stripe's
+ * hosted Checkout page (see /api/billing/checkout for the session
+ * creation). The real subscription row is written by the webhook
+ * handler on checkout.session.completed.
  *
  * Design: Neo-Industrial (DESIGN.md) — .landing-page scoped overrides
  * for gold #FFD700 palette, Epilogue/Inter fonts, hard shadows.
@@ -36,7 +38,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Loader2,
-  Zap,
   Sparkles,
   CheckCircle2,
   Store as StoreIcon,
@@ -44,12 +45,6 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { CountryPicker } from "./_components/country-picker";
 import { PlanPicker, PLANS, type PlanId } from "./_components/plan-picker";
-import {
-  CardForm,
-  EMPTY_CARD,
-  isCardComplete,
-  type CardData,
-} from "./_components/card-form";
 
 type Step =
   | "personal"
@@ -107,10 +102,9 @@ export default function SignupPage() {
   // Step 4 state
   const [plan, setPlan] = useState<PlanId>(initialPlan);
 
-  // Step 5 state (mock card — never leaves the browser)
-  const [card, setCard] = useState<CardData>(EMPTY_CARD);
-  // Discount code is a stub field — not sent to the API, not applied
-  // anywhere yet. Will be wired up when real billing lands.
+  // Step 5 state — discount code is a stub (not yet forwarded to
+  // Stripe; Stripe Checkout's own promotion-code field handles real
+  // discounts today via allow_promotion_codes on the session).
   const [discountCode, setDiscountCode] = useState("");
 
   // Step 6 state (OTP)
@@ -148,15 +142,13 @@ export default function SignupPage() {
   const canAdvanceWorkspace =
     workspaceName.trim().length >= 2 && /\S+@\S+\.\S+/.test(email);
   const canAdvanceBusiness = isUrlFormatValid(storeUrl); // empty is valid
-  const canStartTrial = isCardComplete(card);
 
   /**
-   * Step 5 → 6: send OTP, show verify screen.
-   * OTP lives at the end of the flow so the user has already committed
-   * card details by the time they're asked to check their inbox.
+   * Step 5 → 6: send the OTP and show the verify screen.
+   * No card capture here — card entry happens on Stripe's hosted
+   * Checkout page after the workspace is created.
    */
-  const handleStartTrial = useCallback(async () => {
-    if (!canStartTrial) return;
+  const handleContinueToCheckout = useCallback(async () => {
     setError(null);
     setLoading(true);
     const { error } = await supabase.auth.signInWithOtp({
@@ -173,7 +165,7 @@ export default function SignupPage() {
     }
     setStep("verify");
     setCooldown(60);
-  }, [canStartTrial, email, supabase.auth]);
+  }, [email, supabase.auth]);
 
   const handleResend = useCallback(async () => {
     if (cooldown > 0) return;
@@ -192,10 +184,22 @@ export default function SignupPage() {
   }, [cooldown, email, supabase.auth]);
 
   /**
-   * Step 6 → creating: verify the OTP, then POST everything we've
-   * collected to /api/workspaces. The route handles the full side-
-   * effect chain (profile, workspace, member, subscription, optional
-   * first store + product import trigger).
+   * Step 6 → creating: verify the OTP, create the workspace, then
+   * create a Stripe Checkout Session and hand the browser off to
+   * Stripe's hosted page for card entry. The webhook handler
+   * (`/api/billing/webhook`) writes the real subscription row when
+   * Stripe confirms the payment.
+   *
+   * Failure modes:
+   *   - OTP verify fails → stay on step 6 with error, user re-enters
+   *   - /api/workspaces fails → revert to step 6 with error (friction,
+   *     but safe — user can resend OTP)
+   *   - /api/billing/checkout fails AFTER workspace was created →
+   *     fall through to /dashboard. They have a working workspace;
+   *     they can retry checkout from a Billing tab / banner (P3.x).
+   *   - Dev bypass → server returns { devBypass: true, url:
+   *     "/dashboard" }; we router.push() instead of window.location
+   *     so client-side navigation is used.
    */
   const handleVerifyAndCreate = useCallback(async () => {
     if (otpCode.length !== 6) return;
@@ -215,6 +219,7 @@ export default function SignupPage() {
 
     setStep("creating");
     try {
+      // 1. Create the workspace (+ profile + optional first store).
       const res = await fetch("/api/workspaces", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -223,7 +228,6 @@ export default function SignupPage() {
           lastName: lastName.trim(),
           country,
           name: workspaceName.trim(),
-          intendedPlan: plan,
           storeUrl: storeUrl.trim() || undefined,
         }),
       });
@@ -233,7 +237,34 @@ export default function SignupPage() {
           .catch(() => ({ error: "Unknown error" }));
         throw new Error(data.error || `HTTP ${res.status}`);
       }
-      router.push("/dashboard");
+
+      // 2. Create a Stripe Checkout Session for the selected plan.
+      const checkoutRes = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
+      const checkoutData = await checkoutRes
+        .json()
+        .catch(() => ({ error: "Unknown error" }));
+      if (!checkoutRes.ok || typeof checkoutData.url !== "string") {
+        // Workspace was created successfully — fall through to
+        // dashboard. User can re-initiate checkout from there.
+        console.warn(
+          "[signup] checkout creation failed after workspace created:",
+          checkoutData.error
+        );
+        router.push("/dashboard");
+        return;
+      }
+
+      // 3. Redirect to Stripe (real mode) or dashboard (dev bypass).
+      if (checkoutData.devBypass === true) {
+        router.push(checkoutData.url);
+      } else {
+        // Full-page navigation — leaves our app entirely.
+        window.location.href = checkoutData.url;
+      }
     } catch (err) {
       setLoading(false);
       setStep("verify");
@@ -284,7 +315,7 @@ export default function SignupPage() {
     workspace: { kicker: "Step 2 of 6", title: "Create your workspace" },
     business: { kicker: "Step 3 of 6", title: "Add your first store" },
     plan: { kicker: "Step 4 of 6", title: "Choose a plan" },
-    payment: { kicker: "Step 5 of 6", title: "Payment details" },
+    payment: { kicker: "Step 5 of 6", title: "Review your trial" },
     verify: { kicker: "Step 6 of 6", title: "Check your inbox" },
     creating: { kicker: "Almost there", title: "Setting up your workspace" },
   };
@@ -305,13 +336,7 @@ export default function SignupPage() {
         }}
       />
 
-      {/* Wrapper widens on step 5 so the summary + card panels get
-          enough room to breathe side by side. Other steps stay tight. */}
-      <div
-        className={`relative z-10 w-full ${
-          step === "payment" ? "max-w-[820px]" : "max-w-[600px]"
-        }`}
-      >
+      <div className="relative z-10 w-full max-w-[600px]">
         {step !== "creating" && (
           <Link
             href="/"
@@ -732,8 +757,7 @@ export default function SignupPage() {
             so each panel gets enough room. Mobile stacks them. */}
         {step === "payment" && (
           <>
-            {/* Standalone step header — sits above the panels, not
-                wrapped in a card. Checkout-page aesthetic. */}
+            {/* Standalone step header — checkout-page aesthetic. */}
             <div className="mb-5">
               <p
                 className="text-[10px] font-bold uppercase tracking-[0.15em] mb-1.5"
@@ -755,158 +779,129 @@ export default function SignupPage() {
               </h1>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5 items-stretch">
-              {/* ── LEFT PANEL — Order summary + discount ── */}
-              <div
-                className="p-6 flex flex-col"
+            {/* Single summary card — no card form here. Card entry
+                happens on Stripe's hosted page (see P1.1 checkout). */}
+            <div
+              className="p-6 flex flex-col mb-5"
+              style={{
+                backgroundColor: "var(--card)",
+                border: "2px solid var(--border-strong)",
+                boxShadow: "var(--hard-shadow)",
+              }}
+            >
+              <p
+                className="text-[10px] font-bold uppercase tracking-[0.15em] mb-4"
                 style={{
-                  backgroundColor: "var(--card)",
-                  border: "2px solid var(--border-strong)",
-                  boxShadow: "var(--hard-shadow)",
+                  fontFamily: "var(--font-mono)",
+                  color: "var(--primary-text)",
                 }}
               >
-                <p
-                  className="text-[10px] font-bold uppercase tracking-[0.15em] mb-4"
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    color: "var(--primary-text)",
-                  }}
-                >
-                  Order Summary
-                </p>
+                Order Summary
+              </p>
 
-                <div className="flex flex-col gap-3">
-                  <SummaryRow
-                    label="Plan"
-                    value={`${selectedPlan.name} · ${selectedPlan.price}${selectedPlan.priceSuffix}`}
-                  />
-                  <SummaryRow
-                    label="Trial Starts"
-                    value={trialStartLabel}
-                  />
-                  <SummaryRow
-                    label="Trial Ends"
-                    value={trialEndLabel}
-                  />
-                </div>
-
-                {/* Discount code — optional, stub for now. */}
-                <div
-                  className="mt-5 pt-5"
-                  style={{ borderTop: "2px solid var(--border)" }}
-                >
-                  <label
-                    className="block text-[10px] font-bold uppercase tracking-[0.15em] mb-2"
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      color: "var(--foreground)",
-                      opacity: 0.5,
-                    }}
-                  >
-                    Discount Code
-                  </label>
-                  <input
-                    type="text"
-                    value={discountCode}
-                    onChange={(e) =>
-                      setDiscountCode(e.target.value.toUpperCase())
-                    }
-                    placeholder="SAVE10"
-                    className="w-full px-3 py-2.5 text-xs outline-none transition-all duration-100"
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      backgroundColor: "var(--input)",
-                      border: "2px solid var(--border)",
-                      color: "var(--foreground)",
-                    }}
-                    onFocus={(e) => {
-                      e.currentTarget.style.border =
-                        "4px solid var(--primary)";
-                      e.currentTarget.style.padding = "8px 10px";
-                    }}
-                    onBlur={(e) => {
-                      e.currentTarget.style.border = "2px solid var(--border)";
-                      e.currentTarget.style.padding = "10px 12px";
-                    }}
-                  />
-                  {discountCode.trim() && (
-                    <p
-                      className="mt-1.5 text-[10px] font-bold uppercase tracking-wider"
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        color: "var(--primary-text)",
-                      }}
-                    >
-                      Code saved · will apply at checkout
-                    </p>
-                  )}
-                </div>
-
-                {/* Charge footer — mt-auto pushes it to the bottom of
-                    the panel so the summary aligns with the card panel
-                    height when they sit side by side. */}
-                <div
-                  className="mt-auto pt-5"
-                  style={{ borderTop: "2px solid var(--border)" }}
-                >
-                  <p
-                    className="text-[10px] font-bold uppercase tracking-[0.15em] mb-1.5"
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      color: "var(--muted-foreground)",
-                    }}
-                  >
-                    After trial
-                  </p>
-                  <p
-                    className="text-[11px] leading-relaxed"
-                    style={{
-                      fontFamily: "var(--font-body)",
-                      color: "var(--foreground)",
-                      opacity: 0.85,
-                    }}
-                  >
-                    Your card will be charged{" "}
-                    <span className="font-bold">
-                      {selectedPlan.price}
-                      {selectedPlan.priceSuffix}
-                    </span>{" "}
-                    on <span className="font-bold">{trialEndLabel}</span>{" "}
-                    unless you cancel before then.
-                  </p>
-                </div>
+              <div className="flex flex-col gap-3">
+                <SummaryRow
+                  label="Plan"
+                  value={`${selectedPlan.name} · ${selectedPlan.price}${selectedPlan.priceSuffix}`}
+                />
+                <SummaryRow label="Trial Starts" value={trialStartLabel} />
+                <SummaryRow label="Trial Ends" value={trialEndLabel} />
               </div>
 
-              {/* ── RIGHT PANEL — Card details ── */}
+              {/* Discount code — client-side only. Stripe Checkout's
+                  allow_promotion_codes flag shows a proper promo field
+                  on the hosted page, so this is more of a reassurance
+                  UI for users who want to enter the code early. */}
               <div
-                className="p-6 flex flex-col"
-                style={{
-                  backgroundColor: "var(--card)",
-                  border: "2px solid var(--border-strong)",
-                  boxShadow: "var(--hard-shadow)",
-                }}
+                className="mt-5 pt-5"
+                style={{ borderTop: "2px solid var(--border)" }}
               >
-                <p
-                  className="text-[10px] font-bold uppercase tracking-[0.15em] mb-4"
+                <label
+                  className="block text-[10px] font-bold uppercase tracking-[0.15em] mb-2"
                   style={{
                     fontFamily: "var(--font-mono)",
-                    color: "var(--primary-text)",
+                    color: "var(--foreground)",
+                    opacity: 0.5,
                   }}
                 >
-                  Card Details
+                  Discount Code
+                </label>
+                <input
+                  type="text"
+                  value={discountCode}
+                  onChange={(e) =>
+                    setDiscountCode(e.target.value.toUpperCase())
+                  }
+                  placeholder="SAVE10"
+                  className="w-full px-3 py-2.5 text-xs outline-none transition-all duration-100"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    backgroundColor: "var(--input)",
+                    border: "2px solid var(--border)",
+                    color: "var(--foreground)",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.border = "4px solid var(--primary)";
+                    e.currentTarget.style.padding = "8px 10px";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.border = "2px solid var(--border)";
+                    e.currentTarget.style.padding = "10px 12px";
+                  }}
+                />
+                {discountCode.trim() && (
+                  <p
+                    className="mt-1.5 text-[10px] font-bold uppercase tracking-wider"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      color: "var(--primary-text)",
+                    }}
+                  >
+                    Enter this same code on the payment page to apply
+                  </p>
+                )}
+              </div>
+
+              <div
+                className="mt-5 pt-5"
+                style={{ borderTop: "2px solid var(--border)" }}
+              >
+                <p
+                  className="text-[10px] font-bold uppercase tracking-[0.15em] mb-1.5"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--muted-foreground)",
+                  }}
+                >
+                  After trial
                 </p>
-                <CardForm value={card} onChange={setCard} />
+                <p
+                  className="text-[11px] leading-relaxed"
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    color: "var(--foreground)",
+                    opacity: 0.85,
+                  }}
+                >
+                  Your card will be charged{" "}
+                  <span className="font-bold">
+                    {selectedPlan.price}
+                    {selectedPlan.priceSuffix}
+                  </span>{" "}
+                  on <span className="font-bold">{trialEndLabel}</span>{" "}
+                  unless you cancel before then.
+                </p>
               </div>
             </div>
 
             <div className="flex gap-2">
               <SecondaryButton onClick={goBack} label="Back" />
               <PrimaryButton
-                onClick={handleStartTrial}
-                disabled={!canStartTrial || loading}
+                onClick={handleContinueToCheckout}
+                disabled={loading}
                 loading={loading}
-                label="Start Trial"
-                icon={<Zap className="w-3.5 h-3.5" />}
+                label="Continue"
+                icon={<ArrowRight className="w-3.5 h-3.5" />}
                 className="flex-1"
               />
             </div>
@@ -919,7 +914,9 @@ export default function SignupPage() {
                 opacity: 0.6,
               }}
             >
-              By starting your trial you agree to the Terms and Privacy
+              We&apos;ll email you a verification code. After you confirm
+              it, we redirect you to our secure payment page to enter
+              your card. By continuing you agree to the Terms and Privacy
               Policy.
             </p>
 
