@@ -7,6 +7,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|monitoring|api/cron/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Exclude: static assets, images, monitoring, cron routes, and
+    // /api/billing/* (webhooks + Stripe calls that don't use our
+    // Supabase session cookie).
+    "/((?!_next/static|_next/image|favicon.ico|monitoring|api/cron/|api/billing/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
