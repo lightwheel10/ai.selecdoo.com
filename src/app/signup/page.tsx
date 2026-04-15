@@ -84,8 +84,11 @@ export default function SignupPage() {
   const searchParams = useSearchParams();
   const supabase = createClient();
 
+  // ?plan=pro|business carried from the landing pricing cards.
+  // Business Class is the default for visitors from the hero/bottom
+  // CTAs (no ?plan= param) since it's the "Most Popular" tier.
   const queryPlan = searchParams.get("plan");
-  const initialPlan: PlanId = queryPlan === "standard" ? "standard" : "pro";
+  const initialPlan: PlanId = queryPlan === "pro" ? "pro" : "business";
 
   const [step, setStep] = useState<Step>("personal");
 

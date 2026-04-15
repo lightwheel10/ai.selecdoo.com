@@ -2,7 +2,7 @@
 
 import { Check } from "lucide-react";
 
-export type PlanId = "standard" | "pro";
+export type PlanId = "pro" | "business";
 
 interface Plan {
   id: PlanId;
@@ -20,7 +20,7 @@ interface Plan {
  */
 export const PLANS: Plan[] = [
   {
-    id: "standard",
+    id: "pro",
     name: "Pro",
     price: "€79",
     priceSuffix: "/month",
@@ -35,7 +35,7 @@ export const PLANS: Plan[] = [
     ],
   },
   {
-    id: "pro",
+    id: "business",
     name: "Business Class",
     price: "€159",
     priceSuffix: "/month",

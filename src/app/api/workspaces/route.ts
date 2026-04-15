@@ -165,7 +165,7 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    if (intendedPlan !== "standard" && intendedPlan !== "pro") {
+    if (intendedPlan !== "pro" && intendedPlan !== "business") {
       return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
     }
 
