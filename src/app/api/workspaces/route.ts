@@ -1,27 +1,35 @@
 /**
  * Workspace creation API.
  *
- * POST: runs the full signup side-effect chain after OTP verification.
+ * POST: creates the workspace + its creator + (optional) first store.
+ * This endpoint stops short of starting a subscription — the caller
+ * follows up with POST /api/billing/checkout to redirect the user to
+ * Stripe's hosted checkout. The subscription row is later written
+ * by the webhook handler at /api/billing/webhook when Stripe fires
+ * checkout.session.completed.
  *
  *   1. Upsert v2.user_profiles    (first_name, last_name, country)
  *   2. Insert v2.workspaces        (name + slug, created_by = user.id)
  *   3. Insert v2.workspace_members (user_id, role = 'admin')
- *   4. Stamp user_profiles.first_trial_started_at if eligible
- *      (prevents trial abuse across multiple workspaces per user)
- *   5. Insert v2.workspace_subscriptions (7-day trial, stripe_* NULL)
- *   6. (optional) Insert v2.stores + v2.monitoring_configs when a
+ *   4. (optional) Insert v2.stores + v2.monitoring_configs when a
  *      storeUrl was provided in signup step 3, then kick off the
  *      Apify product import via next/server `after()` so the response
  *      returns fast.
  *
- * Failures at steps 2–5 roll back the newer rows they created. Step
- * 6 is best-effort — a failed store insert (e.g. URL collision against
+ * Failures at step 3 roll back step 2 (delete workspace). Step 1 is
+ * an idempotent upsert so we leave it in place on any failure. Step 4
+ * is best-effort — a failed store insert (e.g. URL collision against
  * the global unique constraint) does NOT roll back the workspace;
- * the user will just see an empty store list and can add one later.
+ * the user can add stores manually later from the dashboard.
  *
- * No card data is ever received here — Stripe integration is deferred.
- * The subscription row is written with stripe_* columns NULL; a future
- * Stripe webhook handler will backfill them.
+ * No card data is ever received here — the card form is on Stripe's
+ * hosted page. workspace_subscriptions is NOT written by this route;
+ * that's the webhook handler's job so there's one source of truth.
+ *
+ * Per the D2 decision, one trial per workspace (not per user), so the
+ * v2.user_profiles.first_trial_started_at column is no longer read
+ * or written by signup. The column stays (unused) until a later
+ * migration drops it.
  */
 
 import { NextResponse, after } from "next/server";
@@ -31,7 +39,6 @@ import { isValidCountryCode } from "@/lib/countries";
 import { triggerScrape } from "@/lib/scrape-trigger";
 
 const MAX_BODY_SIZE = 4_096;
-const TRIAL_DAYS = 7;
 
 function generateSlug(name: string): string {
   return (
@@ -130,8 +137,6 @@ export async function POST(req: Request) {
       typeof body.lastName === "string" ? body.lastName.trim() : "";
     const country = typeof body.country === "string" ? body.country : "";
     const name = typeof body.name === "string" ? body.name.trim() : "";
-    const intendedPlan =
-      typeof body.intendedPlan === "string" ? body.intendedPlan : "";
     const rawStoreUrl =
       typeof body.storeUrl === "string" ? body.storeUrl.trim() : "";
 
@@ -165,9 +170,6 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    if (intendedPlan !== "pro" && intendedPlan !== "business") {
-      return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
-    }
 
     // Validate optional storeUrl up front so we fail fast before any
     // DB writes happen. When present and invalid, return 400.
@@ -183,8 +185,6 @@ export async function POST(req: Request) {
     const supabase = createAdminClient();
 
     // ── 1. Upsert user_profile ──
-    // first_trial_started_at is intentionally omitted — we only stamp
-    // it in step 4 once subscription creation succeeds.
     const { error: profileErr } = await supabase
       .from("user_profiles")
       .upsert(
@@ -204,14 +204,6 @@ export async function POST(req: Request) {
         { status: 500 }
       );
     }
-
-    const { data: existingProfile } = await supabase
-      .from("user_profiles")
-      .select("first_trial_started_at")
-      .eq("user_id", user.id)
-      .single();
-
-    const trialEligible = !existingProfile?.first_trial_started_at;
 
     // ── 2. Create workspace (unique slug with random suffix on collision) ──
     let slug = generateSlug(name);
@@ -263,63 +255,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // ── 4. Stamp first_trial_started_at if this is the user's first trial ──
-    const nowIso = new Date().toISOString();
-    if (trialEligible) {
-      const { error: stampErr } = await supabase
-        .from("user_profiles")
-        .update({ first_trial_started_at: nowIso })
-        .eq("user_id", user.id);
-
-      if (stampErr) {
-        console.error("user_profiles trial stamp error:", stampErr);
-        await supabase
-          .from("workspace_members")
-          .delete()
-          .eq("workspace_id", workspace.id);
-        await supabase.from("workspaces").delete().eq("id", workspace.id);
-        return NextResponse.json(
-          { error: "Failed to mark trial" },
-          { status: 500 }
-        );
-      }
-    }
-
-    // ── 5. Insert subscription row (trialing or already-expired) ──
-    const trialEnd = new Date();
-    trialEnd.setDate(trialEnd.getDate() + TRIAL_DAYS);
-
-    const { error: subErr } = await supabase
-      .from("workspace_subscriptions")
-      .insert({
-        workspace_id: workspace.id,
-        plan: "trial",
-        status: trialEligible ? "trialing" : "expired",
-        intended_plan: intendedPlan,
-        trial_starts_at: nowIso,
-        trial_ends_at: trialEnd.toISOString(),
-      });
-
-    if (subErr) {
-      console.error("workspace_subscriptions insert error:", subErr);
-      if (trialEligible) {
-        await supabase
-          .from("user_profiles")
-          .update({ first_trial_started_at: null })
-          .eq("user_id", user.id);
-      }
-      await supabase
-        .from("workspace_members")
-        .delete()
-        .eq("workspace_id", workspace.id);
-      await supabase.from("workspaces").delete().eq("id", workspace.id);
-      return NextResponse.json(
-        { error: "Failed to start trial" },
-        { status: 500 }
-      );
-    }
-
-    // ── 6. (optional) Create the user's first store + monitoring config ──
+    // ── 4. (optional) Create the user's first store + monitoring config ──
     // Best-effort: a failure here (e.g. unique-URL collision) does NOT
     // roll back the workspace. The user still has a valid workspace and
     // can add stores manually from the dashboard.
@@ -394,12 +330,6 @@ export async function POST(req: Request) {
         id: workspace.id,
         name: workspace.name,
         slug: workspace.slug,
-      },
-      subscription: {
-        plan: "trial",
-        status: trialEligible ? "trialing" : "expired",
-        trial_ends_at: trialEnd.toISOString(),
-        intended_plan: intendedPlan,
       },
       store: firstStoreId ? { id: firstStoreId } : null,
     });
