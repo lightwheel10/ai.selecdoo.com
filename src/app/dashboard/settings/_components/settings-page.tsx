@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useCallback } from "react";
-import { Users, Store as StoreIcon, Package, Bot, Webhook, Sparkles } from "lucide-react";
+import { Users, Store as StoreIcon, Package, Bot, Webhook, Sparkles, CreditCard } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TeamAccessManager } from "./team-access-manager";
 
@@ -28,6 +28,10 @@ const AdminAISkillsTab = dynamic(
   () => import("./admin-ai-skills-tab").then((m) => m.AdminAISkillsTab),
   { ssr: false }
 );
+const AdminBillingTab = dynamic(
+  () => import("./admin-billing-tab").then((m) => m.AdminBillingTab),
+  { ssr: false }
+);
 
 interface SettingsPageProps {
   isAdmin: boolean;
@@ -35,7 +39,7 @@ interface SettingsPageProps {
 }
 
 // Valid tab values — used to validate URL param
-const VALID_TABS = ["team", "shops", "products", "webhook", "ai-skills", "ai-activity"] as const;
+const VALID_TABS = ["team", "shops", "products", "webhook", "ai-skills", "ai-activity", "billing"] as const;
 type TabValue = (typeof VALID_TABS)[number];
 
 export function SettingsPage({ isAdmin, canManageTeam }: SettingsPageProps) {
@@ -128,6 +132,10 @@ export function SettingsPage({ isAdmin, canManageTeam }: SettingsPageProps) {
           <Bot className="w-3.5 h-3.5" />
           {ta("aiActivityTab")}
         </TabsTrigger>
+        <TabsTrigger value="billing">
+          <CreditCard className="w-3.5 h-3.5" />
+          {ta("billingTab")}
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="team">
@@ -147,6 +155,9 @@ export function SettingsPage({ isAdmin, canManageTeam }: SettingsPageProps) {
       </TabsContent>
       <TabsContent value="ai-activity">
         <AdminAIActivityTab />
+      </TabsContent>
+      <TabsContent value="billing">
+        <AdminBillingTab />
       </TabsContent>
     </Tabs>
   );

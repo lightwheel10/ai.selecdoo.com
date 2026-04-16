@@ -77,6 +77,97 @@ function formatDelta(
 
 export default async function DashboardPage() {
   const { workspaceId } = await getAuthContext();
+
+  // Subscription check — soft-lock: if the workspace has an explicitly
+  // non-active subscription (past_due, canceled, expired, unpaid), show
+  // an empty state with an upgrade CTA instead of the full dashboard.
+  // No subscription row at all (null) or status in (trialing, active,
+  // incomplete) → normal dashboard. This matches the D3 soft-lock
+  // decision; full enforcement (blocking API routes) is in P4.x.
+  const { createAdminClient: createAdmin } = await import("@/lib/supabase/admin");
+  const adminSb = createAdmin();
+  const { data: subRow } = await adminSb
+    .from("workspace_subscriptions")
+    .select("status")
+    .eq("workspace_id", workspaceId!)
+    .maybeSingle();
+
+  const subStatus = subRow?.status ?? null;
+  const isLocked =
+    subStatus !== null &&
+    subStatus !== "trialing" &&
+    subStatus !== "active" &&
+    subStatus !== "incomplete";
+
+  if (isLocked) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div
+          className="w-12 h-12 flex items-center justify-center mb-5"
+          style={{
+            backgroundColor: "rgba(255,69,58,0.08)",
+            border: "2px solid rgba(255,69,58,0.25)",
+          }}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#FF453A"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" x2="12" y1="9" y2="13" />
+            <line x1="12" x2="12.01" y1="17" y2="17" />
+          </svg>
+        </div>
+        <p
+          className="text-[10px] font-bold uppercase tracking-[0.15em] mb-2"
+          style={{ fontFamily: "var(--font-mono)", color: "#FF453A" }}
+        >
+          Subscription {subStatus === "past_due" ? "past due" : "ended"}
+        </p>
+        <h1
+          className="text-xl font-extrabold tracking-tight mb-3"
+          style={{
+            fontFamily: "var(--font-display)",
+            letterSpacing: "-0.02em",
+          }}
+        >
+          {subStatus === "past_due"
+            ? "We couldn't charge your card"
+            : "Your trial or subscription has ended"}
+        </h1>
+        <p
+          className="text-[13px] leading-relaxed mb-6 max-w-md"
+          style={{
+            fontFamily: "var(--font-body)",
+            color: "var(--muted-foreground)",
+          }}
+        >
+          {subStatus === "past_due"
+            ? "Update your payment method to restore access to all features. Your data is safe — nothing has been deleted."
+            : "Subscribe to continue using AI content generation, product monitoring, and store management. Your data is safe."}
+        </p>
+        <a
+          href="/dashboard/settings?tab=billing"
+          className="inline-flex items-center gap-2 px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.15em] bg-primary text-primary-foreground transition-all duration-100 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+          style={{
+            fontFamily: "var(--font-mono)",
+            border: "2px solid var(--border-strong)",
+            boxShadow: "var(--hard-shadow)",
+          }}
+        >
+          {subStatus === "past_due" ? "Update Payment" : "Subscribe"}
+        </a>
+      </div>
+    );
+  }
+
   const t = await getTranslations("Overview");
   const tt = await getTranslations("Time");
 

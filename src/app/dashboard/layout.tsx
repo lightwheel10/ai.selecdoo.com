@@ -2,9 +2,13 @@
  * Dashboard layout — protected, workspace-aware.
  *
  * Resolves the current user's workspace and provides it to all
- * child components via WorkspaceProvider. If the user has no
- * workspace (new signup that failed, or removed from workspace),
- * redirects to /signup.
+ * child components via WorkspaceProvider + RoleProvider. If the user
+ * has no workspace (new signup that failed, or removed from
+ * workspace), redirects to /signup.
+ *
+ * Subscription state is fetched here once and piped through
+ * RoleProvider so client components (TrialBanner, billing tab, etc.)
+ * can read it via useAuthAccess().subscription without re-fetching.
  */
 
 import { cookies } from "next/headers";
@@ -13,10 +17,11 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/domain/app-sidebar";
 import { Toaster } from "sonner";
 import { getAuthContext } from "@/lib/auth/session";
-import { RoleProvider } from "@/components/domain/role-provider";
+import { RoleProvider, type SubscriptionInfo } from "@/components/domain/role-provider";
 import { WorkspaceProvider } from "@/components/domain/workspace-provider";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserWorkspaces } from "@/lib/auth/workspace";
+import { TrialBanner } from "@/components/domain/trial-banner";
 
 export default async function DashboardLayout({
   children,
@@ -29,15 +34,10 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  // If user has no workspace, redirect to signup to create one.
-  // In dev bypass mode, also redirect — dev bypass needs a real
-  // workspace to function correctly (queries use workspaceId!).
   if (!workspaceId) {
     redirect("/signup");
   }
 
-  // If user has multiple workspaces and hasn't picked one yet,
-  // redirect to workspace selector. Single-workspace users skip this.
   if (user && !isDevBypass) {
     const cookieStore = await cookies();
     const hasPreference = !!cookieStore.get("mf_workspace_id")?.value;
@@ -49,26 +49,40 @@ export default async function DashboardLayout({
     }
   }
 
-  // Fetch workspace name + public site URL for the provider
-  let workspaceName: string | null = null;
-  let publicSiteUrl: string | null = null;
-  if (workspaceId) {
-    const supabase = createAdminClient();
-    const { data } = await supabase
+  // Fetch workspace name + subscription in parallel
+  const supabase = createAdminClient();
+  const [wsResult, subResult] = await Promise.all([
+    supabase
       .from("workspaces")
       .select("name, public_site_url")
       .eq("id", workspaceId)
-      .single();
-    workspaceName = data?.name ?? null;
-    publicSiteUrl = data?.public_site_url ?? null;
-  }
+      .single(),
+    supabase
+      .from("workspace_subscriptions")
+      .select("plan, status, trial_ends_at, intended_plan")
+      .eq("workspace_id", workspaceId)
+      .maybeSingle(),
+  ]);
+
+  const workspaceName = wsResult.data?.name ?? null;
+  const publicSiteUrl = wsResult.data?.public_site_url ?? null;
+
+  const subscription: SubscriptionInfo | null = subResult.data
+    ? {
+        plan: subResult.data.plan,
+        status: subResult.data.status,
+        trialEndsAt: subResult.data.trial_ends_at,
+        intendedPlan: subResult.data.intended_plan,
+      }
+    : null;
 
   return (
     <SidebarProvider>
       <WorkspaceProvider workspaceId={workspaceId} workspaceName={workspaceName} publicSiteUrl={publicSiteUrl}>
-        <RoleProvider role={role} permissions={permissions}>
+        <RoleProvider role={role} permissions={permissions} subscription={subscription}>
           <AppSidebar user={user} role={role} permissions={permissions} />
           <SidebarInset>
+            <TrialBanner />
             <main className="flex-1 p-6">{children}</main>
           </SidebarInset>
         </RoleProvider>
