@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { ExternalLink, Loader2 } from "lucide-react";
+import { ExternalLink, Loader2, Check, ArrowRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { PLANS } from "@/app/signup/_components/plan-picker";
 
@@ -308,7 +308,143 @@ export function AdminBillingTab() {
         </div>
       )}
 
-      {/* ── Section 3: Actions ── */}
+      {/* ── Section 3: Plan Comparison ── */}
+      <div
+        className="p-6"
+        style={{
+          backgroundColor: "var(--card)",
+          border: "2px solid var(--border-strong)",
+          boxShadow: "var(--hard-shadow)",
+        }}
+      >
+        <p
+          className="text-[10px] font-bold uppercase tracking-[0.15em] mb-4"
+          style={{
+            fontFamily: "var(--font-mono)",
+            color: "var(--primary-text)",
+          }}
+        >
+          Plans
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {PLANS.map((p) => {
+            const isCurrent = p.id === displayPlanId;
+            return (
+              <div
+                key={p.id}
+                className="relative flex flex-col p-4"
+                style={{
+                  border: isCurrent
+                    ? "2px solid var(--primary)"
+                    : "2px solid var(--border)",
+                  backgroundColor: isCurrent
+                    ? "var(--primary-muted)"
+                    : "transparent",
+                }}
+              >
+                {isCurrent && (
+                  <span
+                    className="absolute -top-2.5 right-3 px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.15em]"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      backgroundColor: "var(--primary)",
+                      color: "var(--primary-foreground)",
+                      border: "2px solid var(--border-strong)",
+                    }}
+                  >
+                    Current Plan
+                  </span>
+                )}
+
+                <p
+                  className="text-[10px] font-bold uppercase tracking-[0.15em] mb-1.5"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--muted-foreground)",
+                  }}
+                >
+                  {p.name}
+                </p>
+
+                <div className="flex items-baseline gap-1 mb-2">
+                  <span
+                    className="text-xl font-black"
+                    style={{
+                      fontFamily: "var(--font-display)",
+                      letterSpacing: "-0.02em",
+                    }}
+                  >
+                    {p.price}
+                  </span>
+                  <span
+                    className="text-[10px] font-bold"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      color: "var(--muted-foreground)",
+                    }}
+                  >
+                    {p.priceSuffix}
+                  </span>
+                </div>
+
+                <ul className="flex flex-col gap-1 mb-3 mt-auto">
+                  {p.features.map((f, i) => (
+                    <li
+                      key={i}
+                      className="flex items-center gap-1.5 text-[10px]"
+                      style={{ fontFamily: "var(--font-body)" }}
+                    >
+                      <Check
+                        className="w-2.5 h-2.5 shrink-0"
+                        strokeWidth={3}
+                        style={{ color: "var(--primary-text)" }}
+                      />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+
+                {!isCurrent && (
+                  <button
+                    onClick={handlePortal}
+                    disabled={portalLoading}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] bg-primary text-primary-foreground transition-all duration-100 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-40"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      border: "2px solid var(--border-strong)",
+                      boxShadow: "var(--hard-shadow)",
+                    }}
+                  >
+                    {portalLoading ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <ArrowRight className="w-3 h-3" />
+                    )}
+                    {displayPlanId === "pro"
+                      ? "Upgrade"
+                      : "Switch"}{" "}
+                    to {p.name}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <p
+          className="mt-3 text-[10px]"
+          style={{
+            fontFamily: "var(--font-mono)",
+            color: "var(--muted-foreground)",
+            opacity: 0.6,
+          }}
+        >
+          Plan changes take effect immediately with prorated billing.
+        </p>
+      </div>
+
+      {/* ── Section 4: Actions ── */}
       <div className="flex items-center gap-3">
         <button
           onClick={handlePortal}
@@ -336,7 +472,7 @@ export function AdminBillingTab() {
             opacity: 0.6,
           }}
         >
-          Invoices, card updates, plan changes, and cancellation
+          Invoices, card updates, and cancellation
         </p>
       </div>
     </div>
