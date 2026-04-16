@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { canCreateStore } from "@/lib/auth/roles";
+import { canCreateStore, canUsePaidFeature } from "@/lib/auth/roles";
 import { getAuthContext } from "@/lib/auth/session";
 import { triggerScrape } from "@/lib/scrape-trigger";
 
@@ -69,12 +69,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Request body too large" }, { status: 413 });
     }
 
-    const { user, role, permissions, isDevBypass, workspaceId } = await getAuthContext();
+    const { user, role, permissions, isDevBypass, workspaceId, subscription } = await getAuthContext();
     if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     if (!canCreateStore({ role, permissions })) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (!canUsePaidFeature({ isDevBypass, subscription })) {
+      return NextResponse.json({ error: "Active subscription required" }, { status: 402 });
     }
 
     const { url } = await req.json();

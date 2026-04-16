@@ -4,9 +4,14 @@
  * Multi-tenant: role and permissions are resolved per-workspace from
  * the workspace_members table, NOT from app_metadata.
  *
+ * Subscription state is resolved in parallel and returned alongside
+ * role/permissions so API routes can gate premium features via
+ * `canUsePaidFeature(ctx)` without a separate DB call.
+ *
  * Backward compatible: if no workspaceId is provided, the user's
- * first (or only) workspace is auto-resolved. This means all existing
- * callers continue to work without changes.
+ * first (or only) workspace is auto-resolved. Adding `subscription`
+ * to AuthContext is safe — all 37 existing callers destructure
+ * explicitly and aren't affected by a new field.
  */
 
 import type { User } from "@supabase/supabase-js";
@@ -19,12 +24,18 @@ import {
   type WorkspaceMembership,
 } from "@/lib/auth/workspace";
 
+export interface SubscriptionState {
+  plan: string | null;
+  status: string | null;
+}
+
 export interface AuthContext {
   user: User | null;
   workspaceId: string | null;
   role: AppRole;
   permissions: AppPermission[];
   isDevBypass: boolean;
+  subscription: SubscriptionState | null;
 }
 
 /**
@@ -43,15 +54,12 @@ export async function getAuthContext(
     process.env.DEV_BYPASS === "true";
 
   if (isDevBypass) {
-    // Dev bypass always needs a real workspace for queries and API routes
-    // to work correctly. If none exists, create one automatically.
     const { createAdminClient } = await import("@/lib/supabase/admin");
     const supabase = createAdminClient();
 
     let devWorkspaceId: string | null = workspaceId ?? null;
 
     if (!devWorkspaceId) {
-      // Try to find an existing workspace
       const { data: existing } = await supabase
         .from("workspaces")
         .select("id")
@@ -61,9 +69,6 @@ export async function getAuthContext(
       devWorkspaceId = existing?.[0]?.id ?? null;
     }
 
-    // If no workspace exists, log a warning. Dev bypass needs at least
-    // one workspace to function correctly — sign up via /signup first,
-    // or run the migration SQL to create one.
     if (!devWorkspaceId) {
       console.warn(
         "[DEV_BYPASS] No workspace found. Sign up at /signup to create one. " +
@@ -77,6 +82,7 @@ export async function getAuthContext(
       role: "admin",
       permissions: [...APP_PERMISSIONS],
       isDevBypass: true,
+      subscription: { plan: "pro", status: "active" },
     };
   }
 
@@ -93,30 +99,26 @@ export async function getAuthContext(
       role: "viewer",
       permissions: [],
       isDevBypass: false,
+      subscription: null,
     };
   }
 
   // ── Resolve workspace membership ──
-  // Priority: explicit param > cookie preference > default (first workspace).
   let membership: WorkspaceMembership | null = null;
 
   if (workspaceId) {
     membership = await getWorkspaceMembership(user.id, workspaceId);
   } else {
-    // Check for workspace preference cookie
     const cookieStore = await cookies();
     const preferred = cookieStore.get("mf_workspace_id")?.value;
     if (preferred) {
       membership = await getWorkspaceMembership(user.id, preferred);
     }
-    // Fall back to default (first workspace) if cookie is unset or invalid
     if (!membership) {
       membership = await getDefaultWorkspaceMembership(user.id);
     }
   }
 
-  // User exists but has no workspace membership — new user who hasn't
-  // created a workspace yet, or was removed from their workspace.
   if (!membership) {
     return {
       user,
@@ -124,7 +126,23 @@ export async function getAuthContext(
       role: "viewer",
       permissions: [],
       isDevBypass: false,
+      subscription: null,
     };
+  }
+
+  // ── Resolve subscription state ──
+  // Uses admin client to bypass RLS. One indexed query on
+  // workspace_subscriptions.workspace_id (UNIQUE) — fast.
+  let subscription: SubscriptionState | null = null;
+  {
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const adminSb = createAdminClient();
+    const { data: sub } = await adminSb
+      .from("workspace_subscriptions")
+      .select("plan, status")
+      .eq("workspace_id", membership.workspaceId)
+      .maybeSingle();
+    subscription = sub ? { plan: sub.plan, status: sub.status } : null;
   }
 
   return {
@@ -133,5 +151,6 @@ export async function getAuthContext(
     role: membership.role,
     permissions: membership.permissions,
     isDevBypass: false,
+    subscription,
   };
 }

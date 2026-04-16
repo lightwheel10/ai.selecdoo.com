@@ -8,7 +8,7 @@
 
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { canRunMonitoring, canStartScrape } from "@/lib/auth/roles";
+import { canRunMonitoring, canStartScrape, canUsePaidFeature } from "@/lib/auth/roles";
 import { getAuthContext } from "@/lib/auth/session";
 import { triggerScrape } from "@/lib/scrape-trigger";
 
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Request body too large" }, { status: 413 });
     }
 
-    const { user, role, permissions, isDevBypass, workspaceId } = await getAuthContext();
+    const { user, role, permissions, isDevBypass, workspaceId, subscription } = await getAuthContext();
     if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -38,6 +38,9 @@ export async function POST(req: Request) {
       }
     } else if (!canStartScrape({ role, permissions })) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (!canUsePaidFeature({ isDevBypass, subscription })) {
+      return NextResponse.json({ error: "Active subscription required" }, { status: 402 });
     }
 
     const supabase = createAdminClient();

@@ -175,3 +175,23 @@ export function canGenerateAIContent(subject: PermissionSubject): boolean {
 export function canEditAIContent(subject: PermissionSubject): boolean {
   return hasPermission(subject, "ai_content:edit");
 }
+
+/**
+ * Subscription gate for premium features (D3: soft lock).
+ *
+ * Returns true when the workspace has an active or trialing subscription,
+ * OR when running under dev bypass (so local development isn't blocked by
+ * billing). Returns false for past_due, canceled, expired, unpaid, or
+ * missing subscriptions — callers should return 402 Payment Required.
+ *
+ * Operates on a subset of AuthContext so it can be called without importing
+ * the full auth module (avoids circular dependencies).
+ */
+export function canUsePaidFeature(ctx: {
+  isDevBypass: boolean;
+  subscription?: { status: string | null } | null;
+}): boolean {
+  if (ctx.isDevBypass) return true;
+  const status = ctx.subscription?.status;
+  return status === "trialing" || status === "active";
+}

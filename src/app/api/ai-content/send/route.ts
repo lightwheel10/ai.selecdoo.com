@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthContext } from "@/lib/auth/session";
-import { canGenerateAIContent } from "@/lib/auth/roles";
+import { canGenerateAIContent, canUsePaidFeature } from "@/lib/auth/roles";
 import { verifyStoreInWorkspace } from "@/lib/auth/workspace";
 import { getSendWebhookFieldConfig, buildSendPayload } from "@/lib/webhook-payload";
 
@@ -10,12 +10,15 @@ const SEND_TIMEOUT = 40_000; // 40 seconds
 
 export async function POST(req: Request) {
   try {
-    const { user, role, permissions, isDevBypass, workspaceId } = await getAuthContext();
+    const { user, role, permissions, isDevBypass, workspaceId, subscription } = await getAuthContext();
     if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     if (!canGenerateAIContent({ role, permissions })) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (!canUsePaidFeature({ isDevBypass, subscription })) {
+      return NextResponse.json({ error: "Active subscription required" }, { status: 402 });
     }
 
     const body = await req.json();

@@ -20,7 +20,7 @@ import { cookies } from "next/headers";
 import * as Sentry from "@sentry/nextjs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthContext } from "@/lib/auth/session";
-import { canGenerateAIContent } from "@/lib/auth/roles";
+import { canGenerateAIContent, canUsePaidFeature } from "@/lib/auth/roles";
 import { verifyStoreInWorkspace } from "@/lib/auth/workspace";
 import { AI_PROVIDER } from "@/lib/ai-content/config";
 import { generateQuestionOptions } from "@/lib/ai-content/client";
@@ -40,12 +40,15 @@ const VALID_CONTENT_TYPES = ["deal_post", "social_post", "website_text", "facebo
 export async function POST(req: Request) {
   try {
     // ── Auth ──
-    const { user, role, permissions, isDevBypass, workspaceId } = await getAuthContext();
+    const { user, role, permissions, isDevBypass, workspaceId, subscription } = await getAuthContext();
     if (!user && !isDevBypass) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     if (!canGenerateAIContent({ role, permissions })) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (!canUsePaidFeature({ isDevBypass, subscription })) {
+      return NextResponse.json({ error: "Active subscription required" }, { status: 402 });
     }
 
     // ── Provider check ──
