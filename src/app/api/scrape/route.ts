@@ -9,6 +9,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { canRunMonitoring, canStartScrape, canUsePaidFeature } from "@/lib/auth/roles";
+import { checkPlanLimit } from "@/lib/auth/plan-limits";
 import { getAuthContext } from "@/lib/auth/session";
 import { triggerScrape } from "@/lib/scrape-trigger";
 
@@ -41,6 +42,13 @@ export async function POST(req: Request) {
     }
     if (!canUsePaidFeature({ isDevBypass, subscription })) {
       return NextResponse.json({ error: "Active subscription required" }, { status: 402 });
+    }
+    const checkLimit = await checkPlanLimit(workspaceId!, "checks", subscription?.plan ?? null);
+    if (!checkLimit.allowed) {
+      return NextResponse.json(
+        { error: `Monthly check limit reached (${checkLimit.used}/${checkLimit.max} for your plan). Upgrade for more.` },
+        { status: 402 }
+      );
     }
 
     const supabase = createAdminClient();

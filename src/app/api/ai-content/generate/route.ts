@@ -3,6 +3,7 @@ import * as Sentry from "@sentry/nextjs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthContext } from "@/lib/auth/session";
 import { canGenerateAIContent, canUsePaidFeature } from "@/lib/auth/roles";
+import { checkPlanLimit } from "@/lib/auth/plan-limits";
 import { verifyStoreInWorkspace } from "@/lib/auth/workspace";
 import { getWebhookFieldConfig, buildGeneratePayload } from "@/lib/webhook-payload";
 import { AI_PROVIDER } from "@/lib/ai-content/config";
@@ -93,6 +94,13 @@ export async function POST(req: Request) {
     }
     if (!canUsePaidFeature({ isDevBypass, subscription })) {
       return NextResponse.json({ error: "Active subscription required" }, { status: 402 });
+    }
+    const genLimit = await checkPlanLimit(workspaceId!, "generations", subscription?.plan ?? null);
+    if (!genLimit.allowed) {
+      return NextResponse.json(
+        { error: `AI generation limit reached (${genLimit.used}/${genLimit.max} this month). Upgrade for more.` },
+        { status: 402 }
+      );
     }
 
     const body = await req.json();
