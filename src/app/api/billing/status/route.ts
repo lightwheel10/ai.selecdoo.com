@@ -1,32 +1,24 @@
 /**
  * GET /api/billing/status
  *
- * Returns the current workspace's subscription state so the UI can
- * render the trial banner, billing tab, and gate paid features
- * client-side. Read-only, cheap, safe to poll.
+ * Returns the current workspace's subscription state + usage counts +
+ * plan limits so the billing tab can render meters ("3 of 5 stores
+ * used") and the enforcement layer can check caps.
  *
  * Response shape:
  *   {
- *     hasSubscription:     boolean
- *     plan:                "trial" | "pro" | "business" | "canceled" | null
- *     status:              Stripe-style status string | null
- *     intendedPlan:        "pro" | "business" | null
- *     trialStartsAt:       ISO string | null
- *     trialEndsAt:         ISO string | null
- *     currentPeriodStart:  ISO string | null
- *     currentPeriodEnd:    ISO string | null
+ *     hasSubscription, plan, status, intendedPlan,
+ *     trialStartsAt, trialEndsAt, currentPeriodStart, currentPeriodEnd,
+ *     usage:  { stores, products, generationsThisMonth, checksThisMonth },
+ *     limits: { maxStores, maxProducts, maxGenerationsPerMonth, maxChecksPerMonth }
  *   }
  *
- * Access:
- *   - Any authenticated member of the workspace. Non-admins need to
- *     see "5 days left in trial" on their dashboard too; there's
- *     nothing sensitive here (no card digits, no invoice amounts).
- *   - Customer id / subscription id are intentionally NOT included —
- *     the billing portal route uses those server-side, the UI doesn't
- *     need them.
+ * `usage` and `limits` are null when there's no subscription row.
+ * `limits` is null when plan_limits has no row for the current plan
+ * (e.g., plan='canceled' which doesn't exist in plan_limits).
  *
- * Dev bypass returns a synthetic "active / pro" state so UIs that
- * gate on subscription status don't show a paywall in local dev.
+ * Access: any authenticated workspace member (read-only, no secrets).
+ * Dev bypass: synthetic active/pro + zeroed usage + Pro limits.
  */
 
 import { NextResponse } from "next/server";
@@ -43,8 +35,6 @@ export async function GET() {
       return NextResponse.json({ error: "No workspace" }, { status: 400 });
     }
 
-    // Dev bypass: synthesize an "active pro" state so the UI renders
-    // as if fully paid. We never hit the DB in this branch.
     if (ctx.isDevBypass) {
       return NextResponse.json({
         hasSubscription: true,
@@ -55,31 +45,51 @@ export async function GET() {
         trialEndsAt: null,
         currentPeriodStart: null,
         currentPeriodEnd: null,
+        usage: {
+          stores: 0,
+          products: 0,
+          generationsThisMonth: 0,
+          checksThisMonth: 0,
+        },
+        limits: {
+          maxStores: 5,
+          maxProducts: 250,
+          maxGenerationsPerMonth: 500,
+          maxChecksPerMonth: 2,
+        },
         devBypass: true,
       });
     }
 
     const supabase = createAdminClient();
 
-    const { data: sub, error } = await supabase
-      .from("workspace_subscriptions")
-      .select(
-        "plan, status, intended_plan, trial_starts_at, trial_ends_at, current_period_start, current_period_end"
-      )
-      .eq("workspace_id", ctx.workspaceId)
-      .maybeSingle();
+    // ── Phase 1: subscription + store IDs (parallel) ──
+    const [subResult, storeResult] = await Promise.all([
+      supabase
+        .from("workspace_subscriptions")
+        .select(
+          "plan, status, intended_plan, trial_starts_at, trial_ends_at, current_period_start, current_period_end"
+        )
+        .eq("workspace_id", ctx.workspaceId)
+        .maybeSingle(),
+      supabase
+        .from("stores")
+        .select("id", { count: "exact" })
+        .eq("workspace_id", ctx.workspaceId)
+        .is("deleted_at", null),
+    ]);
 
-    if (error) {
-      console.error("[billing/status] DB error:", error);
+    if (subResult.error) {
+      console.error("[billing/status] subscription query error:", subResult.error);
       return NextResponse.json(
         { error: "Failed to fetch subscription" },
         { status: 500 }
       );
     }
 
+    const sub = subResult.data;
+
     if (!sub) {
-      // No row yet — freshly created workspace pre-checkout. UI treats
-      // this as "no subscription" and prompts the user to subscribe.
       return NextResponse.json({
         hasSubscription: false,
         plan: null,
@@ -89,8 +99,59 @@ export async function GET() {
         trialEndsAt: null,
         currentPeriodStart: null,
         currentPeriodEnd: null,
+        usage: null,
+        limits: null,
       });
     }
+
+    // ── Phase 2: cascading counts ──
+    const storeCount = storeResult.count ?? 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const storeIds: string[] = (storeResult.data ?? []).map((s: any) => s.id);
+
+    let productCount = 0;
+    let genCount = 0;
+    let checkCount = 0;
+
+    if (storeIds.length > 0) {
+      const now = new Date();
+      const firstOfMonth = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        1
+      ).toISOString();
+
+      const [prodR, genR, checkR] = await Promise.all([
+        supabase
+          .from("products")
+          .select("id", { count: "exact", head: true })
+          .in("store_id", storeIds)
+          .is("deleted_at", null),
+        supabase
+          .from("ai_content")
+          .select("id", { count: "exact", head: true })
+          .in("store_id", storeIds)
+          .gte("created_at", firstOfMonth),
+        supabase
+          .from("monitoring_logs")
+          .select("id", { count: "exact", head: true })
+          .in("store_id", storeIds)
+          .gte("started_at", firstOfMonth),
+      ]);
+
+      productCount = prodR.count ?? 0;
+      genCount = genR.count ?? 0;
+      checkCount = checkR.count ?? 0;
+    }
+
+    // ── Phase 3: plan limits ──
+    const { data: limitsRow } = await supabase
+      .from("plan_limits")
+      .select(
+        "max_stores, max_products, max_generations_per_month, max_checks_per_month"
+      )
+      .eq("plan", sub.plan)
+      .maybeSingle();
 
     return NextResponse.json({
       hasSubscription: true,
@@ -101,6 +162,20 @@ export async function GET() {
       trialEndsAt: sub.trial_ends_at,
       currentPeriodStart: sub.current_period_start,
       currentPeriodEnd: sub.current_period_end,
+      usage: {
+        stores: storeCount,
+        products: productCount,
+        generationsThisMonth: genCount,
+        checksThisMonth: checkCount,
+      },
+      limits: limitsRow
+        ? {
+            maxStores: limitsRow.max_stores,
+            maxProducts: limitsRow.max_products,
+            maxGenerationsPerMonth: limitsRow.max_generations_per_month,
+            maxChecksPerMonth: limitsRow.max_checks_per_month,
+          }
+        : null,
     });
   } catch (err) {
     console.error("[billing/status] error:", err);
