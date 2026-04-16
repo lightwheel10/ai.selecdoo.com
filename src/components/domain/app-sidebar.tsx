@@ -10,6 +10,7 @@ import { setLocale } from "@/app/actions/locale";
 import { NAV_BOTTOM, NAV_ITEMS } from "@/lib/constants";
 import { ThemeToggle } from "@/components/domain/theme-toggle";
 import { useWorkspace } from "@/components/domain/workspace-provider";
+import { useAuthAccess } from "@/components/domain/role-provider";
 import {
   type AppPermission,
   canAccessAIContent,
@@ -43,6 +44,7 @@ export function AppSidebar({ user, role, permissions }: AppSidebarProps) {
   const t = useTranslations("Sidebar");
   const locale = useLocale();
   const { workspaceName } = useWorkspace();
+  const { subscription } = useAuthAccess();
   const [signOutOpen, setSignOutOpen] = useState(false);
 
   const visibleMainItems = NAV_ITEMS.filter((item) => {
@@ -245,6 +247,9 @@ export function AppSidebar({ user, role, permissions }: AppSidebarProps) {
                 </div>
               )}
 
+              {/* Plan badge */}
+              <SidebarPlanBadge subscription={subscription} />
+
               {/* User email */}
               <p
                 className="text-[9px] font-bold uppercase tracking-[0.15em] mb-2 truncate"
@@ -336,5 +341,119 @@ export function AppSidebar({ user, role, permissions }: AppSidebarProps) {
         </DialogContent>
       </Dialog>
     </Sidebar>
+  );
+}
+
+/* ─── Plan badge shown in the sidebar footer ──────────── */
+
+import type { SubscriptionInfo } from "@/components/domain/role-provider";
+
+const PLAN_DISPLAY: Record<string, string> = {
+  pro: "Pro",
+  business: "Business Class",
+  trial: "Trial",
+  canceled: "Canceled",
+};
+
+function SidebarPlanBadge({
+  subscription,
+}: {
+  subscription: SubscriptionInfo | null;
+}) {
+  // Capture time once on mount — avoids the react-hooks/purity
+  // warning for Date.now() inside a render path.
+  const [now] = useState(() => Date.now());
+
+  if (!subscription) {
+    return (
+      <PlanChip
+        label="No Plan"
+        bg="var(--status-neutral-bg)"
+        border="var(--status-neutral-border)"
+        color="var(--muted-foreground)"
+      />
+    );
+  }
+
+  const { status, plan, trialEndsAt } = subscription;
+
+  // Incomplete = checkout in progress, don't show a badge
+  if (status === "incomplete") return null;
+
+  if (status === "trialing" && trialEndsAt) {
+    const daysLeft = Math.max(
+      0,
+      Math.ceil(
+        (new Date(trialEndsAt).getTime() - now) /
+          (1000 * 60 * 60 * 24)
+      )
+    );
+    return (
+      <PlanChip
+        label={`Trial · ${daysLeft}d left`}
+        bg="var(--primary-muted)"
+        border="var(--primary-border)"
+        color="var(--primary-text)"
+      />
+    );
+  }
+
+  if (status === "active") {
+    const displayName = PLAN_DISPLAY[plan ?? ""] ?? plan ?? "Active";
+    return (
+      <PlanChip
+        label={displayName}
+        bg="rgba(34,197,94,0.08)"
+        border="rgba(34,197,94,0.3)"
+        color="#22C55E"
+      />
+    );
+  }
+
+  if (status === "past_due") {
+    return (
+      <PlanChip
+        label="Past Due"
+        bg="rgba(255,159,10,0.06)"
+        border="rgba(255,159,10,0.3)"
+        color="#FF9F0A"
+      />
+    );
+  }
+
+  // canceled / expired / unpaid
+  return (
+    <PlanChip
+      label="Expired"
+      bg="rgba(255,69,58,0.06)"
+      border="rgba(255,69,58,0.25)"
+      color="#FF453A"
+    />
+  );
+}
+
+function PlanChip({
+  label,
+  bg,
+  border,
+  color,
+}: {
+  label: string;
+  bg: string;
+  border: string;
+  color: string;
+}) {
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.15em] mb-1.5"
+      style={{
+        fontFamily: "var(--font-mono)",
+        backgroundColor: bg,
+        border: `1.5px solid ${border}`,
+        color,
+      }}
+    >
+      {label}
+    </span>
   );
 }
