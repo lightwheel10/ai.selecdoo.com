@@ -55,7 +55,7 @@ export async function GET() {
           maxStores: 5,
           maxProducts: 250,
           maxGenerationsPerMonth: 500,
-          maxChecksPerMonth: 2,
+          maxChecksPerMonth: 55,
         },
         devBypass: true,
       });
