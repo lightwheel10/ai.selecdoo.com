@@ -133,10 +133,10 @@ export async function GET() {
           .in("store_id", storeIds)
           .gte("created_at", firstOfMonth),
         supabase
-          .from("monitoring_logs")
+          .from("scrape_jobs")
           .select("id", { count: "exact", head: true })
           .in("store_id", storeIds)
-          .gte("started_at", firstOfMonth),
+          .gte("created_at", firstOfMonth),
       ]);
 
       productCount = prodR.count ?? 0;
