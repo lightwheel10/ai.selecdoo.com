@@ -12,6 +12,16 @@ interface Plan {
   description: string;
   features: string[];
   popular?: boolean;
+  /**
+   * Numeric per-month limits. MUST match db/migrations/006_update_check_limits.sql
+   * and the trial-defaults in db/migrations/003_add_user_profiles_and_subscriptions.sql.
+   */
+  limits: {
+    stores: number;
+    products: number;
+    generationsPerMonth: number;
+    checksPerMonth: number;
+  };
 }
 
 /**
@@ -33,6 +43,12 @@ export const PLANS: Plan[] = [
       "55 checks per month",
       "€5 AI generations",
     ],
+    limits: {
+      stores: 5,
+      products: 250,
+      generationsPerMonth: 500,
+      checksPerMonth: 55,
+    },
   },
   {
     id: "business",
@@ -49,6 +65,12 @@ export const PLANS: Plan[] = [
       "€10 AI generations",
     ],
     popular: true,
+    limits: {
+      stores: 10,
+      products: 1000,
+      generationsPerMonth: 1000,
+      checksPerMonth: 110,
+    },
   },
 ];
 

@@ -168,7 +168,16 @@ export function AdminBillingTab() {
               letterSpacing: "-0.02em",
             }}
           >
-            {planInfo?.name ?? "—"}
+            {data.status === "trialing" && planInfo ? (
+              <>
+                <span style={{ color: "var(--muted-foreground)" }}>
+                  Trial of{" "}
+                </span>
+                {planInfo.name}
+              </>
+            ) : (
+              planInfo?.name ?? "—"
+            )}
             {planInfo && (
               <span
                 className="ml-2 text-sm font-bold"
@@ -192,10 +201,10 @@ export function AdminBillingTab() {
           )}
         </div>
 
-        {/* Trial info */}
+        {/* Trial info + activate CTA */}
         {data.status === "trialing" && (
           <div
-            className="p-3 mb-4"
+            className="p-3 mb-4 flex flex-col gap-3"
             style={{
               backgroundColor: "var(--primary-muted)",
               border: "2px solid var(--primary-border)",
@@ -211,10 +220,10 @@ export function AdminBillingTab() {
               <span className="font-bold">
                 {daysLeft} day{daysLeft !== 1 ? "s" : ""} left
               </span>
-              {" in your trial. "}
+              {" in your trial — full plan limits unlock the moment you activate. "}
               {planInfo && (
                 <>
-                  You&apos;ll be charged{" "}
+                  Otherwise we&apos;ll auto-charge{" "}
                   <span className="font-bold">
                     {planInfo.price}
                     {planInfo.priceSuffix}
@@ -222,11 +231,28 @@ export function AdminBillingTab() {
                   on{" "}
                   <span className="font-bold">
                     {fmtDate(data.trialEndsAt)}
-                  </span>{" "}
-                  unless you cancel before then.
+                  </span>
+                  .
                 </>
               )}
             </p>
+            <button
+              onClick={handlePortal}
+              disabled={portalLoading}
+              className="self-start inline-flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] bg-primary text-primary-foreground transition-all duration-100 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-40"
+              style={{
+                fontFamily: "var(--font-mono)",
+                border: "2px solid var(--border-strong)",
+                boxShadow: "var(--hard-shadow)",
+              }}
+            >
+              {portalLoading ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <ArrowRight className="w-3 h-3" />
+              )}
+              Activate {planInfo?.name ?? "now"}
+            </button>
           </div>
         )}
 
@@ -280,7 +306,7 @@ export function AdminBillingTab() {
               color: "var(--primary-text)",
             }}
           >
-            Usage
+            {data.status === "trialing" ? "Trial Usage" : "Usage"}
           </p>
 
           <div className="flex flex-col gap-4">
@@ -288,21 +314,49 @@ export function AdminBillingTab() {
               label="Stores"
               used={data.usage.stores}
               max={data.limits.maxStores}
+              upgradeMax={
+                data.status === "trialing" ? planInfo?.limits.stores : undefined
+              }
+              upgradePlanName={
+                data.status === "trialing" ? planInfo?.name : undefined
+              }
             />
             <UsageMeter
               label="Products"
               used={data.usage.products}
               max={data.limits.maxProducts}
+              upgradeMax={
+                data.status === "trialing" ? planInfo?.limits.products : undefined
+              }
+              upgradePlanName={
+                data.status === "trialing" ? planInfo?.name : undefined
+              }
             />
             <UsageMeter
               label="AI Generations (this month)"
               used={data.usage.generationsThisMonth}
               max={data.limits.maxGenerationsPerMonth}
+              upgradeMax={
+                data.status === "trialing"
+                  ? planInfo?.limits.generationsPerMonth
+                  : undefined
+              }
+              upgradePlanName={
+                data.status === "trialing" ? planInfo?.name : undefined
+              }
             />
             <UsageMeter
               label="Monitoring Checks (this month)"
               used={data.usage.checksThisMonth}
               max={data.limits.maxChecksPerMonth}
+              upgradeMax={
+                data.status === "trialing"
+                  ? planInfo?.limits.checksPerMonth
+                  : undefined
+              }
+              upgradePlanName={
+                data.status === "trialing" ? planInfo?.name : undefined
+              }
             />
           </div>
         </div>
@@ -329,16 +383,20 @@ export function AdminBillingTab() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {PLANS.map((p) => {
-            const isCurrent = p.id === displayPlanId;
+            const isTrialPick =
+              data.status === "trialing" && p.id === displayPlanId;
+            const isCurrent =
+              data.status !== "trialing" && p.id === displayPlanId;
+            const isHighlighted = isTrialPick || isCurrent;
             return (
               <div
                 key={p.id}
                 className="relative flex flex-col p-4"
                 style={{
-                  border: isCurrent
+                  border: isHighlighted
                     ? "2px solid var(--primary)"
                     : "2px solid var(--border)",
-                  backgroundColor: isCurrent
+                  backgroundColor: isHighlighted
                     ? "var(--primary-muted)"
                     : "transparent",
                 }}
@@ -354,6 +412,19 @@ export function AdminBillingTab() {
                     }}
                   >
                     Current Plan
+                  </span>
+                )}
+                {isTrialPick && (
+                  <span
+                    className="absolute -top-2.5 right-3 px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.15em]"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      backgroundColor: "var(--card)",
+                      color: "var(--primary-text)",
+                      border: "2px solid var(--primary)",
+                    }}
+                  >
+                    Trial Pick
                   </span>
                 )}
 
@@ -421,10 +492,9 @@ export function AdminBillingTab() {
                     ) : (
                       <ArrowRight className="w-3 h-3" />
                     )}
-                    {displayPlanId === "pro"
-                      ? "Upgrade"
-                      : "Switch"}{" "}
-                    to {p.name}
+                    {isTrialPick
+                      ? `Activate ${p.name}`
+                      : `${displayPlanId === "pro" ? "Upgrade" : "Switch"} to ${p.name}`}
                   </button>
                 )}
               </div>
@@ -537,16 +607,23 @@ function UsageMeter({
   label,
   used,
   max,
+  upgradeMax,
+  upgradePlanName,
 }: {
   label: string;
   used: number;
   max: number;
+  /** When set (and > max), shows an inline "→ X on {upgradePlanName}" hint. */
+  upgradeMax?: number;
+  upgradePlanName?: string;
 }) {
   const pct = max > 0 ? Math.min(100, (used / max) * 100) : 0;
   const atLimit = max > 0 && used >= max;
+  const showUpgradeHint =
+    typeof upgradeMax === "number" && upgradeMax > max;
   return (
     <div>
-      <div className="flex items-baseline justify-between mb-1.5">
+      <div className="flex items-baseline justify-between mb-1.5 gap-3">
         <span
           className="text-[10px] font-bold uppercase tracking-[0.15em]"
           style={{
@@ -557,13 +634,27 @@ function UsageMeter({
           {label}
         </span>
         <span
-          className="text-[11px] font-bold"
+          className="text-[11px] font-bold flex items-baseline gap-2"
           style={{
             fontFamily: "var(--font-body)",
             color: atLimit ? "#FF453A" : "var(--foreground)",
           }}
         >
-          {used.toLocaleString()} / {max.toLocaleString()}
+          <span>
+            {used.toLocaleString()} / {max.toLocaleString()}
+          </span>
+          {showUpgradeHint && (
+            <span
+              className="text-[10px] font-bold uppercase tracking-[0.1em]"
+              style={{
+                fontFamily: "var(--font-mono)",
+                color: "var(--primary-text)",
+              }}
+            >
+              → {upgradeMax!.toLocaleString()}
+              {upgradePlanName ? ` on ${upgradePlanName}` : ""}
+            </span>
+          )}
         </span>
       </div>
       <div
