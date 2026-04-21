@@ -1,20 +1,18 @@
 /**
- * Public storefront URL generation for published products.
+ * External URL generation for products.
  *
- * Each workspace can optionally have a public_site_url configured
- * (e.g., "https://www.shopshout.ai/product.html" for Selecdoo).
- * If set, published products link to that URL with the hash_id.
- * If not set, published products link to the original store URL.
- *
- * This is a temporary solution until per-workspace storefronts are
- * built into the main app. At that point, public_site_url would be
- * set automatically (e.g., "marketforce.revenueworks.ai/ws/{slug}/product").
+ * Always returns the original store URL (product_url). The
+ * `publicSiteUrl` parameter is retained for backwards compatibility
+ * with existing call sites but is intentionally ignored — the
+ * workspace-level `public_site_url` field is still used elsewhere
+ * (brand-voice scraping for AI content generation), so the column
+ * isn't being removed, but it no longer redirects product links to
+ * an intermediate storefront.
  */
 
 /**
- * Get the external URL for a product.
- * - Workspace has public_site_url + product is published → storefront URL
- * - Otherwise → original store URL (product_url)
+ * Get the external URL for a product — always the original store URL.
+ * Returns null when the product has no `product_url` on record.
  */
 export function getProductExternalUrl(
   product: {
@@ -22,12 +20,8 @@ export function getProductExternalUrl(
     product_url?: string | null;
     is_published?: boolean;
   },
-  publicSiteUrl?: string | null
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _publicSiteUrl?: string | null
 ): string | null {
-  // If workspace has a public storefront and product is published, link to it
-  if (publicSiteUrl && product.is_published && product.hash_id) {
-    return `${publicSiteUrl}?id=${encodeURIComponent(product.hash_id)}`;
-  }
-  // Otherwise link to the original store URL
   return product.product_url || null;
 }
