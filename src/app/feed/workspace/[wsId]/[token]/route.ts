@@ -44,6 +44,13 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // against accidental rapid-fire polls.
 const CACHE_SECONDS = 3600;
 
+// 2026-05-14 (paras): the feed's channel-level <link> element. Points at the
+// active production host. Original value was https://ai.selecdoo.com but that
+// domain was never configured in DNS — the app actually lives at
+// marketforce.revenueworks.ai. Google Merchant doesn't validate this URL, so
+// it's purely cosmetic, but it shouldn't point at a dead domain.
+const FEED_CHANNEL_LINK = "https://marketforce.revenueworks.ai";
+
 const PRODUCT_LIST_COLUMNS =
   "id, store_id, hash_id, cleaned_title, title, handle, sku, brand, price, original_price, discount_percentage, currency, in_stock, product_url, image_url, description, description_de, description_en, updated_at, is_published, is_featured, is_slider, ai_category, affiliate_link, ai_shipping_data";
 
@@ -120,7 +127,7 @@ export async function GET(
   if (filteredStoreIds.length === 0) {
     const { xml } = renderGoogleMerchantFeed([], {
       title: workspace.name || "Marketforce feed",
-      link: "https://ai.selecdoo.com",
+      link: FEED_CHANNEL_LINK,
       description: "Product feed from Marketforce",
     });
     return new NextResponse(xml, {
@@ -164,7 +171,7 @@ export async function GET(
   // 6) Render and return.
   const { xml, itemCount, skippedCount } = renderGoogleMerchantFeed(allProducts, {
     title: workspace.name || "Marketforce feed",
-    link: "https://ai.selecdoo.com",
+    link: FEED_CHANNEL_LINK,
     description: "Product feed from Marketforce",
   });
 
